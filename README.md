@@ -54,7 +54,7 @@ Copy the `custom_components/valerion` folder into the `custom_components` folder
 
 ## Setup
 
-Settings > Devices & services > Add integration > **Valerion**. Enter the IP address, the port (4352), the security code if you set one, and the MAC address. The projector must be on during setup.
+Settings > Devices & services > Add integration > **Valerion**. Enter the IP address, the port (4352), the security code if you set one, and the MAC address. The projector must be on or in standby during setup; if it does not answer in standby, switch it on.
 
 ## How it works
 

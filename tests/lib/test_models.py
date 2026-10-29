@@ -6,6 +6,7 @@ import pytest
 
 from custom_components.valerion.lib import (
     ALL_PICTURE_MODES,
+    DeviceIdentity,
     Gamma,
     MotionEnhancement,
     PowerState,
@@ -99,6 +100,20 @@ def test_replies_observed_on_visionmaster_pro2() -> None:
     assert info.color_format == "3"
     assert info.hdr_format == "0"
     assert info.color_space == "0"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("V02.01.00E.Q0718 83 OEM01.0.0.0", "V02.01.00E.Q0718"),  # Pro2, on
+        ("V02.01.00E.Q0718 00 OEM01.0.0.0", "V02.01.00E.Q0718"),  # Pro2, light standby
+        ("V1.0", "V1.0"),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_firmware_is_first_sver_field(raw: str | None, expected: str | None) -> None:
+    assert DeviceIdentity(software_version=raw).firmware == expected
 
 
 def test_signal_info_handles_no_information_and_partial() -> None:

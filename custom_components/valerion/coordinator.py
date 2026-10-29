@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -22,6 +24,7 @@ from .const import (
     INTERVAL_IDLE,
     INTERVAL_ON,
     INTERVAL_TRANSITION,
+    NAME,
     POWER_ON_RETRY,
     POWER_ON_TIMEOUT,
     SILENT_POLLS_BEFORE_STANDBY,
@@ -88,7 +91,8 @@ SLOW_COMMANDS: Final[tuple[Command, ...]] = (
     protocol.TEMPERATURE,
     protocol.LED_STATUS,
 )
-#: Queried once after every power-on.
+#: Queried when the projector starts answering (light standby answers them
+#: too, observed on the Pro2) and again after every power-on.
 STATIC_COMMANDS: Final[tuple[Command, ...]] = (
     protocol.MANUFACTURER,
     protocol.MODEL,
@@ -157,6 +161,8 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         )
         self.client = client
         self.mac = mac
+        #: Device registry identifier, shared by all entities of this projector.
+        self.device_id: str = entry.unique_id or entry.entry_id
         self._values: dict[str, str] = {}
         self._identity = DeviceIdentity()
         self._identity_loaded = False
@@ -175,10 +181,15 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 self._values[protocol.POWER.code] = power_raw
                 unavailable: set[str] = set()
                 if power == PowerState.ON:
+                    if self._last_power != PowerState.ON:
+                        self._identity_loaded = False  # re-read after every power-on
                     await self._poll_on(session, wanted, unavailable)
                 else:
                     self._forget_volatile()
-                    self._identity_loaded = False
+                    if not self._identity_loaded:
+                        results = await session.query_many(list(STATIC_COMMANDS))
+                        self._store(results, unavailable)
+                        self._apply_identity()
         except AwolLinkAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except AwolLinkUnresponsiveError as err:
@@ -204,6 +215,11 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             commands += list(STATIC_COMMANDS)
 
         results = await session.query_many(commands)
+        self._store(results, unavailable)
+        if not self._identity_loaded:
+            self._apply_identity()
+
+    def _store(self, results: dict[str, str | AwolLinkCommandError], unavailable: set[str]) -> None:
         for code, result in results.items():
             if isinstance(result, AwolLinkCommandError):
                 if result.is_unavailable:
@@ -214,9 +230,36 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             else:
                 self._values[code] = result
 
-        if not self._identity_loaded:
-            self._identity = _identity_from_values(self._values)
-            self._identity_loaded = True
+    def _apply_identity(self) -> None:
+        identity = _identity_from_values(self._values)
+        self._identity_loaded = True
+        if identity != self._identity:
+            self._identity = identity
+            self._update_device_registry()
+
+    def device_details(self) -> DeviceInfo:
+        """Return the model, name and firmware shown on the device page."""
+        return DeviceInfo(
+            model=self._identity.model or NAME,
+            name=self._identity.name or self.config_entry.title,
+            sw_version=self._identity.firmware,
+        )
+
+    def _update_device_registry(self) -> None:
+        # Entities write the device info only when they are created. If the
+        # identity arrives later (or changes after a firmware update), correct
+        # the existing device entry. Before the first setup there is none yet.
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device(identifiers={(DOMAIN, self.device_id)})
+        if device is None:
+            return
+        details = self.device_details()
+        registry.async_update_device(
+            device.id,
+            model=details.get("model"),
+            name=details.get("name"),
+            sw_version=details.get("sw_version"),
+        )
 
     def _handle_silent(self, error: str) -> ProjectorData:
         self._silent_polls += 1

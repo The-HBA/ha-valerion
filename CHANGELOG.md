@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-10-29
+
+### Fixed
+- The device page now shows the projector model and firmware even when Home Assistant started while the projector was in standby. The identity is read whenever the projector answers, also in standby, and the device page is corrected when it changes.
+- The firmware version shows only the version itself (for example V02.01.00E.Q0718), without the extra fields that change between on and standby.
+
+### Changed
+- Setup texts: the projector can be on or in standby during setup, it does not need to be switched on.
+
 ## [0.0.2] - 2026-10-29
 
 ### Added

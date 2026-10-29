@@ -106,6 +106,16 @@ home screen (no HDMI signal). All documented queries were sent in one session.
 | `%3TEMP ?` | `33 48 0 0 0 0 0 0` | Eight sensor slots, two in use |
 | `%3LEDS ?` | `0` | Normal |
 
+### In light standby (same projector, 2026-10-29)
+
+A full survey with the projector in light standby (`%1POWR=0`, hours after
+a power-off) answered every query, with the same timing. Differences from
+the table above: `%3VOLM=0`, `%2SVER=V02.01.00E.Q0718 00 OEM01.0.0.0`
+(second field `00` instead of `83`), `%3FANS=1800 1800 0 0 0 0 0`
+(fans keep running) and `%3TEMP=35 45 0 0 0 0 0 0`. Identity queries
+(`INF1`, `INF2`, `NAME`, `SVER`, `INST`) can therefore be read in light
+standby.
+
 ## Open questions (to be measured on real hardware)
 
 - Meaning of the `%3SINF` codes (audio format, colour depth, colour format,

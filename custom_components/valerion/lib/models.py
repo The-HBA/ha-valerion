@@ -281,13 +281,24 @@ def _strip_label(part: str) -> str | None:
 
 @dataclass(frozen=True, slots=True)
 class DeviceIdentity:
-    """Static information read once per power-on."""
+    """Static information, read whenever the projector starts answering."""
 
     manufacturer: str | None = None
     model: str | None = None
     name: str | None = None
+    #: Raw ``%2SVER`` reply, for example ``"V02.01.00E.Q0718 83 OEM01.0.0.0"``.
     software_version: str | None = None
     pjlink_class: str | None = None
     color: str | None = None
     inputs: tuple[str, ...] = field(default_factory=tuple)
     recommended_resolution: str | None = None
+
+    @property
+    def firmware(self) -> str | None:
+        """Return only the firmware version, the first field of ``%2SVER``.
+
+        The second field differs between on (``83``) and standby (``00``) on
+        the Pro2, so it must not be shown as part of the version.
+        """
+        parts = (self.software_version or "").split()
+        return parts[0] if parts else None
