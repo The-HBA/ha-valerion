@@ -30,6 +30,7 @@ from .exceptions import (
     AwolLinkAuthError,
     AwolLinkCommandError,
     AwolLinkConnectionError,
+    AwolLinkRefusedError,
     AwolLinkUnresponsiveError,
 )
 from .protocol import (
@@ -200,7 +201,8 @@ class AwolLinkClient:
         """Open and close a session; return the greeting line.
 
         Raises :class:`AwolLinkUnresponsiveError` when the projector is in
-        standby or busy, :class:`AwolLinkConnectionError` when unreachable
+        standby or busy, :class:`AwolLinkRefusedError` when AWOL Link is
+        switched off, :class:`AwolLinkConnectionError` when unreachable
         and :class:`AwolLinkAuthError` when the security code is wrong.
         """
         async with self.session():
@@ -214,6 +216,9 @@ class AwolLinkClient:
         except TimeoutError as err:
             msg = f"timeout connecting to {self.host}:{self.port}"
             raise AwolLinkConnectionError(msg) from err
+        except ConnectionRefusedError as err:
+            msg = f"{self.host}:{self.port} refused the connection (AWOL Link switched off?)"
+            raise AwolLinkRefusedError(msg) from err
         except OSError as err:
             msg = f"cannot connect to {self.host}:{self.port}: {err}"
             raise AwolLinkConnectionError(msg) from err

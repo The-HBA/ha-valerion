@@ -15,6 +15,7 @@ from .exceptions import (
     AwolLinkCommandError,
     AwolLinkConnectionError,
     AwolLinkError,
+    AwolLinkRefusedError,
     AwolLinkUnresponsiveError,
 )
 from .models import (
@@ -45,7 +46,7 @@ from .models import (
 from .protocol import AwolLinkProtocolError, Command, Response
 from .wol import build_magic_packet, normalize_mac, send_magic_packet
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 __all__ = [
     "ALL_PICTURE_MODES",
@@ -64,6 +65,7 @@ __all__ = [
     "AwolLinkConnectionError",
     "AwolLinkError",
     "AwolLinkProtocolError",
+    "AwolLinkRefusedError",
     "AwolLinkSession",
     "AwolLinkUnresponsiveError",
     "ColorTemperature",

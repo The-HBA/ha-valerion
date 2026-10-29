@@ -32,6 +32,7 @@ from .lib import (
     AwolLinkClient,
     AwolLinkCommandError,
     AwolLinkConnectionError,
+    AwolLinkRefusedError,
     AwolLinkUnresponsiveError,
     Command,
     DeviceIdentity,
@@ -52,11 +53,12 @@ type ValerionConfigEntry = ConfigEntry[ValerionCoordinator]
 
 
 class Connection(StrEnum):
-    """How the last poll went."""
+    """How the last poll went (also the states of the AWOL Link status sensor)."""
 
-    OK = "ok"
+    ANSWERING = "answering"  # greeted us and answered
     SILENT = "silent"  # TCP accepted, no greeting: standby or busy
-    UNREACHABLE = "unreachable"  # connection refused / timed out
+    REFUSED = "refused"  # TCP refused: AWOL Link switched off on the projector
+    UNREACHABLE = "unreachable"  # no route, or the connection timed out
 
 
 #: Queried on every poll while the projector is on.
@@ -181,13 +183,15 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             raise ConfigEntryAuthFailed(str(err)) from err
         except AwolLinkUnresponsiveError as err:
             return self._handle_silent(str(err))
+        except AwolLinkRefusedError as err:
+            return self._handle_refused(str(err))
         except AwolLinkConnectionError as err:
             return self._handle_unreachable(str(err))
 
         self._silent_polls = 0
         self._last_power = power
         self._set_interval(power)
-        return self._snapshot(Connection.OK, power, unavailable=frozenset(unavailable))
+        return self._snapshot(Connection.ANSWERING, power, unavailable=frozenset(unavailable))
 
     async def _poll_on(self, session: Any, wanted: set[str], unavailable: set[str]) -> None:
         self._poll_counter += 1
@@ -230,6 +234,14 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         self._last_power = PowerState.STANDBY
         self._set_interval(PowerState.STANDBY)
         return self._snapshot(Connection.SILENT, PowerState.STANDBY, last_error=error)
+
+    def _handle_refused(self, error: str) -> ProjectorData:
+        # On the network but AWOL Link is off, so the power state is unknown.
+        self._forget_volatile()
+        self._identity_loaded = False
+        self._last_power = None
+        self._set_interval(None)
+        return self._snapshot(Connection.REFUSED, None, last_error=error)
 
     def _handle_unreachable(self, error: str) -> ProjectorData:
         self._forget_volatile()

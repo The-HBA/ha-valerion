@@ -17,8 +17,15 @@ to be confirmed.
   does not accept that.)
 - One control session at a time. A second TCP connection is accepted but
   never greeted until the first one closes.
-- In standby the projector accepts TCP connections but never sends the
-  greeting. Power-on from standby needs Wake-on-LAN.
+- Standby comes in (at least) two depths. In *light standby* the projector
+  still greets and answers queries with `%1POWR=0`. In *deep standby*,
+  reported by the VMote author, it accepts TCP connections but never sends
+  the greeting, and power-on needs Wake-on-LAN. On a VisionMaster Pro2
+  (firmware V02.01.00E.Q0718, 2026-10-29) both a power-off from the Android
+  TV side and an IR remote power-off gave light standby; it was still
+  answering 70 minutes and 2 minutes later respectively (longer
+  measurements pending). The integration's *AWOL Link status* sensor
+  records which depth the projector is in over time.
 - UDP port 4352 is used for discovery (`%2SRCH` answered by `%2ACKN=...`).
 
 ## Command format

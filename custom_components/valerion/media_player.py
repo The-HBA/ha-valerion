@@ -67,17 +67,21 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
         """Stay available while off so ``turn_on`` can wake the projector.
 
         Only an unreachable projector without a known MAC address is truly
-        unavailable, because then there is no way to switch it on.
+        unavailable, because then there is no way to switch it on. A projector
+        that refuses the connection (AWOL Link off) cannot be controlled at all.
         """
         if not self.coordinator.last_update_success:
             return False
         data = self.coordinator.data
+        if data.connection == Connection.REFUSED:
+            return False
         return not (data.connection == Connection.UNREACHABLE and not self.coordinator.mac)
 
     @property
-    def state(self) -> MediaPlayerState:
-        """Return on/off; the projector has no playback state."""
-        return MediaPlayerState.ON if self.coordinator.data.is_on else MediaPlayerState.OFF
+    def state(self) -> MediaPlayerState | None:
+        """Return on, standby or off; the projector has no playback state."""
+        power = self.coordinator.data.power
+        return _POWER_TO_STATE.get(power) if power is not None else None
 
     @property
     def assumed_state(self) -> bool:
@@ -171,3 +175,10 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
 
     def _power_is(self, state: PowerState) -> bool:
         return self.coordinator.data.power == state
+
+
+_POWER_TO_STATE: dict[PowerState, MediaPlayerState] = {
+    PowerState.ON: MediaPlayerState.ON,
+    PowerState.STANDBY: MediaPlayerState.STANDBY,
+    PowerState.OFF: MediaPlayerState.OFF,
+}

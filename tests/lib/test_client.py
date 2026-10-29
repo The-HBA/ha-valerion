@@ -11,6 +11,7 @@ from custom_components.valerion.lib import (
     AwolLinkClient,
     AwolLinkCommandError,
     AwolLinkConnectionError,
+    AwolLinkRefusedError,
     AwolLinkUnresponsiveError,
     protocol,
 )
@@ -106,9 +107,11 @@ async def test_connection_refused() -> None:
     await fake.start()
     port = fake.port
     await fake.stop()
-    client = AwolLinkClient("127.0.0.1", port, timeout=0.5)
-    with pytest.raises(AwolLinkConnectionError) as excinfo:
+    # Windows retries a refused localhost connection for about 2 s before giving up.
+    client = AwolLinkClient("127.0.0.1", port, timeout=5.0)
+    with pytest.raises(AwolLinkRefusedError) as excinfo:
         await client.probe()
+    assert isinstance(excinfo.value, AwolLinkConnectionError)
     assert not isinstance(excinfo.value, AwolLinkUnresponsiveError)
 
 

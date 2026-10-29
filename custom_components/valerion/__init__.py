@@ -13,7 +13,7 @@ from .lib import AwolLinkClient
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
-PLATFORMS: list[Platform] = [Platform.MEDIA_PLAYER]
+PLATFORMS: list[Platform] = [Platform.MEDIA_PLAYER, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> bool:

@@ -1,0 +1,14 @@
+{
+  "entity": {
+    "sensor": {
+      "link_status": {
+        "default": "mdi:lan-connect",
+        "state": {
+          "silent": "mdi:lan-pending",
+          "refused": "mdi:lan-disconnect",
+          "unreachable": "mdi:lan-disconnect"
+        }
+      }
+    }
+  }
+}

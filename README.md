@@ -15,11 +15,12 @@ This is an independent community project. It is not affiliated with, endorsed by
 
 | Home Assistant entity | What you get |
 | --- | --- |
-| Media player | Power on (Wake-on-LAN) and off, input (Home, HDMI 1-3), volume, mute |
+| Media player | State on / standby / off, power on (Wake-on-LAN) and off, input (Home, HDMI 1-3), volume, mute |
 | Remote *(planned)* | Navigation keys, menu, settings, home, lens/zoom/focus menus |
 | Selects *(planned)* | Picture mode (matching the current SDR/HDR/HDR10+/Dolby Vision format), gamma, dynamic tone mapping, colour temperature, enhanced black level, motion enhancement |
 | Number *(planned)* | Laser brightness level |
-| Sensors *(planned)* | Input resolution, video/audio/HDR format, colour depth and space, aspect ratio, fan speeds, temperatures, LED/error status, firmware version |
+| Sensor | *AWOL Link status* (diagnostic): answering, silent, refused or unreachable, so the history shows how deeply the projector sleeps in standby |
+| More sensors *(planned)* | Input resolution, video/audio/HDR format, colour depth and space, aspect ratio, fan speeds, temperatures, LED/error status, firmware version |
 
 ## Compatibility
 
@@ -59,7 +60,7 @@ Settings > Devices & services > Add integration > **Valerion**. Enter the IP add
 
 AWOL Link only allows **one control connection at a time**. If something holds that connection open, the Valerion app and VMote stop working. This integration therefore never keeps a connection: every poll and every command opens a short session, does its work and disconnects. While another app is connected the integration simply waits and shows the last known state.
 
-In standby the projector accepts network connections but does not answer them. Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, then keeps asking the projector to power on until it answers.
+Standby comes in two depths. In light standby the projector still answers and reports that it is in standby. In deep standby it accepts network connections but does not answer them. Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, then keeps asking the projector to power on until it answers. The *AWOL Link status* sensor shows which case applies: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is switched off on the projector) or *unreachable*.
 
 ## Known limitations
 

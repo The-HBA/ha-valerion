@@ -20,6 +20,7 @@
     },
     "error": {
       "cannot_connect": "Could not reach the projector at this address and port.",
+      "awol_link_off": "The projector refused the connection, so AWOL Link is switched off. Switch it on under All Settings > Inputs > External Inputs > AWOL Link, then try again.",
       "invalid_auth": "The projector rejected the security code.",
       "projector_asleep": "The projector accepted the connection but did not answer. Make sure it is switched on and that the Valerion app or VMote is closed, then try again.",
       "invalid_host": "This is not a valid IP address or hostname.",
@@ -28,6 +29,19 @@
     },
     "abort": {
       "already_configured": "This projector is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "link_status": {
+        "name": "AWOL Link status",
+        "state": {
+          "answering": "Answering",
+          "silent": "Silent (connected, no reply)",
+          "refused": "Refused (AWOL Link off)",
+          "unreachable": "Unreachable"
+        }
+      }
     }
   },
   "exceptions": {

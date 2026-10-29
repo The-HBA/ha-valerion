@@ -18,6 +18,7 @@ from .lib import (
     AwolLinkClient,
     AwolLinkCommandError,
     AwolLinkConnectionError,
+    AwolLinkRefusedError,
     AwolLinkUnresponsiveError,
     normalize_mac,
     protocol,
@@ -67,6 +68,8 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
                     errors["base"] = "projector_asleep"
                 except AwolLinkAuthError:
                     errors["base"] = "invalid_auth"
+                except AwolLinkRefusedError:
+                    errors["base"] = "awol_link_off"
                 except AwolLinkConnectionError:
                     errors["base"] = "cannot_connect"
                 except Exception:

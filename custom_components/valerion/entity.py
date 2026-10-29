@@ -44,6 +44,6 @@ class ValerionEntity(CoordinatorEntity[ValerionCoordinator]):
         """Entities are only meaningful while the projector answers."""
         return (
             super().available
-            and self.coordinator.data.connection == Connection.OK
+            and self.coordinator.data.connection == Connection.ANSWERING
             and self.coordinator.data.is_on
         )

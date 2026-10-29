@@ -13,6 +13,14 @@ class AwolLinkConnectionError(AwolLinkError):
     """The projector could not be reached over TCP (refused, unroutable, timeout)."""
 
 
+class AwolLinkRefusedError(AwolLinkConnectionError):
+    """The projector refused the TCP connection.
+
+    The projector is on the network but AWOL Link is switched off
+    (All Settings > Inputs > External Inputs > AWOL Link).
+    """
+
+
 class AwolLinkUnresponsiveError(AwolLinkConnectionError):
     """TCP connected but the projector never sent its greeting.
 
