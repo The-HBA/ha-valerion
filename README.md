@@ -60,11 +60,12 @@ Settings > Devices & services > Add integration > **Valerion**. Enter the IP add
 
 AWOL Link only allows **one control connection at a time**. If something holds that connection open, the Valerion app and VMote stop working. This integration therefore never keeps a connection: every poll and every command opens a short session, does its work and disconnects. While another app is connected the integration simply waits and shows the last known state.
 
-Standby comes in two depths. In light standby the projector still answers, reports that it is in standby and can be switched on directly, without a MAC address. In deep standby it accepts network connections but does not answer them. Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, then keeps asking the projector to power on until it answers. The *AWOL Link status* sensor shows which case applies: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is switched off on the projector) or *unreachable*.
+Standby differs between models. In light standby (seen on the VisionMaster Pro2) the projector still answers, reports that it is in standby and can be switched on directly, without a MAC address. In deep standby it either accepts network connections without answering them, or leaves the network altogether (the VisionMaster Max does this about 30 seconds after switching off). Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, then keeps asking the projector to power on until it answers. The *AWOL Link status* sensor shows which case applies: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is switched off on the projector) or *unreachable* (off, or in a standby that leaves the network).
 
 ## Known limitations
 
-- Only the settings that AWOL Link documents are supported. Aspect ratio can be read but not set.
+- Only the settings that AWOL Link documents are supported. AWOL's command list documents aspect ratio as read-only, so the integration only reads it for now. Setting it does work on the VisionMaster Max while an HDMI signal is playing (tested by Michael Konieczki); it will be added once it is confirmed on more models.
+- After a long standby (more than a day), some projectors switch Wi-Fi off completely. Wake-on-LAN cannot reach them then, and only the IR remote switches them on (seen on the VisionMaster Max).
 - Some settings are locked depending on the picture format (for example gamma presets in SDR only, dynamic tone mapping in HDR10 only). The projector reports these as unavailable.
 - There is no play/pause/media information: AWOL Link does not expose the Android TV side of the projector.
 

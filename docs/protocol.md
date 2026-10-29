@@ -57,7 +57,8 @@ See `custom_components/valerion/lib/protocol.py` for the full list and
 - `%3MOTN`: the command sheet and the response sheet disagree; the response
   sheet (`0` Off, `1` Custom, `2` Film, `3` Clear, `4` Standard, `5` Smooth)
   is used here.
-- `%3ASPR` is query-only in the official list.
+- `%3ASPR` is query-only in the official list, but setting it works on the
+  VisionMaster Max (see below).
 - `%3LSMN ?`, `%3ZMMN ?`, `%3FCMN ?` are actions written as queries: they
   open the lens-shift, zoom and focus menus on screen and reply `OK`.
 
@@ -116,6 +117,41 @@ the table above: `%3VOLM=0`, `%2SVER=V02.01.00E.Q0718 00 OEM01.0.0.0`
 (`INF1`, `INF2`, `NAME`, `SVER`, `INST`) can therefore be read in light
 standby.
 
+## Reported: VisionMaster Max (Michael Konieczki, 2026-10-29)
+
+Measured by Michael Konieczki on his VisionMaster Max (firmware not stated).
+Not yet confirmed on the Pro2.
+
+- **Standby:** after `%1POWR 0` the projector leaves the network within
+  about 30 seconds (no greeting, no replies); light standby as on the Pro2
+  was never seen. Wake-on-Wi-Fi shortly afterwards works every time, and the
+  projector answers again after about 2 seconds.
+- **Long standby:** after more than 24 hours it sometimes does not wake at
+  all. Wi-Fi is then fully off and only the IR remote switches the
+  projector on. The trigger is unknown; it seemed to depend on time, not on
+  how the projector was switched off. Whether the Wi-Fi band (6 GHz versus
+  2.4 GHz) matters is being tested.
+- **Second connection:** accepted, but greeted only after the first one
+  closes. While another app is connected, the projector therefore looks
+  exactly like a projector in deep standby.
+- **`%3ASPR <n>` sets the aspect ratio** for every value from `0` to `9`,
+  and `%3ASPR ?` reads the new value back, but only while an HDMI signal is
+  playing. On the home screen without a signal it is locked: a new value
+  returns `ERR2`, re-sending the current value returns `ERR3`.
+
+| `%3ASPR` | Aspect ratio |
+| --- | --- |
+| `0` | Auto |
+| `1` | 4:3 |
+| `2` | Zoom |
+| `3` | 16:9 |
+| `4` | 21:9 |
+| `5` | 32:9 |
+| `6` | Anamorphic 16:9 |
+| `7` | Anamorphic 2.39:1 |
+| `8` | Anamorphic 1.85:1 |
+| `9` | Anamorphic 2.0:1 |
+
 ## Open questions (to be measured on real hardware)
 
 - Meaning of the `%3SINF` codes (audio format, colour depth, colour format,
@@ -129,6 +165,7 @@ standby.
   of polling.
 - Whether `%2SRCH` is answered while the projector is in standby (that would
   allow telling standby apart from "another controller is connected").
-- Whether `%3ASPR <n>` sets the aspect ratio despite being undocumented.
-- Behaviour of the second TCP connection: silently queued or dropped after a
-  timeout.
+- Whether `%3ASPR <n>` sets the aspect ratio on the Pro2 as it does on the
+  Max (needs an HDMI signal).
+- Whether the Pro2 ever leaves light standby for a silent or unreachable
+  state, and after how long.
