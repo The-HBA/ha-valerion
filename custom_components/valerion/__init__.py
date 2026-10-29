@@ -5,15 +5,31 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_HOST, CONF_MAC, CONF_PORT, Platform
+from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_SECURITY_CODE
+from .const import CONF_SECURITY_CODE, DOMAIN
 from .coordinator import ValerionConfigEntry, ValerionCoordinator
 from .lib import AwolLinkClient
+from .services import async_setup_services
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.typing import ConfigType
 
-PLATFORMS: list[Platform] = [Platform.MEDIA_PLAYER, Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.BUTTON,
+    Platform.MEDIA_PLAYER,
+    Platform.REMOTE,
+    Platform.SENSOR,
+]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the actions once, independent of any projector being set up."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> bool:

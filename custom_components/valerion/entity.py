@@ -45,3 +45,19 @@ class ValerionEntity(CoordinatorEntity[ValerionCoordinator]):
             and self.coordinator.data.connection == Connection.ANSWERING
             and self.coordinator.data.is_on
         )
+
+    @property
+    def _power_control_available(self) -> bool:
+        """Availability for entities that switch the projector on.
+
+        They stay available while off so ``turn_on`` can wake the projector.
+        Only an unreachable projector without a known MAC address is truly
+        unavailable, because then there is no way to switch it on. A projector
+        that refuses the connection (AWOL Link off) cannot be controlled at all.
+        """
+        if not self.coordinator.last_update_success:
+            return False
+        data = self.coordinator.data
+        if data.connection == Connection.REFUSED:
+            return False
+        return not (data.connection == Connection.UNREACHABLE and not self.coordinator.mac)

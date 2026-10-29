@@ -11,6 +11,7 @@ from custom_components.valerion.lib.protocol import (
     auth_digest,
     decode_line,
     encode_line,
+    parse_command_line,
     parse_greeting,
     parse_response,
 )
@@ -90,3 +91,39 @@ def test_auth_digest_uses_code_then_random() -> None:
     assert auth_digest("1234", "498e4a67") != auth_digest("498e4a67", "1234")
     assert len(auth_digest("code", "rand")) == 32
     assert auth_digest("code", "rand") == auth_digest("code", "rand").lower()
+
+
+@pytest.mark.parametrize(
+    ("line", "header", "value"),
+    [
+        ("%1POWR ?", "%1POWR", "?"),
+        ("  %3rcnc 4 ", "%3RCNC", "4"),
+        ("%3PICT HDR Theater", "%3PICT", "HDR Theater"),
+        ("%3PICT PC/Game", "%3PICT", "PC/Game"),
+        ("%3ASPR 4", "%3ASPR", "4"),
+    ],
+)
+def test_parse_command_line(line: str, header: str, value: str) -> None:
+    command, parsed_value = parse_command_line(line)
+    assert command.header == header
+    assert parsed_value == value
+    assert command.set(parsed_value) == f"{header} {value}"
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "",
+        "%1POWR",
+        "%1POWR ",
+        "1POWR ?",
+        "%0POWR ?",
+        "%1POW ?",
+        "%1POWR=1",
+        "%1POWR ?\r%1POWR 0",
+        "%1POWR ?\n%1POWR 0",
+    ],
+)
+def test_parse_command_line_rejects(line: str) -> None:
+    with pytest.raises(AwolLinkProtocolError):
+        parse_command_line(line)

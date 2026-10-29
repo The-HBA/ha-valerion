@@ -3,7 +3,7 @@
 # definition of "done" for each release. Values: done | todo | exempt.
 rules:
   # Bronze
-  action-setup: todo
+  action-setup: done
   appropriate-polling: done
   brands: todo
   common-modules: done
@@ -12,7 +12,7 @@ rules:
   dependency-transparency:
     status: exempt
     comment: No external requirements; the protocol library ships inside the integration.
-  docs-actions: todo
+  docs-actions: done
   docs-conditions:
     status: exempt
     comment: The integration provides no conditions.
@@ -61,7 +61,7 @@ rules:
     comment: One config entry is one projector.
   entity-category: done
   entity-device-class: done
-  entity-disabled-by-default: todo
+  entity-disabled-by-default: done
   entity-translations: done
   exception-translations: done
   icon-translations: done

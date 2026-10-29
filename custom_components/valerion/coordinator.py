@@ -8,6 +8,7 @@ again so the Valerion app and VMote are never locked out.
 from __future__ import annotations
 
 import asyncio
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 import logging
@@ -20,11 +21,14 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
+    CONF_POWER_OFF_MODE,
+    DEFAULT_POWER_OFF_MODE,
     DOMAIN,
     INTERVAL_IDLE,
     INTERVAL_ON,
     INTERVAL_TRANSITION,
     NAME,
+    POWER_OFF_MODE_FULL,
     POWER_ON_RETRY,
     POWER_ON_TIMEOUT,
     SILENT_POLLS_BEFORE_STANDBY,
@@ -39,6 +43,7 @@ from .lib import (
     AwolLinkUnresponsiveError,
     Command,
     DeviceIdentity,
+    KeyPress,
     PowerState,
     SignalInfo,
     protocol,
@@ -48,6 +53,8 @@ from .lib import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+
     from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
@@ -329,48 +336,18 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         )
 
     # ----------------------------------------------------------------- commands
-    async def async_send(self, command: Command, value: str | int) -> None:
-        """Send a set command, read the setting back and publish the new state."""
+    @contextmanager
+    def _command_errors(self) -> Iterator[None]:
+        """Translate library errors into Home Assistant errors for actions."""
         try:
-            async with self.client.session() as session:
-                await session.send(command, value)
-                try:
-                    self._values[command.code] = await session.query(command)
-                except AwolLinkCommandError:
-                    self._values[command.code] = str(value)
+            yield
         except AwolLinkAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except AwolLinkCommandError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="command_rejected",
-                translation_placeholders={"command": command.header, "error": err.error},
-            ) from err
-        except AwolLinkUnresponsiveError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="projector_asleep",
-            ) from err
-        except AwolLinkConnectionError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="cannot_connect",
-                translation_placeholders={"error": str(err)},
-            ) from err
-        self._publish()
-
-    async def async_press_key(self, command: Command, value: str | int) -> None:
-        """Send a non-idempotent command (remote key) without read-back and never retry."""
-        try:
-            async with self.client.session() as session:
-                await session.send(command, value)
-        except AwolLinkAuthError as err:
-            raise ConfigEntryAuthFailed(str(err)) from err
-        except AwolLinkCommandError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="command_rejected",
-                translation_placeholders={"command": command.header, "error": err.error},
+                translation_placeholders={"command": err.command, "error": err.error},
             ) from err
         except AwolLinkUnresponsiveError as err:
             raise HomeAssistantError(
@@ -382,6 +359,49 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 translation_key="cannot_connect",
                 translation_placeholders={"error": str(err)},
             ) from err
+
+    async def async_send(self, command: Command, value: str | int) -> None:
+        """Send a set command, read the setting back and publish the new state."""
+        with self._command_errors():
+            async with self.client.session() as session:
+                await session.send(command, value)
+                try:
+                    self._values[command.code] = await session.query(command)
+                except AwolLinkCommandError:
+                    self._values[command.code] = str(value)
+        self._publish()
+
+    async def async_press_key(self, command: Command, value: str | int) -> None:
+        """Send a non-idempotent command (remote key) without read-back and never retry."""
+        with self._command_errors():
+            async with self.client.session() as session:
+                await session.send(command, value)
+
+    async def async_press_keys(self, presses: Sequence[KeyPress], *, delay: float) -> None:
+        """Send key presses in one short session, ``delay`` seconds apart.
+
+        Keys are never retried: a repeated press could move a menu twice.
+        """
+        with self._command_errors():
+            async with self.client.session() as session:
+                for index, press in enumerate(presses):
+                    if index and delay > 0:
+                        await asyncio.sleep(delay)
+                    await session.send(press.command, press.value)
+
+    async def async_send_raw(self, command: Command, value: str) -> str:
+        """Send one raw line and return the projector's reply line.
+
+        ERRx replies are returned rather than raised, so the user sees the
+        projector's own answer (for example ``%3ASPR=ERR3``).
+        """
+        with self._command_errors():
+            async with self.client.session() as session:
+                try:
+                    response = await session.raw(command.set(value), expect=command)
+                except AwolLinkCommandError as err:
+                    return f"{command.header}={err.error}"
+        return response.raw
 
     async def async_power_on(self) -> None:
         """Wake the projector and switch it on.
@@ -420,8 +440,14 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             await asyncio.sleep(POWER_ON_RETRY.total_seconds())
         self._begin_transition()
 
-    async def async_power_off(self, *, full: bool) -> None:
-        """Put the projector in standby (default) or switch it fully off."""
+    async def async_power_off(self, *, full: bool | None = None) -> None:
+        """Put the projector in standby or switch it fully off.
+
+        Without ``full`` the power-off mode from the integration options applies.
+        """
+        if full is None:
+            mode = self.config_entry.options.get(CONF_POWER_OFF_MODE, DEFAULT_POWER_OFF_MODE)
+            full = mode == POWER_OFF_MODE_FULL
         target = PowerState.OFF if full else PowerState.STANDBY
         await self.async_press_key(protocol.POWER, target)
         self._values[protocol.POWER.code] = target

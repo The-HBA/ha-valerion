@@ -32,6 +32,49 @@
     }
   },
   "entity": {
+    "button": {
+      "lens_shift_menu": {
+        "name": "Lens shift menu"
+      },
+      "zoom_menu": {
+        "name": "Zoom menu"
+      },
+      "focus_menu": {
+        "name": "Focus menu"
+      },
+      "key_up": {
+        "name": "Up"
+      },
+      "key_down": {
+        "name": "Down"
+      },
+      "key_left": {
+        "name": "Left"
+      },
+      "key_right": {
+        "name": "Right"
+      },
+      "key_ok": {
+        "name": "OK"
+      },
+      "key_return": {
+        "name": "Return"
+      },
+      "key_menu": {
+        "name": "Menu"
+      },
+      "key_settings": {
+        "name": "Settings"
+      },
+      "key_home": {
+        "name": "Home"
+      }
+    },
+    "remote": {
+      "remote": {
+        "name": "Remote"
+      }
+    },
     "sensor": {
       "link_status": {
         "name": "AWOL Link status",
@@ -62,6 +105,31 @@
     },
     "invalid_source": {
       "message": "{source} is not a valid input."
+    },
+    "invalid_key": {
+      "message": "{key} is not a known key. Valid keys: {keys}."
+    },
+    "projector_off": {
+      "message": "The projector is not on, so it cannot receive key presses. Switch it on first."
+    },
+    "invalid_raw_command": {
+      "message": "{command} is not a valid AWOL Link command. Write it like %1POWR ? or %3RCNC 4: a percent sign, the class digit, the four-letter code, a space and the value."
+    }
+  },
+  "services": {
+    "send_raw_command": {
+      "name": "Send raw command",
+      "description": "Sends one AWOL Link command line to the projector and returns its reply. For testing and for commands that have no entity yet. The projector may accept commands that are not in the official list; use them at your own risk.",
+      "fields": {
+        "config_entry": {
+          "name": "Projector",
+          "description": "The projector to send the command to. Can be left empty when only one projector is configured."
+        },
+        "command": {
+          "name": "Command",
+          "description": "The command line, for example %1POWR ? (query) or %3RCNC 4 (OK key). See the official AWOL Link command list."
+        }
+      }
     }
   }
 }

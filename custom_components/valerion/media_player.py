@@ -16,20 +16,15 @@ from homeassistant.components.media_player import (
 )
 from homeassistant.exceptions import ServiceValidationError
 
-from .const import (
-    CONF_POWER_OFF_MODE,
-    DEFAULT_POWER_OFF_MODE,
-    DOMAIN,
-    POWER_OFF_MODE_FULL,
-    SOURCE_NAMES,
-)
-from .coordinator import Connection, ValerionConfigEntry, ValerionCoordinator
+from .const import DOMAIN, SOURCE_NAMES
 from .entity import ValerionEntity
 from .lib import VOLUME_MAX, MuteState, PowerState, protocol
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .coordinator import ValerionConfigEntry, ValerionCoordinator
 
 PARALLEL_UPDATES = 1
 
@@ -64,18 +59,8 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
 
     @property
     def available(self) -> bool:
-        """Stay available while off so ``turn_on`` can wake the projector.
-
-        Only an unreachable projector without a known MAC address is truly
-        unavailable, because then there is no way to switch it on. A projector
-        that refuses the connection (AWOL Link off) cannot be controlled at all.
-        """
-        if not self.coordinator.last_update_success:
-            return False
-        data = self.coordinator.data
-        if data.connection == Connection.REFUSED:
-            return False
-        return not (data.connection == Connection.UNREACHABLE and not self.coordinator.mac)
+        """Stay available while off so ``turn_on`` can wake the projector."""
+        return self._power_control_available
 
     @property
     def state(self) -> MediaPlayerState | None:
@@ -127,10 +112,7 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
 
     async def async_turn_off(self) -> None:
         """Put the projector in standby, or fully off if configured so."""
-        mode = self.coordinator.config_entry.options.get(
-            CONF_POWER_OFF_MODE, DEFAULT_POWER_OFF_MODE
-        )
-        await self.coordinator.async_power_off(full=mode == POWER_OFF_MODE_FULL)
+        await self.coordinator.async_power_off()
 
     async def async_select_source(self, source: str) -> None:
         """Switch to ``source`` by its display name."""

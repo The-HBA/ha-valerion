@@ -16,7 +16,8 @@ This is an independent community project. It is not affiliated with, endorsed by
 | Home Assistant entity | What you get |
 | --- | --- |
 | Media player | State on / standby / off, power on (Wake-on-LAN) and off, input (Home, HDMI 1-3), volume, mute |
-| Remote *(planned)* | Navigation keys, menu, settings, home, lens/zoom/focus menus |
+| Remote | Sends the remote keys by name with `remote.send_command` (see [Remote keys](#remote-keys)); on/off switches the projector |
+| Buttons | *Lens shift menu*, *Zoom menu*, *Focus menu* (open the menu on screen). The navigation keys (up, down, left, right, OK, return, menu, settings, home) are also buttons, disabled by default; enable them on the device page if you want them on a dashboard |
 | Selects *(planned)* | Picture mode (matching the current SDR/HDR/HDR10+/Dolby Vision format), gamma, dynamic tone mapping, colour temperature, enhanced black level, motion enhancement |
 | Number *(planned)* | Laser brightness level |
 | Sensor | *AWOL Link status* (diagnostic): answering, silent, refused or unreachable, so the history shows how deeply the projector sleeps in standby |
@@ -55,6 +56,32 @@ Copy the `custom_components/valerion` folder into the `custom_components` folder
 ## Setup
 
 Settings > Devices & services > Add integration > **Valerion**. Enter the IP address, the port (4352), the security code if you set one, and the MAC address. The projector must be on or in standby during setup; if it does not answer in standby, switch it on.
+
+## Remote keys
+
+Send keys with the `remote.send_command` action to the projector's remote entity. Names are not case sensitive:
+`up`, `down`, `left`, `right`, `ok`, `return`, `menu`, `settings`, `home`, `volume_up`, `volume_down`, `lens_shift`, `zoom`, `focus`.
+Several keys in one call, *Repeats* and *Delay between commands* are supported; a whole sequence uses one short connection. Keys are only sent while the projector is on.
+
+```yaml
+action: remote.send_command
+target:
+  entity_id: remote.visionmaster_pro2_remote
+data:
+  command: [down, down, ok]
+  delay_secs: 0.5
+```
+
+## Actions
+
+**Valerion: Send raw command** (`valerion.send_raw_command`) sends one AWOL Link line to the projector and returns its reply, for example `%1POWR ?` returns `%1POWR=1`. It is meant for testing and for commands that have no entity yet; see AWOL's command list for the codes. Error replies are returned as they are (`ERR2` invalid value, `ERR3` not available for the current signal). The *Projector* field can stay empty when only one projector is set up.
+
+```yaml
+action: valerion.send_raw_command
+data:
+  command: "%3ASPR ?"
+response_variable: reply
+```
 
 ## How it works
 

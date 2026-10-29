@@ -104,6 +104,8 @@ class FakeProjector:
         if header in self.unavailable:
             return f"{header}=ERR3"
         if argument == "?":
+            if header.endswith(("LSMN", "ZMMN", "FCMN")):
+                return f"{header}=OK"  # lens menus: actions written as queries
             if header in self.values:
                 return f"{header}={self.values[header]}"
             return f"{header}=ERR1"

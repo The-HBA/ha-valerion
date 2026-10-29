@@ -40,6 +40,7 @@ ERROR_CODES: Final[dict[str, str]] = {
 }
 
 _RESPONSE_RE: Final = re.compile(r"^%(?P<cls>[0-9])(?P<code>[A-Z0-9]{4})=(?P<value>.*)$", re.DOTALL)
+_COMMAND_LINE_RE: Final = re.compile(r"^%(?P<cls>[1-9])(?P<code>[A-Za-z0-9]{4}) (?P<value>\S.*)$")
 
 
 class AwolLinkProtocolError(ValueError):
@@ -213,6 +214,24 @@ def parse_response(line: str) -> Response:
         value=match["value"].strip(),
         raw=line,
     )
+
+
+def parse_command_line(line: str) -> tuple[Command, str]:
+    """Split a typed command line such as ``%3ASPR 4`` into command and value.
+
+    Used for raw commands entered by a user. The header is upper-cased, the
+    value is kept as typed (picture-mode names are case sensitive). Lines
+    with terminators or without a value are rejected.
+    """
+    text = line.strip()
+    if any(char in text for char in "\r\n"):
+        msg = f"command must be a single line: {line!r}"
+        raise AwolLinkProtocolError(msg)
+    match = _COMMAND_LINE_RE.match(text)
+    if match is None:
+        msg = f"expected a command like '%1POWR ?' or '%3RCNC 4', got {line!r}"
+        raise AwolLinkProtocolError(msg)
+    return Command(int(match["cls"]), match["code"].upper()), match["value"].strip()
 
 
 @dataclass(frozen=True, slots=True)

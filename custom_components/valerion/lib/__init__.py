@@ -18,6 +18,7 @@ from .exceptions import (
     AwolLinkRefusedError,
     AwolLinkUnresponsiveError,
 )
+from .keys import KEYS, KeyPress, key_press
 from .models import (
     ALL_PICTURE_MODES,
     LASER_LEVEL_MAX,
@@ -43,15 +44,16 @@ from .models import (
     split_multi_value,
     split_picture_mode_list,
 )
-from .protocol import AwolLinkProtocolError, Command, Response
+from .protocol import AwolLinkProtocolError, Command, Response, parse_command_line
 from .wol import build_magic_packet, normalize_mac, send_magic_packet
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 __all__ = [
     "ALL_PICTURE_MODES",
     "DEFAULT_PORT",
     "DEFAULT_TIMEOUT",
+    "KEYS",
     "LASER_LEVEL_MAX",
     "LASER_LEVEL_MIN",
     "MODELS",
@@ -77,6 +79,7 @@ __all__ = [
     "ErrorStatus",
     "Gamma",
     "Input",
+    "KeyPress",
     "LedStatus",
     "MotionEnhancement",
     "MuteState",
@@ -87,7 +90,9 @@ __all__ = [
     "__version__",
     "build_magic_packet",
     "discover",
+    "key_press",
     "normalize_mac",
+    "parse_command_line",
     "protocol",
     "send_magic_packet",
     "split_multi_value",

@@ -1,0 +1,75 @@
+"""Button entities for the Valerion integration.
+
+The lens-shift, zoom and focus menus get a button each. The navigation keys
+are also buttons, but disabled by default: most people use the remote entity
+or the physical remote, and the buttons are there for dashboards.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.const import EntityCategory
+
+from .entity import ValerionEntity
+from .lib import key_press
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .coordinator import ValerionConfigEntry, ValerionCoordinator
+
+PARALLEL_UPDATES = 1
+
+_LENS_MENUS = ("lens_shift", "zoom", "focus")
+_NAVIGATION_KEYS = ("up", "down", "left", "right", "ok", "return", "menu", "settings", "home")
+
+#: The description key is the key name in ``lib.keys.KEYS``.
+BUTTONS: tuple[ButtonEntityDescription, ...] = (
+    *(
+        ButtonEntityDescription(
+            key=name,
+            translation_key=f"{name}_menu",
+            entity_category=EntityCategory.CONFIG,
+        )
+        for name in _LENS_MENUS
+    ),
+    *(
+        ButtonEntityDescription(
+            key=name,
+            translation_key=f"key_{name}",
+            entity_registry_enabled_default=False,
+        )
+        for name in _NAVIGATION_KEYS
+    ),
+)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ValerionConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Set up the buttons for a config entry."""
+    coordinator = entry.runtime_data
+    async_add_entities(ValerionButton(coordinator, description) for description in BUTTONS)
+
+
+class ValerionButton(ValerionEntity, ButtonEntity):
+    """One key press or lens menu."""
+
+    def __init__(
+        self, coordinator: ValerionCoordinator, description: ButtonEntityDescription
+    ) -> None:
+        """Initialize the button."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{self.device_id}_button_{description.key}"
+        self._press = key_press(description.key)
+
+    async def async_press(self) -> None:
+        """Send the key press."""
+        await self.coordinator.async_press_keys([self._press], delay=0)
+        await self.coordinator.async_request_refresh()

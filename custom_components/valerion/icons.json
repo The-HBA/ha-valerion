@@ -1,5 +1,48 @@
 {
   "entity": {
+    "button": {
+      "lens_shift_menu": {
+        "default": "mdi:arrow-all"
+      },
+      "zoom_menu": {
+        "default": "mdi:magnify-plus-outline"
+      },
+      "focus_menu": {
+        "default": "mdi:image-filter-center-focus"
+      },
+      "key_up": {
+        "default": "mdi:chevron-up"
+      },
+      "key_down": {
+        "default": "mdi:chevron-down"
+      },
+      "key_left": {
+        "default": "mdi:chevron-left"
+      },
+      "key_right": {
+        "default": "mdi:chevron-right"
+      },
+      "key_ok": {
+        "default": "mdi:checkbox-blank-circle-outline"
+      },
+      "key_return": {
+        "default": "mdi:keyboard-return"
+      },
+      "key_menu": {
+        "default": "mdi:menu"
+      },
+      "key_settings": {
+        "default": "mdi:cog"
+      },
+      "key_home": {
+        "default": "mdi:home"
+      }
+    },
+    "remote": {
+      "remote": {
+        "default": "mdi:remote"
+      }
+    },
     "sensor": {
       "link_status": {
         "default": "mdi:lan-connect",
@@ -9,6 +52,11 @@
           "unreachable": "mdi:lan-disconnect"
         }
       }
+    }
+  },
+  "services": {
+    "send_raw_command": {
+      "service": "mdi:console-line"
     }
   }
 }

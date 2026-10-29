@@ -1,0 +1,12 @@
+send_raw_command:
+  fields:
+    config_entry:
+      required: false
+      selector:
+        config_entry:
+          integration: valerion
+    command:
+      required: true
+      example: "%1POWR ?"
+      selector:
+        text:

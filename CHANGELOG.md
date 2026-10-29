@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-10-29
+
+### Added
+- *Remote* entity: send the projector's remote keys by name (`up`, `down`, `left`, `right`, `ok`, `return`, `menu`, `settings`, `home`, `volume_up`, `volume_down`, `lens_shift`, `zoom`, `focus`) with `remote.send_command`, including repeats and delays.
+- Buttons for the lens shift, zoom and focus menus, plus one button per navigation key (disabled by default).
+- *Send raw command* action (`valerion.send_raw_command`): sends one AWOL Link command line and returns the projector's reply.
+
+### Changed
+- When the projector rejects a command, the error message shows the full command line that was sent.
+
 ## [0.0.4] - 2026-10-29
 
 ### Changed
