@@ -23,7 +23,7 @@ to be confirmed.
   the greeting, and power-on needs Wake-on-LAN. On a VisionMaster Pro2
   (firmware V02.01.00E.Q0718, 2026-10-29) both a power-off from the Android
   TV side and an IR remote power-off gave light standby; it was still
-  answering 70 minutes and 2 minutes later respectively (longer
+  answering 70 minutes and 10 minutes later respectively (longer
   measurements pending). The integration's *AWOL Link status* sensor
   records which depth the projector is in over time.
 - UDP port 4352 is used for discovery (`%2SRCH` answered by `%2ACKN=...`).
