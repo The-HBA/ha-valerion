@@ -52,12 +52,62 @@ See `custom_components/valerion/lib/protocol.py` for the full list and
 - `%3LSMN ?`, `%3ZMMN ?`, `%3FCMN ?` are actions written as queries: they
   open the lens-shift, zoom and focus menus on screen and reply `OK`.
 
+## Observed: VisionMaster Pro2, firmware V02.01.00E.Q0718 (2026-10-29)
+
+Measured over Wi-Fi with no security code, the projector on and showing the
+home screen (no HDMI signal). All documented queries were sent in one session.
+
+- **Enabling:** only the switch on *All Settings > Inputs > External Inputs >
+  AWOL Link* is needed. *Network IP Control Port* on the same menu can stay
+  off. With AWOL Link off, the projector refuses every TCP connection
+  ("connection refused") but still answers ping.
+- **Greeting:** `PJLINK 0 ` with a trailing space.
+- **Timing:** replies arrive in 0.04 to 0.15 s; 30 queries in one session
+  worked without pauses.
+- **Separators:** multi-value replies are separated by single spaces;
+  only `%3PICL` uses commas.
+
+| Query | Reply | Notes |
+| --- | --- | --- |
+| `%1POWR ?` | `1` | On |
+| `%1INPT ?`, `%2INPT ?` | `30` | Home screen |
+| `%1INST ?`, `%2INST ?` | `30 31 32 33` | Home, HDMI 1 to 3 |
+| `%1NAME ?` | `VisionMaster` | |
+| `%1INF1 ?` | `AWOL VISION` | |
+| `%1INF2 ?` | `VisionMaster Pro2` | |
+| `%1INFO ?` | `Elgant Grey` | Body colour, spelled this way by the firmware |
+| `%1CLSS ?` | `2` | |
+| `%2SVER ?` | `V02.01.00E.Q0718 83 OEM01.0.0.0` | Firmware, then two unexplained fields |
+| `%2INNM ?` | `ERR2` | Not usable as a plain query |
+| `%2IRES ?` | `0 x 0` | No signal |
+| `%2RRES ?` | `3840 x 2160` | |
+| `%2ERST ?` | `ERR1` | Not supported on this firmware |
+| `%3VOLM ?` | `95` | |
+| `%3PICL ?` | `Vivid,Standard,Sports,Energy Saving,Theater,FILMMAKER MODE` | SDR list; no `PC/Game` on the home screen |
+| `%3PICT ?` | `FILMMAKER MODE` | |
+| `%3LASL ?` | `10` | |
+| `%3ENBL ?` | `3` | |
+| `%3MOTN ?` | `0` | |
+| `%3GAMA ?` | `1` | |
+| `%3DYTM ?` | `0` | Answered, not ERR3, although no HDR10 signal was present |
+| `%3CLTP ?` | `2` | |
+| `%3ASPR ?` | `3` | |
+| `%3SINF ?` | `0*0p@0Hz 0 255 3 0 0` | Six fields; codes, not text labels. Meaning of the codes still to be measured with a signal |
+| `%3FANS ?` | `1770 1710 0 0 0 0 0` | Seven fan slots, two in use |
+| `%3TEMP ?` | `33 48 0 0 0 0 0 0` | Eight sensor slots, two in use |
+| `%3LEDS ?` | `0` | Normal |
+
 ## Open questions (to be measured on real hardware)
 
-- Exact reply format of `%3SINF`, `%3FANS`, `%3TEMP`, `%3PICL` and `%2SVER`
-  (newline, space or comma separated).
-- Round-trip time per command and the practical number of commands per
-  session.
+- Meaning of the `%3SINF` codes (audio format, colour depth, colour format,
+  HDR format, colour space) while an HDMI signal is playing, and the
+  `%3PICL` lists for HDR10, HDR10+ and Dolby Vision.
+- Which fan and temperature slots are filled on other models.
+- What the extra `%2SVER` fields (`83`, `OEM01.0.0.0`) mean.
+- Whether `%2ERST` is supported on other models or firmware.
+- What *Status Notification* (an IPv4 address entered on the AWOL Link
+  settings page) sends, and on which port. It may allow push updates instead
+  of polling.
 - Whether `%2SRCH` is answered while the projector is in standby (that would
   allow telling standby apart from "another controller is connected").
 - Whether `%3ASPR <n>` sets the aspect ratio despite being undocumented.

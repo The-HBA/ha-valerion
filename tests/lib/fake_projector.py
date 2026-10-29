@@ -68,7 +68,8 @@ class FakeProjector:
 
     async def _greet(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> bool:
         if self.security_code is None:
-            writer.write(b"PJLINK 0\r")
+            # A VisionMaster Pro2 sends a trailing space (observed 2026-10-29).
+            writer.write(b"PJLINK 0 \r")
             await writer.drain()
             self.greeted += 1
             return True

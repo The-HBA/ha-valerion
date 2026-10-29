@@ -24,7 +24,7 @@ def _client(fake: FakeProjector, **kwargs: object) -> AwolLinkClient:
 
 async def test_probe_reads_greeting_and_disconnects(projector: FakeProjector) -> None:
     client = _client(projector)
-    assert await client.probe() == "PJLINK 0"
+    assert await client.probe() == "PJLINK 0 "
     assert projector.connections == 1
     assert projector.greeted == 1
 

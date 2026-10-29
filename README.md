@@ -26,13 +26,13 @@ This is an independent community project. It is not affiliated with, endorsed by
 | | |
 | --- | --- |
 | Projectors | Valerion VisionMaster Pro2 (tested), Pro, Max, Plus2, Plus (AWOL Link is documented for all of them; reports welcome) |
-| Projector firmware | V0000.01.00E.Q0718 (August 2026) or newer, with AWOL Link enabled |
+| Projector firmware | V02.01.00E.Q0718 (August 2026) or newer, with AWOL Link enabled |
 | Home Assistant | 2026.9 or newer |
 | Network | The projector and Home Assistant on the same local network. Wake-on-LAN needs the projector's MAC address. |
 
 ## Before you start
 
-1. On the projector: **All Settings > Inputs > External Inputs > AWOL Link** and switch it on. Optionally set a security code.
+1. On the projector: open **All Settings > Inputs > External Inputs > AWOL Link** and switch **AWOL Link** on. Optionally set a security code on the same page. (The *Network IP Control Port* switch is not needed.)
 2. Set the projector's menu language to **English (US)**. In other languages the projector refuses some colour-temperature values (a known firmware bug).
 3. Give the projector a fixed IP address in your router (DHCP reservation).
 4. Note the MAC address from **All Settings > System > About > Status**. It is needed to switch the projector on from standby.

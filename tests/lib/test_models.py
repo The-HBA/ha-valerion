@@ -77,6 +77,30 @@ def test_signal_info_parses_labelled_lines() -> None:
     assert info.raw == raw
 
 
+def test_replies_observed_on_visionmaster_pro2() -> None:
+    """Replies recorded from a VisionMaster Pro2, firmware V02.01.00E.Q0718, on the home screen."""
+    assert split_multi_value("1770 1710 0 0 0 0 0") == ["1770", "1710", "0", "0", "0", "0", "0"]
+    assert len(split_multi_value("33 48 0 0 0 0 0 0")) == 8
+    assert split_multi_value("30 31 32 33") == ["30", "31", "32", "33"]
+    assert split_picture_mode_list(
+        "Vivid,Standard,Sports,Energy Saving,Theater,FILMMAKER MODE"
+    ) == [
+        "Vivid",
+        "Standard",
+        "Sports",
+        "Energy Saving",
+        "Theater",
+        "FILMMAKER MODE",
+    ]
+    info = SignalInfo.parse("0*0p@0Hz 0 255 3 0 0")
+    assert info.video_format == "0*0p@0Hz"
+    assert info.audio_format == "0"
+    assert info.color_depth == "255"
+    assert info.color_format == "3"
+    assert info.hdr_format == "0"
+    assert info.color_space == "0"
+
+
 def test_signal_info_handles_no_information_and_partial() -> None:
     assert SignalInfo.parse("255").video_format is None
     partial = SignalInfo.parse("1080p60,PCM")
