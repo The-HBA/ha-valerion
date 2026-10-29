@@ -1,0 +1,13 @@
+{
+  "domain": "valerion",
+  "name": "Valerion",
+  "codeowners": ["@The-HBA"],
+  "config_flow": true,
+  "documentation": "https://github.com/The-HBA/ha-valerion",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/The-HBA/ha-valerion/issues",
+  "loggers": ["custom_components.valerion"],
+  "requirements": [],
+  "version": "0.0.1"
+}

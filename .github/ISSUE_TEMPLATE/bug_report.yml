@@ -1,0 +1,46 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the report. Please never paste your AWOL Link security code.
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: 2026.10.4
+    validations:
+      required: true
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Projector model and firmware
+      placeholder: VisionMaster Pro2, V0000.01.00E.Q0718
+    validations:
+      required: true
+  - type: dropdown
+    id: security_code
+    attributes:
+      label: Is an AWOL Link security code set?
+      options: ["No", "Yes"]
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics and logs
+      description: Attach the diagnostics download from the device page and relevant log lines (enable debug logging on the integration page first).

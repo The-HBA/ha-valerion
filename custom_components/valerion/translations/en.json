@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to your Valerion projector",
+        "description": "Enable AWOL Link on the projector first: All Settings > Inputs > External Inputs > AWOL Link. The projector must be switched on for this step.",
+        "data": {
+          "host": "IP address",
+          "port": "Port",
+          "security_code": "AWOL Link security code",
+          "mac": "MAC address"
+        },
+        "data_description": {
+          "host": "The projector's IP address on your network. Give it a fixed address (DHCP reservation) in your router.",
+          "port": "Leave at 4352 unless you changed it on the projector.",
+          "security_code": "Only if you set a security code in the AWOL Link menu. Leave empty otherwise.",
+          "mac": "Needed to switch the projector on from standby (Wake-on-LAN). Find it under All Settings > System > About > Status. Optional, can be added later."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the projector at this address and port.",
+      "invalid_auth": "The projector rejected the security code.",
+      "projector_asleep": "The projector accepted the connection but did not answer. Make sure it is switched on and that the Valerion app or VMote is closed, then try again.",
+      "invalid_host": "This is not a valid IP address or hostname.",
+      "invalid_mac": "This is not a valid MAC address (expected 12 hexadecimal digits, for example AA:BB:CC:DD:EE:FF).",
+      "unknown": "Unexpected error, see the Home Assistant log."
+    },
+    "abort": {
+      "already_configured": "This projector is already configured."
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Could not reach the projector: {error}"
+    },
+    "projector_asleep": {
+      "message": "The projector did not answer. It is in standby or another app (Valerion, VMote) is connected to it."
+    },
+    "command_rejected": {
+      "message": "The projector rejected {command} with {error}. ERR2 means an invalid value, ERR3 means the setting is locked for the current picture format."
+    },
+    "power_on_timeout": {
+      "message": "The projector did not wake up in time: {error}"
+    },
+    "power_on_needs_mac": {
+      "message": "The projector is in standby and cannot be woken without its MAC address. Add the MAC address to the integration settings."
+    },
+    "invalid_source": {
+      "message": "{source} is not a valid input."
+    }
+  }
+}

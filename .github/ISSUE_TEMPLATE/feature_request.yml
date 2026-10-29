@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest a new entity, setting or behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to be able to do?
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Protocol details, if known
+      description: If you know the AWOL Link command involved, or how another tool does it, mention it here.

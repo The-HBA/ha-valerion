@@ -1,0 +1,62 @@
+[project]
+name = "ha-valerion"
+version = "0.0.1"
+description = "Home Assistant integration for Valerion projectors over AWOL Link"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.14"
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+src = ["custom_components", "tests"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "ANN401",  # Any in **kwargs signatures required by Home Assistant
+  "COM812",  # handled by the formatter
+  "CPY001",  # no per-file copyright headers; LICENSE covers the repository
+  "D203",    # one-blank-line-before-class (conflicts with D211)
+  "D212",    # multi-line-summary-first-line (conflicts with D213)
+  "EM101",   # exception message literals
+  "EM102",   # exception message f-strings
+  "FBT001",  # boolean positional arguments are part of HA entity APIs
+  "FBT002",
+  "INP001",  # custom_components is a namespace package
+  "ISC001",  # handled by the formatter
+  "PLR0913", # HA constructors take many arguments
+  "TD002", "TD003", "FIX002",  # TODO comments without author/issue are fine here
+  "TRY003",  # long exception messages
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR2004", "SLF001", "ARG001", "ARG002", "ANN", "D", "PT011", "S104", "TC001", "TC002", "TC003"]
+"custom_components/valerion/*.py" = ["ARG001"]  # hass argument is part of the HA platform API
+"custom_components/valerion/lib/cli.py" = ["T201", "PLR0911", "C901", "PLR0912", "PTH123", "ASYNC230"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true
+known-first-party = ["custom_components.valerion"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+files = ["custom_components/valerion/lib"]
+follow_imports = "silent"
+
+[[tool.mypy.overrides]]
+module = ["homeassistant.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-q"

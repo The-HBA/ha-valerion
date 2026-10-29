@@ -1,0 +1,7 @@
+# Tooling for the protocol library tests, linting and typing.
+# Home Assistant level tests are added in a later milestone; they require
+# Linux and pytest-homeassistant-custom-component pinned to the HA release.
+ruff==0.17.3
+mypy==2.4.1
+pytest==9.2.0
+pytest-asyncio==1.4.1
