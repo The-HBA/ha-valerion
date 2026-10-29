@@ -7,9 +7,9 @@ Local control of Valerion (AWOL Vision) projectors from Home Assistant over **AW
 
 Thanks also to [tinogo's Unfolded Circle driver](https://github.com/tinogo/uc-intg-awol-valerion), which served as a second reference for the protocol behaviour.
 
-This is an independent community project. It is not affiliated with, endorsed by or supported by Valerion or AWOL Vision. AI-assisted tooling was used during development; every change is reviewed by the maintainer and tested against a real projector.
+This is an independent community project. It is not affiliated with, endorsed by or supported by Valerion or AWOL Vision. The Valerion and AWOL names and logos belong to their owners and are used only to identify the supported projectors. AI-assisted tooling was used during development; every change is reviewed by the maintainer and tested against a real projector.
 
-> **Status: early development.** Nothing is released yet. Follow the repository to be notified of the first release.
+> **Status: early development.** Development releases (0.0.x) are available and tested on a VisionMaster Pro2; v0.1.0 will be the first complete version. Follow the repository to be notified of new releases.
 
 ## What it does
 
@@ -76,7 +76,6 @@ When opening an issue, please include: Home Assistant version, integration versi
 
 - [VMote](https://play.google.com/store/apps/details?id=com.mkonieczki.vmote), the Android remote by Michael Konieczki.
 - [tinogo/uc-intg-awol-valerion](https://github.com/tinogo/uc-intg-awol-valerion), AWOL Link for Unfolded Circle remotes.
-- [bruint/hacs-awol-link](https://github.com/bruint/hacs-awol-link), an earlier Home Assistant integration built from the published command tables.
 - [Official AWOL Link article](https://support.valerion.com/hc/en-us/articles/17088458288143-What-is-AWOL-Link) with the command list.
 
 ## License

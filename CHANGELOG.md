@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Home Assistant now shows the official AWOL Valerion icon and logo (light and dark theme) instead of a generic projector icon.
+
 ## [0.0.3] - 2026-10-29
 
 ### Fixed
