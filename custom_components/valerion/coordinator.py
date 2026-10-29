@@ -110,6 +110,11 @@ STATIC_COMMANDS: Final[tuple[Command, ...]] = (
     protocol.INPUT_LIST,
     protocol.RECOMMENDED_RESOLUTION,
 )
+#: Commands an entity needs in addition to its own context: the picture mode
+#: select needs the list of modes valid for the current signal.
+_EXTRA_CONTEXT: Final[dict[str, tuple[Command, ...]]] = {
+    protocol.PICTURE_MODE.code: (protocol.PICTURE_MODE_LIST,),
+}
 #: Values that only make sense while the projector is on.
 _VOLATILE_CODES: Final = frozenset(
     cmd.code for cmd in (*CORE_COMMANDS, *FAST_COMMANDS, *SLOW_COMMANDS)
@@ -171,6 +176,15 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         #: Device registry identifier, shared by all entities of this projector.
         self.device_id: str = entry.unique_id or entry.entry_id
         self._values: dict[str, str] = {}
+        #: Codes answered with ERR3 (locked for the current signal). Kept until
+        #: the code is read successfully again, because slow-tier codes are
+        #: only queried about once a minute.
+        self._unavailable: set[str] = set()
+        #: Set after a picture-mode change: every picture setting belongs to
+        #: the mode, so the slow tier is read again on the next poll.
+        self._settings_stale = False
+        #: The picture mode for which a missing list entry was last re-read.
+        self._list_checked_for: str | None = None
         self._identity = DeviceIdentity()
         self._identity_loaded = False
         self._silent_polls = 0
@@ -181,21 +195,20 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
     # ------------------------------------------------------------------ polling
     async def _async_update_data(self) -> ProjectorData:
         wanted = {ctx.code for ctx in self.async_contexts() if isinstance(ctx, Command)}
+        wanted |= {extra.code for code in wanted for extra in _EXTRA_CONTEXT.get(code, ())}
         try:
             async with self.client.session() as session:
                 power_raw = await session.query(protocol.POWER)
                 power = _as_power(power_raw)
                 self._values[protocol.POWER.code] = power_raw
-                unavailable: set[str] = set()
                 if power == PowerState.ON:
                     if self._last_power != PowerState.ON:
                         self._identity_loaded = False  # re-read after every power-on
-                    await self._poll_on(session, wanted, unavailable)
+                    await self._poll_on(session, wanted)
                 else:
                     self._forget_volatile()
                     if not self._identity_loaded:
-                        results = await session.query_many(list(STATIC_COMMANDS))
-                        self._store(results, unavailable)
+                        self._store(await session.query_many(list(STATIC_COMMANDS)))
                         self._apply_identity()
         except AwolLinkAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
@@ -209,33 +222,53 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         self._silent_polls = 0
         self._last_power = power
         self._set_interval(power)
-        return self._snapshot(Connection.ANSWERING, power, unavailable=frozenset(unavailable))
+        return self._snapshot(Connection.ANSWERING, power)
 
-    async def _poll_on(self, session: Any, wanted: set[str], unavailable: set[str]) -> None:
+    async def _poll_on(self, session: Any, wanted: set[str]) -> None:
         self._poll_counter += 1
         commands: list[Command] = [cmd for cmd in CORE_COMMANDS if cmd is not protocol.POWER]
         commands += [cmd for cmd in FAST_COMMANDS if cmd.code in wanted]
-        slow_due = self._poll_counter % SLOW_TIER_EVERY == 1 or not self._identity_loaded
+        slow_due = (
+            self._poll_counter % SLOW_TIER_EVERY == 1
+            or not self._identity_loaded
+            or self._settings_stale
+        )
+        slow = [cmd for cmd in SLOW_COMMANDS if cmd.code in wanted]
         if slow_due:
-            commands += [cmd for cmd in SLOW_COMMANDS if cmd.code in wanted]
+            commands += slow
+            self._settings_stale = False
         if not self._identity_loaded:
             commands += list(STATIC_COMMANDS)
 
-        results = await session.query_many(commands)
-        self._store(results, unavailable)
+        self._store(await session.query_many(commands))
         if not self._identity_loaded:
             self._apply_identity()
+        mode = self._values.get(protocol.PICTURE_MODE.code)
+        if not slow_due and mode != self._list_checked_for and self._mode_not_listed(wanted):
+            # The signal format changed (SDR -> HDR10 ...): the active mode is
+            # not in the known list, so read the new list and the settings now.
+            # Only once per mode: some lists never contain the active mode.
+            self._list_checked_for = mode
+            self._store(await session.query_many(slow))
 
-    def _store(self, results: dict[str, str | AwolLinkCommandError], unavailable: set[str]) -> None:
+    def _mode_not_listed(self, wanted: set[str]) -> bool:
+        if protocol.PICTURE_MODE_LIST.code not in wanted:
+            return False
+        mode = self._values.get(protocol.PICTURE_MODE.code)
+        modes = split_picture_mode_list(self._values.get(protocol.PICTURE_MODE_LIST.code, ""))
+        return bool(mode) and mode not in modes
+
+    def _store(self, results: dict[str, str | AwolLinkCommandError]) -> None:
         for code, result in results.items():
             if isinstance(result, AwolLinkCommandError):
                 if result.is_unavailable:
-                    unavailable.add(code)
+                    self._unavailable.add(code)
                     self._values.pop(code, None)
                 else:
                     _LOGGER.debug("Query %s failed: %s", code, result)
             else:
                 self._values[code] = result
+                self._unavailable.discard(code)
 
     def _apply_identity(self) -> None:
         identity = _identity_from_values(self._values)
@@ -303,6 +336,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
     def _forget_volatile(self) -> None:
         for code in _VOLATILE_CODES:
             self._values.pop(code, None)
+        self._unavailable.clear()
 
     def _set_interval(self, power: PowerState | None) -> None:
         loop_time = self.hass.loop.time()
@@ -318,7 +352,6 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         power: PowerState | None,
         *,
         busy: bool = False,
-        unavailable: frozenset[str] = frozenset(),
         last_error: str | None = None,
     ) -> ProjectorData:
         signal_raw = self._values.get(protocol.SIGNAL_INFO.code)
@@ -328,7 +361,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             power=power,
             busy=busy,
             values=dict(self._values),
-            unavailable=unavailable,
+            unavailable=frozenset(self._unavailable),
             identity=self._identity,
             signal=SignalInfo.parse(signal_raw) if signal_raw is not None else None,
             picture_modes=tuple(split_picture_mode_list(picl_raw)) if picl_raw else (),
@@ -344,6 +377,20 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         except AwolLinkAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except AwolLinkCommandError as err:
+            if err.is_unavailable:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="setting_locked",
+                    translation_placeholders={"command": err.command},
+                ) from err
+            if err.error == protocol.ERR_PARAMETER and err.command.startswith(
+                protocol.COLOR_TEMPERATURE.header
+            ):
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="color_temperature_rejected",
+                    translation_placeholders={"command": err.command},
+                ) from err
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="command_rejected",
@@ -369,7 +416,19 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                     self._values[command.code] = await session.query(command)
                 except AwolLinkCommandError:
                     self._values[command.code] = str(value)
+        self._unavailable.discard(command.code)
         self._publish()
+
+    async def async_set_picture_mode(self, mode: str) -> None:
+        """Switch the picture mode, then re-read the settings that belong to it.
+
+        Re-sending the active mode returns ERR4 (firmware bug), so it is skipped.
+        """
+        if self._values.get(protocol.PICTURE_MODE.code) == mode:
+            return
+        await self.async_send(protocol.PICTURE_MODE, mode)
+        self._settings_stale = True
+        await self.async_request_refresh()
 
     async def async_press_key(self, command: Command, value: str | int) -> None:
         """Send a non-idempotent command (remote key) without read-back and never retry."""
@@ -471,6 +530,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 current,
                 power=power,
                 values=dict(self._values),
+                unavailable=frozenset(self._unavailable),
                 signal=(
                     SignalInfo.parse(self._values[protocol.SIGNAL_INFO.code])
                     if protocol.SIGNAL_INFO.code in self._values

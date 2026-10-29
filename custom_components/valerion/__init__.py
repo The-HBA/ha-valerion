@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 PLATFORMS: list[Platform] = [
     Platform.BUTTON,
     Platform.MEDIA_PLAYER,
+    Platform.NUMBER,
     Platform.REMOTE,
+    Platform.SELECT,
     Platform.SENSOR,
 ]
 

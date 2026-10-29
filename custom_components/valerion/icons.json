@@ -38,9 +38,34 @@
         "default": "mdi:home"
       }
     },
+    "number": {
+      "laser_level": {
+        "default": "mdi:brightness-6"
+      }
+    },
     "remote": {
       "remote": {
         "default": "mdi:remote"
+      }
+    },
+    "select": {
+      "picture_mode": {
+        "default": "mdi:palette"
+      },
+      "gamma": {
+        "default": "mdi:gamma"
+      },
+      "dynamic_tone_mapping": {
+        "default": "mdi:hdr"
+      },
+      "color_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "enhanced_black_level": {
+        "default": "mdi:circle-half-full"
+      },
+      "motion_enhancement": {
+        "default": "mdi:motion-play-outline"
       }
     },
     "sensor": {

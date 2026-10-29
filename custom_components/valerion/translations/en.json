@@ -70,9 +70,67 @@
         "name": "Home"
       }
     },
+    "number": {
+      "laser_level": {
+        "name": "Laser level"
+      }
+    },
     "remote": {
       "remote": {
         "name": "Remote"
+      }
+    },
+    "select": {
+      "picture_mode": {
+        "name": "Picture mode"
+      },
+      "gamma": {
+        "name": "Gamma",
+        "state": {
+          "gamma_2_0": "2.0",
+          "gamma_2_2": "2.2",
+          "gamma_2_4": "2.4",
+          "bt1886": "BT.1886",
+          "smpte2084": "SMPTE 2084 (HDR)",
+          "hlg": "HLG"
+        }
+      },
+      "dynamic_tone_mapping": {
+        "name": "Dynamic tone mapping",
+        "state": {
+          "off": "Off",
+          "low": "Low",
+          "high": "High"
+        }
+      },
+      "color_temperature": {
+        "name": "Color temperature",
+        "state": {
+          "warm1": "Warm 1",
+          "warm2": "Warm 2",
+          "standard": "Standard",
+          "cool": "Cool"
+        }
+      },
+      "enhanced_black_level": {
+        "name": "Enhanced black level",
+        "state": {
+          "off": "Off",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
+      },
+      "motion_enhancement": {
+        "name": "Motion enhancement",
+        "state": {
+          "off": "Off",
+          "custom": "Custom",
+          "film": "Film",
+          "clear": "Clear",
+          "standard": "Standard",
+          "smooth": "Smooth"
+        }
       }
     },
     "sensor": {
@@ -114,6 +172,15 @@
     },
     "invalid_raw_command": {
       "message": "{command} is not a valid AWOL Link command. Write it like %1POWR ? or %3RCNC 4: a percent sign, the class digit, the four-letter code, a space and the value."
+    },
+    "setting_locked": {
+      "message": "The projector refused {command} because this setting is locked for the current signal (ERR3). For example, gamma presets work only in SDR and dynamic tone mapping only in HDR10."
+    },
+    "color_temperature_rejected": {
+      "message": "The projector refused {command} (ERR2). Warm 1 and Warm 2 only work when the projector's menu language is English (US), a known firmware issue."
+    },
+    "value_not_settable": {
+      "message": "{value} is reported by the projector but cannot be set."
     }
   },
   "services": {

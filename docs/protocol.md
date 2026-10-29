@@ -166,6 +166,9 @@ Not yet confirmed on the Pro2.
 - Whether `%2SRCH` is answered while the projector is in standby (that would
   allow telling standby apart from "another controller is connected").
 - Whether `%3ASPR <n>` sets the aspect ratio on the Pro2 as it does on the
-  Max (needs an HDMI signal).
+  Max (needs an HDMI signal). First try on the Pro2 (firmware
+  V02.01.00E.Q0718, 2026-10-30, through the *Send raw command* action):
+  `%3ASPR 4` replied `%3ASPR=ERR2`. Still to confirm whether an HDMI
+  signal was playing at the time; without one, `ERR2` is expected.
 - Whether the Pro2 ever leaves light standby for a silent or unreachable
   state, and after how long.

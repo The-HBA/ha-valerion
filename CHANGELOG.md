@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-10-30
+
+### Added
+- *Picture mode* select. The list of modes follows the current signal (SDR, HDR10, HDR10+, Dolby Vision) and is read again when the format changes.
+- Selects for *Gamma*, *Dynamic tone mapping*, *Color temperature*, *Enhanced black level* and *Motion enhancement* (in the device's Configuration section).
+- *Laser level* slider (0-10).
+- Clear error messages when a setting is locked for the current signal, and when Warm 1 / Warm 2 is refused because the menu language is not English (US).
+
+### Fixed
+- A setting that is locked for the current signal now stays unavailable between polls instead of switching between unavailable and unknown.
+
 ## [0.0.5] - 2026-10-29
 
 ### Added
