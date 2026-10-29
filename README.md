@@ -60,7 +60,7 @@ Settings > Devices & services > Add integration > **Valerion**. Enter the IP add
 
 AWOL Link only allows **one control connection at a time**. If something holds that connection open, the Valerion app and VMote stop working. This integration therefore never keeps a connection: every poll and every command opens a short session, does its work and disconnects. While another app is connected the integration simply waits and shows the last known state.
 
-Standby comes in two depths. In light standby the projector still answers and reports that it is in standby. In deep standby it accepts network connections but does not answer them. Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, then keeps asking the projector to power on until it answers. The *AWOL Link status* sensor shows which case applies: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is switched off on the projector) or *unreachable*.
+Standby comes in two depths. In light standby the projector still answers, reports that it is in standby and can be switched on directly, without a MAC address. In deep standby it accepts network connections but does not answer them. Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, then keeps asking the projector to power on until it answers. The *AWOL Link status* sensor shows which case applies: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is switched off on the projector) or *unreachable*.
 
 ## Known limitations
 

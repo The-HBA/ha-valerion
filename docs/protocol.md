@@ -24,7 +24,9 @@ to be confirmed.
   (firmware V02.01.00E.Q0718, 2026-10-29) both a power-off from the Android
   TV side and an IR remote power-off gave light standby; it was still
   answering 70 minutes and 10 minutes later respectively (longer
-  measurements pending). The integration's *AWOL Link status* sensor
+  measurements pending). In light standby `%1POWR 1` switches the
+  projector on without Wake-on-LAN (verified from Home Assistant without a
+  MAC address, 2026-10-29). The integration's *AWOL Link status* sensor
   records which depth the projector is in over time.
 - UDP port 4352 is used for discovery (`%2SRCH` answered by `%2ACKN=...`).
 
