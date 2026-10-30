@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+import re
 from typing import Final
 
 
@@ -137,6 +138,68 @@ class ErrorStatus(StrEnum):
     STARTUP_ERROR = "4"
 
 
+# The ``%3SINF`` code tables below are not in the official command list. AWOL
+# support sent them to Michael Konieczki (VMote) on 2026-10-29; they match
+# every reply recorded on the Pro2 (docs/protocol.md). ``255`` means
+# "unavailable" in every field.
+
+
+class AudioFormat(StrEnum):
+    """Second ``%3SINF`` field. ``MULTI`` means several audio tracks, not multichannel."""
+
+    PCM = "0"
+    AAC = "1"
+    HE_AAC = "2"
+    DOLBY_AUDIO = "3"
+    DOLBY_ATMOS = "4"
+    DTS = "5"
+    DTS_HD = "6"
+    DTS_X = "7"
+    MP3 = "8"
+    FLAC = "9"
+    WMA = "10"
+    MPEG = "11"
+    OTHER = "12"
+    MULTI = "13"
+
+
+class ColorDepth(StrEnum):
+    """Third ``%3SINF`` field."""
+
+    BIT_6 = "0"
+    BIT_8 = "1"
+    BIT_10 = "2"
+    BIT_12 = "3"
+    BIT_16 = "4"
+
+
+class ColorFormat(StrEnum):
+    """Fourth ``%3SINF`` field."""
+
+    YUV_420 = "0"
+    YUV_422 = "1"
+    YUV_444 = "2"
+    RGB = "3"
+
+
+class HdrFormat(StrEnum):
+    """Fifth ``%3SINF`` field."""
+
+    SDR = "0"
+    HDR10 = "1"
+    HLG = "2"
+    HDR10_PLUS = "3"
+    DOLBY_VISION = "4"
+
+
+class ColorPrimaries(StrEnum):
+    """Sixth ``%3SINF`` field."""
+
+    BT709 = "0"
+    DCI_P3 = "1"
+    BT2020 = "2"
+
+
 LASER_LEVEL_MIN: Final = 0
 LASER_LEVEL_MAX: Final = 10
 VOLUME_MIN: Final = 0
@@ -207,6 +270,22 @@ def split_multi_value(value: str) -> list[str]:
     return [part for part in value.split(" ") if part]
 
 
+def parse_number_list(value: str) -> tuple[int | None, ...]:
+    """Parse ``%3FANS`` / ``%3TEMP`` slots into numbers.
+
+    The Pro2 replies ``1770 1710 0 0 0 0 0``: one slot per fan or sensor,
+    unused slots are ``0``. A slot that is not a number becomes ``None``.
+    """
+    return tuple(_as_int(part) for part in split_multi_value(value))
+
+
+def _as_int(part: str) -> int | None:
+    try:
+        return int(part)
+    except ValueError:
+        return None
+
+
 def split_picture_mode_list(value: str) -> list[str]:
     """Split ``%3PICL ?`` into mode names.
 
@@ -233,13 +312,47 @@ def split_picture_mode_list(value: str) -> list[str]:
     return [text]
 
 
+_TIMING = re.compile(
+    r"(?P<width>\d+)\s*[*xX]\s*(?P<height>\d+)\s*(?P<scan>[pPiI])?\s*@\s*(?P<rate>\d+(?:\.\d+)?)\s*Hz"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class VideoTiming:
+    """The first ``%3SINF`` field, for example ``3840*2160p@24Hz``."""
+
+    width: int
+    height: int
+    interlaced: bool
+    refresh_rate: float
+
+    @classmethod
+    def parse(cls, value: str) -> VideoTiming | None:
+        """Parse a timing string; ``None`` if it does not look like one."""
+        match = _TIMING.search(value)
+        if match is None:
+            return None
+        return cls(
+            width=int(match["width"]),
+            height=int(match["height"]),
+            interlaced=(match["scan"] or "p").lower() == "i",
+            refresh_rate=float(match["rate"]),
+        )
+
+    def __str__(self) -> str:
+        """Return the timing as text: width, multiplication sign, height, ``p 24 Hz``."""
+        scan = "i" if self.interlaced else "p"
+        return f"{self.width}×{self.height}{scan} {self.refresh_rate:g} Hz"  # noqa: RUF001
+
+
 @dataclass(frozen=True, slots=True)
 class SignalInfo:
     """Parsed ``%3SINF ?`` reply.
 
-    Field order follows the official sheet: video format, audio format,
-    colour depth, colour format, HDR format, colour space. Fields that are
-    missing are ``None``. ``raw`` always keeps the untouched value.
+    Fields in order: video timing, audio format, colour depth, colour format,
+    HDR format, colour primaries. The text fields keep the raw parts (codes on
+    real projectors); the properties decode them. ``raw`` always keeps the
+    untouched value.
     """
 
     raw: str
@@ -248,7 +361,55 @@ class SignalInfo:
     color_depth: str | None = None
     color_format: str | None = None
     hdr_format: str | None = None
-    color_space: str | None = None
+    color_primaries: str | None = None
+
+    @property
+    def timing(self) -> VideoTiming | None:
+        """Return the decoded video timing, if it can be read."""
+        return VideoTiming.parse(self.video_format) if self.video_format else None
+
+    @property
+    def has_signal(self) -> bool:
+        """Return False for ``255`` (AWOL) and ``0*0p@0Hz`` (Pro2 home screen)."""
+        if self.video_format is None:
+            return False
+        timing = self.timing
+        return timing is None or (timing.width > 0 and timing.refresh_rate > 0)
+
+    @property
+    def audio(self) -> AudioFormat | None:
+        """Return the decoded audio format (``None`` without a signal)."""
+        return self._decode(AudioFormat, self.audio_format)
+
+    @property
+    def depth(self) -> ColorDepth | None:
+        """Return the decoded colour depth."""
+        return self._decode(ColorDepth, self.color_depth)
+
+    @property
+    def chroma(self) -> ColorFormat | None:
+        """Return the decoded colour format."""
+        return self._decode(ColorFormat, self.color_format)
+
+    @property
+    def hdr(self) -> HdrFormat | None:
+        """Return the decoded HDR format."""
+        return self._decode(HdrFormat, self.hdr_format)
+
+    @property
+    def primaries(self) -> ColorPrimaries | None:
+        """Return the decoded colour primaries."""
+        return self._decode(ColorPrimaries, self.color_primaries)
+
+    def _decode[E: StrEnum](self, enum: type[E], code: str | None) -> E | None:
+        # Without a signal the Pro2 still reports codes (PCM, RGB, SDR); they
+        # describe nothing, so they are hidden. Unknown codes become None too.
+        if code is None or not self.has_signal:
+            return None
+        try:
+            return enum(code)
+        except ValueError:
+            return None
 
     @classmethod
     def parse(cls, value: str) -> SignalInfo:
@@ -265,7 +426,7 @@ class SignalInfo:
             color_depth=padded[2],
             color_format=padded[3],
             hdr_format=padded[4],
-            color_space=padded[5],
+            color_primaries=padded[5],
         )
 
 

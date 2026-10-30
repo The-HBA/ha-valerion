@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-10-30
+
+### Added
+- *Video signal* sensor (resolution and refresh rate, for example 3840×2160p 24 Hz) and *HDR format* sensor (SDR, HDR10, HLG, HDR10+, Dolby Vision or no signal).
+- Diagnostic sensors for *Audio format*, *Color depth*, *Color format*, *Color primaries* and *LED status*.
+- One *Fan* and one *Temperature* sensor for each fan and temperature sensor the projector reports. They are added automatically the first time the projector reports a value, so each model gets its own number of sensors.
+- *Problem* binary sensor: on when the LED status reports overtemperature, a fan error or another fault.
+- The diagnostics download shows the decoded signal information.
+
 ## [0.0.7] - 2026-10-30
 
 ### Added

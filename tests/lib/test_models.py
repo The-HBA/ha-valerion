@@ -6,11 +6,18 @@ import pytest
 
 from custom_components.valerion.lib import (
     ALL_PICTURE_MODES,
+    AudioFormat,
+    ColorDepth,
+    ColorFormat,
+    ColorPrimaries,
     DeviceIdentity,
     Gamma,
+    HdrFormat,
     MotionEnhancement,
     PowerState,
     SignalInfo,
+    VideoTiming,
+    parse_number_list,
     split_multi_value,
     split_picture_mode_list,
 )
@@ -74,7 +81,7 @@ def test_signal_info_parses_labelled_lines() -> None:
     assert info.color_depth == "10bit"
     assert info.color_format == "YCbCr 4:2:2"
     assert info.hdr_format == "HDR10"
-    assert info.color_space == "BT.2020"
+    assert info.color_primaries == "BT.2020"
     assert info.raw == raw
 
 
@@ -99,7 +106,9 @@ def test_replies_observed_on_visionmaster_pro2() -> None:
     assert info.color_depth == "255"
     assert info.color_format == "3"
     assert info.hdr_format == "0"
-    assert info.color_space == "0"
+    assert info.color_primaries == "0"
+    assert not info.has_signal
+    assert info.hdr is None  # codes without a signal describe nothing
 
 
 @pytest.mark.parametrize(
@@ -122,3 +131,104 @@ def test_signal_info_handles_no_information_and_partial() -> None:
     assert partial.video_format == "1080p60"
     assert partial.audio_format == "PCM"
     assert partial.hdr_format is None
+
+
+@pytest.mark.parametrize(
+    ("raw", "timing", "decoded"),
+    [
+        # Replies recorded on the Pro2 with HDMI signals (docs/protocol.md, 2026-10-30).
+        (
+            "1920*1080p@24Hz 0 3 1 0 0",
+            "1920\u00d71080p 24 Hz",
+            (
+                AudioFormat.PCM,
+                ColorDepth.BIT_12,
+                ColorFormat.YUV_422,
+                HdrFormat.SDR,
+                ColorPrimaries.BT709,
+            ),
+        ),
+        (
+            "3840*2160p@24Hz 0 3 1 1 2",
+            "3840\u00d72160p 24 Hz",
+            (
+                AudioFormat.PCM,
+                ColorDepth.BIT_12,
+                ColorFormat.YUV_422,
+                HdrFormat.HDR10,
+                ColorPrimaries.BT2020,
+            ),
+        ),
+        (
+            "3840*2160p@60Hz 0 1 3 4 2",
+            "3840\u00d72160p 60 Hz",
+            (
+                AudioFormat.PCM,
+                ColorDepth.BIT_8,
+                ColorFormat.RGB,
+                HdrFormat.DOLBY_VISION,
+                ColorPrimaries.BT2020,
+            ),
+        ),
+        # Example from AWOL support (via Michael Konieczki).
+        (
+            "3840*2160p@24Hz 3 2 0 4 0",
+            "3840\u00d72160p 24 Hz",
+            (
+                AudioFormat.DOLBY_AUDIO,
+                ColorDepth.BIT_10,
+                ColorFormat.YUV_420,
+                HdrFormat.DOLBY_VISION,
+                ColorPrimaries.BT709,
+            ),
+        ),
+    ],
+)
+def test_signal_info_decodes_codes(
+    raw: str,
+    timing: str,
+    decoded: tuple[AudioFormat, ColorDepth, ColorFormat, HdrFormat, ColorPrimaries],
+) -> None:
+    info = SignalInfo.parse(raw)
+    assert info.has_signal
+    assert str(info.timing) == timing
+    assert (info.audio, info.depth, info.chroma, info.hdr, info.primaries) == decoded
+
+
+def test_signal_info_unavailable_and_unknown_codes() -> None:
+    no_signal = SignalInfo.parse("255")
+    assert not no_signal.has_signal
+    assert no_signal.timing is None
+    assert no_signal.audio is None
+    odd = SignalInfo.parse("1920*1080p@50Hz 99 255 3 7 1")
+    assert odd.has_signal
+    assert odd.audio is None  # unknown code
+    assert odd.depth is None  # 255 = unavailable
+    assert odd.chroma is ColorFormat.RGB
+    assert odd.hdr is None
+    assert odd.primaries is ColorPrimaries.DCI_P3
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("3840*2160p@23.976Hz", VideoTiming(3840, 2160, interlaced=False, refresh_rate=23.976)),
+        ("1920x1080i@50Hz", VideoTiming(1920, 1080, interlaced=True, refresh_rate=50.0)),
+        ("0*0p@0Hz", VideoTiming(0, 0, interlaced=False, refresh_rate=0.0)),
+        ("garbage", None),
+    ],
+)
+def test_video_timing_parse(raw: str, expected: VideoTiming | None) -> None:
+    assert VideoTiming.parse(raw) == expected
+
+
+def test_video_timing_text() -> None:
+    assert str(VideoTiming(1920, 1080, interlaced=True, refresh_rate=59.94)) == (
+        "1920\u00d71080i 59.94 Hz"
+    )
+
+
+def test_parse_number_list() -> None:
+    assert parse_number_list("1770 1710 0 0 0 0 0") == (1770, 1710, 0, 0, 0, 0, 0)
+    assert parse_number_list("33 48 x") == (33, 48, None)
+    assert parse_number_list("") == ()

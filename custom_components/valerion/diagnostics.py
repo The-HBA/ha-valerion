@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
     from .coordinator import ValerionConfigEntry
+    from .lib import SignalInfo
 
 TO_REDACT = {CONF_HOST, CONF_MAC, CONF_SECURITY_CODE, "unique_id", "title"}
 
@@ -46,8 +47,26 @@ async def async_get_config_entry_diagnostics(
             "values": data.values,
             "unavailable": sorted(data.unavailable),
             "identity": asdict(data.identity),
-            "signal": asdict(data.signal) if data.signal else None,
+            "signal": _signal(data.signal),
             "picture_modes": list(data.picture_modes),
             "last_error": data.last_error,
+        },
+    }
+
+
+def _signal(signal: SignalInfo | None) -> dict[str, Any] | None:
+    """Return the raw signal fields plus how they were decoded."""
+    if signal is None:
+        return None
+    return {
+        **asdict(signal),
+        "decoded": {
+            "has_signal": signal.has_signal,
+            "timing": str(signal.timing) if signal.timing else None,
+            "audio": signal.audio,
+            "depth": signal.depth,
+            "chroma": signal.chroma,
+            "hdr": signal.hdr,
+            "primaries": signal.primaries,
         },
     }

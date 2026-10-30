@@ -104,7 +104,7 @@ home screen (no HDMI signal). All documented queries were sent in one session.
 | `%3DYTM ?` | `0` | Answered, not ERR3, although no HDR10 signal was present |
 | `%3CLTP ?` | `2` | |
 | `%3ASPR ?` | `3` | |
-| `%3SINF ?` | `0*0p@0Hz 0 255 3 0 0` | Six fields; codes, not text labels. Meaning of the codes still to be measured with a signal |
+| `%3SINF ?` | `0*0p@0Hz 0 255 3 0 0` | No signal (home screen). See [Signal information codes](#signal-information-codes-3sinf) |
 | `%3FANS ?` | `1770 1710 0 0 0 0 0` | Seven fan slots, two in use |
 | `%3TEMP ?` | `33 48 0 0 0 0 0 0` | Eight sensor slots, two in use |
 | `%3LEDS ?` | `0` | Normal |
@@ -154,6 +154,38 @@ on an HDMI input, through the integration's *Send raw command* action and
   Pro2 most likely has no motorised lens shift; `%3ZMMN ?` opened the zoom
   menu (2026-10-29).
 
+## Signal information codes (`%3SINF`)
+
+The meaning of the six `%3SINF` fields is not in the official command list.
+AWOL support sent this table to Michael Konieczki (VMote), who passed it on
+on 2026-10-29. It matches every reply recorded on the Pro2 above (for
+example SDR = PCM, 12-bit, YUV 4:2:2, SDR, BT.709; Dolby Vision = 8-bit RGB,
+which is how Dolby Vision is carried over HDMI). The integration decodes the
+fields with this table since v0.0.8.
+
+Fields, in order: video timing (`3840*2160p@24Hz`), audio format, colour
+depth, colour format, HDR format, colour primaries. `255` means unavailable
+in every field.
+
+| Field | Codes |
+| --- | --- |
+| Audio format | 0 PCM, 1 AAC, 2 HE-AAC, 3 Dolby Audio, 4 Dolby Atmos, 5 DTS, 6 DTS-HD, 7 DTS:X, 8 MP3, 9 FLAC, 10 WMA, 11 MPEG, 12 Other, 13 Multi |
+| Colour depth | 0 6-bit, 1 8-bit, 2 10-bit, 3 12-bit, 4 16-bit |
+| Colour format | 0 YUV 4:2:0, 1 YUV 4:2:2, 2 YUV 4:4:4, 3 RGB |
+| HDR format | 0 SDR, 1 HDR10, 2 HLG, 3 HDR10+, 4 Dolby Vision |
+| Colour primaries | 0 BT.709, 1 DCI-P3, 2 BT.2020 |
+
+- **No signal:** AWOL says the whole reply is then `255`; the Pro2 on the
+  home screen replied `0*0p@0Hz 0 255 3 0 0` instead. Both count as "no
+  signal", and the other fields are ignored then (they claim PCM, RGB, SDR).
+- **Audio 13 "Multi"** means the media has several audio tracks, not
+  multichannel sound. Dolby TrueHD Atmos usually shows as 3 (Dolby Audio),
+  not 4, because the projector cannot decode it.
+- **Fans and temperatures:** `%3FANS` and `%3TEMP` report fixed slots (7 and
+  8 on the Pro2) and fill only those in use (2 each on the Pro2). The
+  temperature unit is not documented; 33 to 48 only makes sense as degrees
+  Celsius.
+
 ## Reported: VisionMaster Max (Michael Konieczki, 2026-10-29)
 
 Measured by Michael Konieczki on his VisionMaster Max (firmware not stated).
@@ -191,8 +223,8 @@ Not yet confirmed on the Pro2.
 
 ## Open questions (to be measured on real hardware)
 
-- The meaning of each `%3SINF` code (audio format, colour depth, colour
-  format, HDR format, colour space), checked against the replies above.
+- The `%3SINF` replies for HDR10+ and HLG signals, and for audio other
+  than PCM.
 - The `%3PICL` list for HDR10+ and HLG signals.
 - The motion enhancement names the Pro2 shows in its own menu (it refuses
   `%3MOTN 2`, Film in both sheet tabs).

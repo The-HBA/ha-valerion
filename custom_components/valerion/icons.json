@@ -79,6 +79,37 @@
           "refused": "mdi:lan-disconnect",
           "unreachable": "mdi:lan-disconnect"
         }
+      },
+      "video_signal": {
+        "default": "mdi:video-input-hdmi"
+      },
+      "hdr_format": {
+        "default": "mdi:hdr",
+        "state": {
+          "sdr": "mdi:hdr-off",
+          "no_signal": "mdi:video-off-outline"
+        }
+      },
+      "audio_format": {
+        "default": "mdi:surround-sound"
+      },
+      "color_depth": {
+        "default": "mdi:palette-swatch-outline"
+      },
+      "color_format": {
+        "default": "mdi:palette-outline"
+      },
+      "color_primaries": {
+        "default": "mdi:triangle-outline"
+      },
+      "led_status": {
+        "default": "mdi:alert-circle",
+        "state": {
+          "normal": "mdi:check-circle-outline"
+        }
+      },
+      "fan_speed": {
+        "default": "mdi:fan"
       }
     }
   },

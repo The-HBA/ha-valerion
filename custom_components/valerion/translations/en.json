@@ -157,6 +157,83 @@
           "refused": "Refused (AWOL Link off)",
           "unreachable": "Unreachable"
         }
+      },
+      "video_signal": {
+        "name": "Video signal"
+      },
+      "hdr_format": {
+        "name": "HDR format",
+        "state": {
+          "sdr": "SDR",
+          "hdr10": "HDR10",
+          "hlg": "HLG",
+          "hdr10_plus": "HDR10+",
+          "dolby_vision": "Dolby Vision",
+          "no_signal": "No signal"
+        }
+      },
+      "audio_format": {
+        "name": "Audio format",
+        "state": {
+          "pcm": "PCM",
+          "aac": "AAC",
+          "he_aac": "HE-AAC",
+          "dolby_audio": "Dolby Audio",
+          "dolby_atmos": "Dolby Atmos",
+          "dts": "DTS",
+          "dts_hd": "DTS-HD",
+          "dts_x": "DTS:X",
+          "mp3": "MP3",
+          "flac": "FLAC",
+          "wma": "WMA",
+          "mpeg": "MPEG",
+          "other": "Other",
+          "multi": "Several audio tracks"
+        }
+      },
+      "color_depth": {
+        "name": "Color depth",
+        "state": {
+          "bit_6": "6-bit",
+          "bit_8": "8-bit",
+          "bit_10": "10-bit",
+          "bit_12": "12-bit",
+          "bit_16": "16-bit"
+        }
+      },
+      "color_format": {
+        "name": "Color format",
+        "state": {
+          "yuv_420": "YUV 4:2:0",
+          "yuv_422": "YUV 4:2:2",
+          "yuv_444": "YUV 4:4:4",
+          "rgb": "RGB"
+        }
+      },
+      "color_primaries": {
+        "name": "Color primaries",
+        "state": {
+          "bt709": "BT.709",
+          "dci_p3": "DCI-P3",
+          "bt2020": "BT.2020"
+        }
+      },
+      "led_status": {
+        "name": "LED status",
+        "state": {
+          "normal": "Normal",
+          "overtemperature": "Overtemperature",
+          "open_circuit": "Open circuit",
+          "fan_error": "Fan error",
+          "startup_error": "Startup error",
+          "obstacle_detection": "Obstacle detected"
+        }
+      },
+      "fan_speed": {
+        "name": "Fan {index}"
+      },
+      "temperature": {
+        "name": "Temperature {index}"
       }
     }
   },
