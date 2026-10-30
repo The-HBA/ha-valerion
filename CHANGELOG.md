@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.9] - 2026-10-30
+
+### Added
+- Locked settings show as unavailable before you try them. The projector reports a value even for a setting it will not change (gamma reads 2.2 while Dolby Vision plays), so Home Assistant could not tell. Two sources now tell it:
+  - Built-in locks, the same for every projector: *Dynamic tone mapping* is locked with SDR and Dolby Vision, *Gamma* with Dolby Vision.
+  - Learned locks: when the projector refuses a change because the setting is locked, Home Assistant remembers it for that signal format and picture mode, also after a restart. Learned locks are forgotten after a firmware update.
+- *Forget learned locks* button (Configuration, disabled by default) in case a setting was learned as locked by mistake.
+- The diagnostics download lists the built-in and learned locks in effect.
+
 ## [0.0.8] - 2026-10-30
 
 ### Added

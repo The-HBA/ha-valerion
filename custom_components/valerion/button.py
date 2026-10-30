@@ -2,7 +2,9 @@
 
 The lens-shift, zoom and focus menus get a button each. The navigation keys
 are also buttons, but disabled by default: most people use the remote entity
-or the physical remote, and the buttons are there for dashboards.
+or the physical remote, and the buttons are there for dashboards. A last,
+disabled button forgets the learned locks, in case a setting was learned
+as locked by mistake.
 """
 
 from __future__ import annotations
@@ -54,7 +56,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up the buttons for a config entry."""
     coordinator = entry.runtime_data
-    async_add_entities(ValerionButton(coordinator, description) for description in BUTTONS)
+    async_add_entities(
+        [
+            *(ValerionButton(coordinator, description) for description in BUTTONS),
+            ValerionForgetLocksButton(coordinator),
+        ]
+    )
 
 
 class ValerionButton(ValerionEntity, ButtonEntity):
@@ -73,3 +80,25 @@ class ValerionButton(ValerionEntity, ButtonEntity):
         """Send the key press."""
         await self.coordinator.async_press_keys([self._press], delay=0)
         await self.coordinator.async_request_refresh()
+
+
+class ValerionForgetLocksButton(ValerionEntity, ButtonEntity):
+    """Forget the settings learned as locked (stored in Home Assistant)."""
+
+    _attr_translation_key = "forget_learned_locks"
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: ValerionCoordinator) -> None:
+        """Initialize the button."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self.device_id}_forget_learned_locks"
+
+    @property
+    def available(self) -> bool:
+        """Always available: the locks live in Home Assistant, not on the projector."""
+        return True
+
+    async def async_press(self) -> None:
+        """Forget the learned locks."""
+        await self.coordinator.async_forget_locks()

@@ -36,6 +36,9 @@
       },
       "key_home": {
         "default": "mdi:home"
+      },
+      "forget_learned_locks": {
+        "default": "mdi:lock-reset"
       }
     },
     "number": {

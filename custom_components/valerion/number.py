@@ -43,10 +43,8 @@ class ValerionLaserLevel(ValerionEntity, NumberEntity):
 
     @property
     def available(self) -> bool:
-        """Unavailable while the projector reports the level as locked (ERR3)."""
-        return (
-            super().available and protocol.LASER_LEVEL.code not in self.coordinator.data.unavailable
-        )
+        """Unavailable while the level is locked for the current signal and mode."""
+        return super().available and not self.coordinator.data.is_locked(protocol.LASER_LEVEL)
 
     @property
     def native_value(self) -> int | None:

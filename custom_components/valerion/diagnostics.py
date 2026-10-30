@@ -46,11 +46,13 @@ async def async_get_config_entry_diagnostics(
             "busy": data.busy,
             "values": data.values,
             "unavailable": sorted(data.unavailable),
+            "locked": sorted(data.locked),
             "identity": asdict(data.identity),
             "signal": _signal(data.signal),
             "picture_modes": list(data.picture_modes),
             "last_error": data.last_error,
         },
+        "learned_locks": coordinator.locks_as_dict(),
     }
 
 

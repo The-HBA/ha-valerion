@@ -1,9 +1,10 @@
 """Select entities for the Valerion integration.
 
 Picture mode, aspect ratio and the picture settings that have a fixed list
-of values. Each setting belongs to the active picture mode, and some are locked for the
-current signal (gamma presets in SDR only, dynamic tone mapping in HDR10
-only); a locked setting shows as unavailable.
+of values. Each setting belongs to the active picture mode, and some are
+locked for the current signal (gamma presets in SDR only, dynamic tone
+mapping in HDR10 only); a locked setting shows as unavailable, including
+one the projector refused earlier for the same signal format and mode.
 """
 
 from __future__ import annotations
@@ -133,10 +134,7 @@ class ValerionPictureModeSelect(ValerionEntity, SelectEntity):
     @property
     def available(self) -> bool:
         """Unavailable while the projector reports the mode as locked."""
-        return (
-            super().available
-            and protocol.PICTURE_MODE.code not in self.coordinator.data.unavailable
-        )
+        return super().available and not self.coordinator.data.is_locked(protocol.PICTURE_MODE)
 
     @property
     def options(self) -> list[str]:
@@ -173,10 +171,9 @@ class ValerionSettingSelect(ValerionEntity, SelectEntity):
 
     @property
     def available(self) -> bool:
-        """Unavailable while the setting is locked for the current signal (ERR3)."""
-        return (
-            super().available
-            and self.entity_description.command.code not in self.coordinator.data.unavailable
+        """Unavailable while the setting is locked for the current signal and mode."""
+        return super().available and not self.coordinator.data.is_locked(
+            self.entity_description.command
         )
 
     @property

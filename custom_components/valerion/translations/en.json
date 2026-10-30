@@ -68,6 +68,9 @@
       },
       "key_home": {
         "name": "Home"
+      },
+      "forget_learned_locks": {
+        "name": "Forget learned locks"
       }
     },
     "number": {
@@ -266,7 +269,7 @@
       "message": "{command} is not a valid AWOL Link command. Write it like %1POWR ? or %3RCNC 4: a percent sign, the class digit, the four-letter code, a space and the value."
     },
     "setting_locked": {
-      "message": "The projector refused {command} because this setting is locked for the current signal (ERR3). For example, gamma presets work only in SDR and dynamic tone mapping only in HDR10."
+      "message": "The projector refused {command} because this setting is locked for the current signal (ERR3). For example, gamma presets work only in SDR and dynamic tone mapping only in HDR10. The setting now shows as unavailable while this signal format and picture mode are active."
     },
     "color_temperature_rejected": {
       "message": "The projector refused {command} (ERR2). Warm 1 and Warm 2 only work when the projector's menu language is English (US), a known firmware issue."

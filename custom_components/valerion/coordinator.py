@@ -18,6 +18,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -44,6 +45,7 @@ from .lib import (
     Command,
     DeviceIdentity,
     KeyPress,
+    LockTable,
     PowerState,
     SignalInfo,
     protocol,
@@ -51,6 +53,7 @@ from .lib import (
     split_multi_value,
     split_picture_mode_list,
 )
+from .lib.locks import hdr_key
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -60,6 +63,9 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 type ValerionConfigEntry = ConfigEntry[ValerionCoordinator]
+
+#: Version of the stored learned locks (``.storage/valerion.<entry id>.locks``).
+LOCK_STORE_VERSION: Final = 1
 
 
 class Connection(StrEnum):
@@ -110,10 +116,24 @@ STATIC_COMMANDS: Final[tuple[Command, ...]] = (
     protocol.INPUT_LIST,
     protocol.RECOMMENDED_RESOLUTION,
 )
+#: Settings that can be locked for a signal format and picture mode (ERR3
+#: on a set, see ``lib/locks.py``).
+_LOCKABLE: Final[tuple[Command, ...]] = (
+    protocol.ASPECT_RATIO,
+    protocol.GAMMA,
+    protocol.DYNAMIC_TONE_MAPPING,
+    protocol.COLOR_TEMPERATURE,
+    protocol.ENHANCED_BLACK_LEVEL,
+    protocol.MOTION_ENHANCEMENT,
+    protocol.LASER_LEVEL,
+)
 #: Commands an entity needs in addition to its own context: the picture mode
-#: select needs the list of modes valid for the current signal.
+#: select needs the list of modes valid for the current signal, and a
+#: lockable setting needs the signal format and picture mode its locks
+#: depend on (also when the HDR format sensor is disabled).
 _EXTRA_CONTEXT: Final[dict[str, tuple[Command, ...]]] = {
     protocol.PICTURE_MODE.code: (protocol.PICTURE_MODE_LIST,),
+    **{cmd.code: (protocol.SIGNAL_INFO, protocol.PICTURE_MODE) for cmd in _LOCKABLE},
 }
 #: Command errors with a clearer explanation than ``setting_locked`` (ERR3) or
 #: ``command_rejected``, keyed by (error, command code).
@@ -144,6 +164,9 @@ class ProjectorData:
     values: dict[str, str] = field(default_factory=dict)
     #: Command codes the projector answered with ERR3 (locked for this signal).
     unavailable: frozenset[str] = frozenset()
+    #: Settings locked for the current signal format and picture mode, known
+    #: in advance or learned from an earlier refused change.
+    locked: frozenset[str] = frozenset()
     identity: DeviceIdentity = field(default_factory=DeviceIdentity)
     signal: SignalInfo | None = None
     picture_modes: tuple[str, ...] = ()
@@ -157,6 +180,10 @@ class ProjectorData:
     def value(self, command: Command) -> str | None:
         """Return the raw value for ``command`` if known."""
         return self.values.get(command.code)
+
+    def is_locked(self, command: Command) -> bool:
+        """Return True if ``command`` cannot be changed for the current signal."""
+        return command.code in self.unavailable or command.code in self.locked
 
 
 class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
@@ -201,6 +228,16 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         self._poll_counter = 0
         self._transition_until: float | None = None
         self._last_power: PowerState | None = None
+        self._locks = LockTable()
+        self._lock_store = lock_store(hass, entry.entry_id)
+
+    async def async_load_locks(self) -> None:
+        """Load the locks learned before the last restart."""
+        self._locks = LockTable.from_dict(await self._lock_store.async_load())
+
+    def locks_as_dict(self) -> dict[str, Any]:
+        """Return the learned locks for diagnostics."""
+        return self._locks.as_dict()
 
     # ------------------------------------------------------------------ polling
     async def _async_update_data(self) -> ProjectorData:
@@ -283,6 +320,11 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
     def _apply_identity(self) -> None:
         identity = _identity_from_values(self._values)
         self._identity_loaded = True
+        had_locks = bool(self._locks.learned)
+        if self._locks.check_firmware(identity.firmware):
+            if had_locks and not self._locks.learned:
+                _LOGGER.info("Firmware changed to %s; learned locks cleared", identity.firmware)
+            self._save_locks()
         if identity != self._identity:
             self._identity = identity
             self._update_device_registry()
@@ -372,6 +414,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             busy=busy,
             values=dict(self._values),
             unavailable=frozenset(self._unavailable),
+            locked=self._current_locks(),
             identity=self._identity,
             signal=SignalInfo.parse(signal_raw) if signal_raw is not None else None,
             picture_modes=tuple(split_picture_mode_list(picl_raw)) if picl_raw else (),
@@ -417,13 +460,55 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         """Send a set command, read the setting back and publish the new state."""
         with self._command_errors():
             async with self.client.session() as session:
-                await session.send(command, value)
+                try:
+                    await session.send(command, value)
+                except AwolLinkCommandError as err:
+                    if err.is_unavailable:
+                        self._learn_lock(command, value)
+                    raise
                 try:
                     self._values[command.code] = await session.query(command)
                 except AwolLinkCommandError:
                     self._values[command.code] = str(value)
         self._unavailable.discard(command.code)
         self._publish()
+
+    # -------------------------------------------------------------- learned locks
+    def _current_locks(self) -> frozenset[str]:
+        signal_raw = self._values.get(protocol.SIGNAL_INFO.code)
+        if signal_raw is None:
+            return frozenset()
+        return self._locks.locked(
+            SignalInfo.parse(signal_raw).hdr, self._values.get(protocol.PICTURE_MODE.code)
+        )
+
+    def _learn_lock(self, command: Command, value: str | int) -> None:
+        """Remember that the projector refused ``command`` for this signal and mode.
+
+        Re-sending the current value can also return ERR3 (aspect ratio
+        without a signal), which says nothing about the setting, so it is
+        not learned. Neither is a refusal before the signal and mode are known.
+        """
+        signal_raw = self._values.get(protocol.SIGNAL_INFO.code)
+        mode = self._values.get(protocol.PICTURE_MODE.code)
+        if signal_raw is None or not mode or self._values.get(command.code) == str(value):
+            return
+        hdr = SignalInfo.parse(signal_raw).hdr
+        if self._locks.learn(hdr, mode, command.code):
+            _LOGGER.info(
+                "Learned that %s is locked with %s in %s", command.code, hdr_key(hdr), mode
+            )
+            self._save_locks()
+            self._publish()
+
+    async def async_forget_locks(self) -> None:
+        """Forget every learned lock, for example after a mistaken refusal."""
+        if self._locks.clear():
+            self._save_locks()
+            self._publish()
+
+    def _save_locks(self) -> None:
+        self._lock_store.async_delay_save(self._locks.as_dict, 1)
 
     async def async_set_picture_mode(self, mode: str) -> None:
         """Switch the picture mode, then re-read the settings that belong to it.
@@ -537,6 +622,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 power=power,
                 values=dict(self._values),
                 unavailable=frozenset(self._unavailable),
+                locked=self._current_locks(),
                 signal=(
                     SignalInfo.parse(self._values[protocol.SIGNAL_INFO.code])
                     if protocol.SIGNAL_INFO.code in self._values
@@ -547,6 +633,11 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 ),
             )
         )
+
+
+def lock_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
+    """Return the storage file that keeps the learned locks of one projector."""
+    return Store(hass, LOCK_STORE_VERSION, f"{DOMAIN}.{entry_id}.locks")
 
 
 def _as_power(raw: str | None) -> PowerState | None:

@@ -148,6 +148,11 @@ on an HDMI input, through the integration's *Send raw command* action and
   HDR10. `%3DYTM ?` answers in every format. Only a set command shows
   whether a setting is locked. The HDR10 tests ran in *FILMMAKER MODE*;
   whether other picture modes unlock gamma in HDR10 is still open.
+  Since v0.0.9 the integration builds in the locks measured here that
+  also match AWOL's rule (dynamic tone mapping locked with SDR and Dolby
+  Vision, gamma with Dolby Vision; `lib/locks.py`) and learns any other
+  `ERR3` on a set per signal format and picture mode. Gamma in HDR10 is
+  learned, not built in, until other picture modes are measured.
 - **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
   `ERR2`, as reported for the Max.
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The

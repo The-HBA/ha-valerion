@@ -8,7 +8,7 @@ from homeassistant.const import CONF_HOST, CONF_MAC, CONF_PORT, Platform
 from homeassistant.helpers import config_validation as cv
 
 from .const import CONF_SECURITY_CODE, DOMAIN
-from .coordinator import ValerionConfigEntry, ValerionCoordinator
+from .coordinator import ValerionConfigEntry, ValerionCoordinator, lock_store
 from .lib import AwolLinkClient
 from .services import async_setup_services
 
@@ -47,6 +47,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> 
         security_code=entry.data.get(CONF_SECURITY_CODE),
     )
     coordinator = ValerionCoordinator(hass, entry, client, mac=entry.data.get(CONF_MAC))
+    await coordinator.async_load_locks()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
@@ -57,3 +58,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> 
 async def async_unload_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> bool:
     """Unload a config entry. Sessions are never held open, so nothing to close."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> None:
+    """Delete the learned locks when the projector is removed."""
+    await lock_store(hass, entry.entry_id).async_remove()
