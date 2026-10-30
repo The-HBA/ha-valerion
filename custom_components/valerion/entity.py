@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_HOST
-from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER
@@ -25,12 +25,14 @@ class ValerionEntity(CoordinatorEntity[ValerionCoordinator]):
         super().__init__(coordinator, context)
         self.device_id = coordinator.device_id
         self._attr_unique_id = self.device_id
-        connections = {(CONNECTION_NETWORK_MAC, coordinator.mac)} if coordinator.mac else set()
+        # No MAC "connection" on purpose: the Android TV integrations register
+        # the same MAC, and Home Assistant would then try to merge the two
+        # devices (or refuse with a connection collision). The MAC is only
+        # used for Wake-on-LAN.
         # The coordinator corrects model, name and firmware in the device
         # registry later if the projector's identity arrives or changes.
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.device_id)},
-            connections=connections,
             manufacturer=MANUFACTURER,
             configuration_url=None,
             **coordinator.device_details(),

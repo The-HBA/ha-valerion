@@ -29,6 +29,12 @@ to be confirmed.
   MAC address, 2026-10-29). The integration's *AWOL Link status* sensor
   records which depth the projector is in over time.
 - UDP port 4352 is used for discovery (`%2SRCH` answered by `%2ACKN=...`).
+  The official sheet leaves the `%2ACKN` value empty. Unlike standard PJLink
+  class 2 it is NOT the MAC address but the projector's network name: a
+  unicast `%2SRCH` to a VisionMaster Pro2 (on, firmware V02.01.00E.Q0718,
+  over the VPN from another subnet, 2026-10-30) returned
+  `%2ACKN=VisionMaster Pro2 x GoogleTV2891`. So the MAC address for
+  Wake-on-LAN cannot be read over AWOL Link and must be entered by the user.
 
 ## Command format
 

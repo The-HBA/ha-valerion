@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.10] - 2026-10-30
+
+### Added
+- Settings (gear) button for each projector in Settings > Devices & services > Valerion. The MAC address for Wake-on-LAN can now be added, changed or removed after setup without deleting the projector. Entity names and history stay as they are.
+- The diagnostics download shows whether a MAC address is set and the last Wake-on-LAN attempt.
+
+### Changed
+- Switching on sends the Wake-on-LAN packet both as a broadcast and straight to the projector's IP address, so it also reaches a projector on another network (VLAN). It is repeated every 6 seconds while Home Assistant waits for the projector to answer, because Wi-Fi in power-save mode can miss a single packet.
+- The MAC address is no longer attached to the device in Home Assistant's device registry. The Android TV integrations register the same address, and Home Assistant would then try to merge the two devices.
+
 ## [0.0.9] - 2026-10-30
 
 ### Added

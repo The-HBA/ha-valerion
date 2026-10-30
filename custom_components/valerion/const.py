@@ -31,6 +31,8 @@ SILENT_POLLS_BEFORE_STANDBY: Final = 3
 #: How long turn_on keeps retrying after the Wake-on-LAN packet.
 POWER_ON_TIMEOUT: Final = timedelta(seconds=45)
 POWER_ON_RETRY: Final = timedelta(seconds=2)
+#: How often turn_on repeats the Wake-on-LAN packet while it waits.
+WOL_RESEND: Final = timedelta(seconds=6)
 
 SOURCE_NAMES: Final[dict[str, str]] = {
     "30": "Home",

@@ -15,11 +15,13 @@ import logging
 from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_MAC
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_POWER_OFF_MODE,
@@ -34,8 +36,10 @@ from .const import (
     POWER_ON_TIMEOUT,
     SILENT_POLLS_BEFORE_STANDBY,
     SLOW_TIER_EVERY,
+    WOL_RESEND,
 )
 from .lib import (
+    DEFAULT_BROADCAST,
     AwolLinkAuthError,
     AwolLinkClient,
     AwolLinkCommandError,
@@ -230,6 +234,8 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         self._last_power: PowerState | None = None
         self._locks = LockTable()
         self._lock_store = lock_store(hass, entry.entry_id)
+        #: The last Wake-on-LAN attempt, for diagnostics.
+        self.last_wake: dict[str, Any] | None = None
 
     async def async_load_locks(self) -> None:
         """Load the locks learned before the last restart."""
@@ -556,14 +562,18 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
     async def async_power_on(self) -> None:
         """Wake the projector and switch it on.
 
-        Sends a Wake-on-LAN packet when a MAC address is known, then retries
-        ``%1POWR 1`` until the projector greets us or the timeout passes.
+        With a known MAC address a Wake-on-LAN packet goes out first and again
+        every few seconds while ``%1POWR 1`` is retried, until the projector
+        greets us or the timeout passes.
         """
-        if self.mac:
-            await send_magic_packet(self.mac)
-        deadline = self.hass.loop.time() + POWER_ON_TIMEOUT.total_seconds()
+        loop = self.hass.loop
+        deadline = loop.time() + POWER_ON_TIMEOUT.total_seconds()
+        next_wake = loop.time()
         last_error: Exception | None = None
         while True:
+            if self.mac and loop.time() >= next_wake:
+                await self._async_wake(self.mac)
+                next_wake = loop.time() + WOL_RESEND.total_seconds()
             try:
                 async with self.client.session() as session:
                     await session.send(protocol.POWER, PowerState.ON)
@@ -576,7 +586,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 last_error = err
             except AwolLinkConnectionError as err:
                 last_error = err
-            if self.hass.loop.time() >= deadline:
+            if loop.time() >= deadline:
                 if self.mac:
                     raise HomeAssistantError(
                         translation_domain=DOMAIN,
@@ -589,6 +599,27 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 ) from last_error
             await asyncio.sleep(POWER_ON_RETRY.total_seconds())
         self._begin_transition()
+
+    async def _async_wake(self, mac: str) -> None:
+        """Send one Wake-on-LAN burst; a failure is logged, not raised.
+
+        The broadcast reaches projectors on Home Assistant's own network; the
+        copy sent straight to the projector's address also crosses a router
+        to another VLAN.
+        """
+        targets = (DEFAULT_BROADCAST, self.client.host)
+        try:
+            sent = await send_magic_packet(mac, targets=targets)
+        except OSError as err:
+            _LOGGER.warning("Could not send the Wake-on-LAN packet: %s", err)
+            self.last_wake = {"time": dt_util.utcnow().isoformat(), "error": str(err)}
+            return
+        _LOGGER.debug("Wake-on-LAN packet sent to %s", ", ".join(sent))
+        self.last_wake = {
+            "time": dt_util.utcnow().isoformat(),
+            # The projector's address is redacted like the host in diagnostics.
+            "sent_to": ["broadcast" if a == DEFAULT_BROADCAST else "projector" for a in sent],
+        }
 
     async def async_power_off(self, *, full: bool | None = None) -> None:
         """Put the projector in standby or switch it fully off.
@@ -633,6 +664,18 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 ),
             )
         )
+
+
+def configured_mac(entry: ConfigEntry) -> str | None:
+    """Return the projector's MAC address for Wake-on-LAN, if one is set.
+
+    The settings (options) win over the first setup, so a MAC can be added,
+    changed or removed (empty value) later.
+    """
+    mac: str | None = (
+        entry.options[CONF_MAC] if CONF_MAC in entry.options else entry.data.get(CONF_MAC)
+    )
+    return mac or None
 
 
 def lock_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:

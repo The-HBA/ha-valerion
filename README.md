@@ -30,7 +30,7 @@ This is an independent community project. It is not affiliated with, endorsed by
 | Projectors | Valerion VisionMaster Pro2 (tested), Pro, Max, Plus2, Plus (AWOL Link is documented for all of them; reports welcome) |
 | Projector firmware | V02.01.00E.Q0718 (August 2026) or newer, with AWOL Link enabled |
 | Home Assistant | 2026.9 or newer |
-| Network | The projector and Home Assistant on the same local network. Wake-on-LAN needs the projector's MAC address. |
+| Network | Home Assistant must reach the projector's IP address (TCP port 4352). The projector may sit on another network (VLAN); then allow TCP 4352 and UDP 9 (Wake-on-LAN) from Home Assistant to the projector. Wake-on-LAN needs the projector's MAC address. |
 
 ## Before you start
 
@@ -56,6 +56,8 @@ Copy the `custom_components/valerion` folder into the `custom_components` folder
 ## Setup
 
 Settings > Devices & services > Add integration > **Valerion**. Enter the IP address, the port (4352), the security code if you set one, and the MAC address. The projector must be on or in standby during setup; if it does not answer in standby, switch it on.
+
+The MAC address can be added, changed or removed later: Settings > Devices & services > Valerion, then the settings (gear) button next to the projector. Saving reloads the projector; entity names and history stay as they are.
 
 ## Remote keys
 
@@ -87,7 +89,7 @@ response_variable: reply
 
 AWOL Link only allows **one control connection at a time**. If something holds that connection open, the Valerion app and VMote stop working. This integration therefore never keeps a connection: every poll and every command opens a short session, does its work and disconnects. While another app is connected the integration simply waits and shows the last known state.
 
-Standby differs between models. In light standby (seen on the VisionMaster Pro2) the projector still answers, reports that it is in standby and can be switched on directly, without a MAC address. In deep standby it either accepts network connections without answering them, or leaves the network altogether (the VisionMaster Max does this about 30 seconds after switching off). Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, then keeps asking the projector to power on until it answers. The *AWOL Link status* sensor shows which case applies: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is switched off on the projector) or *unreachable* (off, or in a standby that leaves the network).
+Standby differs between models. In light standby (seen on the VisionMaster Pro2) the projector still answers, reports that it is in standby and can be switched on directly, without a MAC address. In deep standby it either accepts network connections without answering them, or leaves the network altogether (the VisionMaster Max does this about 30 seconds after switching off). Switching it on therefore sends a **Wake-on-LAN** packet to the MAC address you entered, both as a broadcast (reaches a projector on Home Assistant's own network) and straight to the projector's IP address (also crosses to another VLAN), and repeats it every few seconds while it keeps asking the projector to power on, for up to 45 seconds. The *AWOL Link status* sensor shows which case applies: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is switched off on the projector) or *unreachable* (off, or in a standby that leaves the network).
 
 ## Locked settings
 
@@ -102,6 +104,8 @@ If a setting ever stays unavailable when it should not, enable the *Forget learn
 
 - The integration only uses commands from AWOL's official command list, with one exception: the list documents aspect ratio as read-only, but setting it works while an HDMI signal is playing. This was tested on the VisionMaster Pro2 (all ten values with SDR, HDR10 and Dolby Vision, firmware V02.01.00E.Q0718) and on the VisionMaster Max (by Michael Konieczki). Without a signal the projector refuses the change.
 - The meaning of the signal codes (audio format, colour depth and so on) is not in AWOL's public command list; it comes from AWOL support via Michael Konieczki and matches every reply tested on the VisionMaster Pro2. Dolby TrueHD Atmos usually shows as *Dolby Audio*, because the projector cannot decode it, and *Several audio tracks* means the media has more than one audio track, not multichannel sound. The temperature unit is not documented; the values only make sense as degrees Celsius.
+- On another VLAN, the Wake-on-LAN packet sent to the projector's IP address only arrives while the router still remembers the projector's MAC address (usually several minutes to hours after it left the network). For a projector that leaves the network in standby, add a static ARP entry for it on the router (OPNsense and pfSense offer this in the DHCP static mapping).
+- AWOL Link cannot report the projector's MAC address: the UDP search reply contains the projector's network name instead, so the MAC has to be entered by hand.
 - After a long standby (more than a day), some projectors switch Wi-Fi off completely. Wake-on-LAN cannot reach them then, and only the IR remote switches them on (seen on the VisionMaster Max).
 - Some settings are locked depending on the picture format (for example gamma presets in SDR only, dynamic tone mapping in HDR10 only). A lock that is neither built in nor learned yet shows up only when a change is refused; the setting is then shown as unavailable for that format and picture mode (see [Locked settings](#locked-settings)).
 - Not every model has every feature. The VisionMaster Pro2, for example, refuses the *Film* motion enhancement mode and the lens shift menu; Home Assistant then shows a message explaining why.

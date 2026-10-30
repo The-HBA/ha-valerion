@@ -7,7 +7,7 @@ Run from the repository root::
     python scripts/awollink.py --host 192.168.1.50 set LASL 5
     python scripts/awollink.py --host 192.168.1.50 raw "%3PICL ?"
     python scripts/awollink.py --host 192.168.1.50 survey -o survey.json
-    python scripts/awollink.py wake AA:BB:CC:DD:EE:FF
+    python scripts/awollink.py --host 192.168.1.50 wake AA:BB:CC:DD:EE:FF
     python scripts/awollink.py discover 192.168.1.50
 
 Every command opens one short session and closes it again, so the Valerion
@@ -122,9 +122,9 @@ async def _survey(client: AwolLinkClient, out: str | None) -> int:
     return 0
 
 
-async def _wake(mac: str, broadcast: str, port: int) -> int:
-    await send_magic_packet(mac, broadcast=broadcast, port=port)
-    print(f"magic packet for {mac} sent to {broadcast}:{port}")
+async def _wake(mac: str, targets: list[str], port: int) -> int:
+    sent = await send_magic_packet(mac, targets=targets, port=port)
+    print(f"magic packet for {mac} sent to {', '.join(sent)} (port {port})")
     return 0
 
 
@@ -167,6 +167,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_wake = sub.add_parser("wake", help="send a Wake-on-LAN magic packet")
     p_wake.add_argument("mac")
     p_wake.add_argument("--broadcast", default=DEFAULT_BROADCAST)
+    # --host (if given) also gets a unicast copy, which crosses routers/VLANs.
     p_wake.add_argument("--wol-port", type=int, default=WOL_PORT)
 
     p_disc = sub.add_parser("discover", help="send %%2SRCH over UDP and list answers")
@@ -177,7 +178,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 async def _run(args: argparse.Namespace) -> int:
     if args.action == "wake":
-        return await _wake(args.mac, args.broadcast, args.wol_port)
+        targets = [args.broadcast, *([args.host] if args.host else [])]
+        return await _wake(args.mac, targets, args.wol_port)
     if args.action == "discover":
         return await _discover(args.target, args.port, args.wait)
     if not args.host:

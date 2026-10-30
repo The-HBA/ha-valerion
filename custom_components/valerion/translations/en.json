@@ -14,7 +14,7 @@
           "host": "The projector's IP address on your network. Give it a fixed address (DHCP reservation) in your router.",
           "port": "Leave at 4352 unless you changed it on the projector.",
           "security_code": "Only if you set a security code in the AWOL Link menu. Leave empty otherwise.",
-          "mac": "Needed to switch the projector on from standby (Wake-on-LAN). Find it under All Settings > System > About > Status. Optional, can be added later."
+          "mac": "Needed to switch the projector on from standby (Wake-on-LAN). Find it under All Settings > System > About > Status. Optional: it can be added later with the settings (gear) button of the projector's entry."
         }
       }
     },
@@ -29,6 +29,23 @@
     },
     "abort": {
       "already_configured": "This projector is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Projector settings",
+        "description": "Changes apply right away; the projector's entities and history stay as they are.",
+        "data": {
+          "mac": "MAC address"
+        },
+        "data_description": {
+          "mac": "Used to switch the projector on from standby with Wake-on-LAN. Find it under All Settings > System > About > Status. Recommended for every model: switching on then also works when the projector has left the network in standby. Leave empty to remove it."
+        }
+      }
+    },
+    "error": {
+      "invalid_mac": "This is not a valid MAC address (expected 12 hexadecimal digits, for example AA:BB:CC:DD:EE:FF)."
     }
   },
   "entity": {
@@ -254,7 +271,7 @@
       "message": "The projector did not wake up in time: {error}"
     },
     "power_on_needs_mac": {
-      "message": "The projector is in standby and cannot be woken without its MAC address. Add the MAC address to the integration settings."
+      "message": "The projector is in standby and cannot be woken without its MAC address. Add it with the settings (gear) button in Settings > Devices & services > Valerion."
     },
     "invalid_source": {
       "message": "{source} is not a valid input."

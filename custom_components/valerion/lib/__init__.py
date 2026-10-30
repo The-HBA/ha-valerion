@@ -53,12 +53,13 @@ from .models import (
     split_picture_mode_list,
 )
 from .protocol import AwolLinkProtocolError, Command, Response, parse_command_line
-from .wol import build_magic_packet, normalize_mac, send_magic_packet
+from .wol import DEFAULT_BROADCAST, build_magic_packet, normalize_mac, send_magic_packet
 
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 
 __all__ = [
     "ALL_PICTURE_MODES",
+    "DEFAULT_BROADCAST",
     "DEFAULT_PORT",
     "DEFAULT_TIMEOUT",
     "KEYS",

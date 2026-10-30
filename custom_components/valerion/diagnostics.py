@@ -53,6 +53,10 @@ async def async_get_config_entry_diagnostics(
             "last_error": data.last_error,
         },
         "learned_locks": coordinator.locks_as_dict(),
+        "wake_on_lan": {
+            "mac_known": coordinator.mac is not None,
+            "last_wake": coordinator.last_wake,
+        },
     }
 
 
