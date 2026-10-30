@@ -102,7 +102,7 @@ class ColorTemperature(StrEnum):
 
 
 class AspectRatio(StrEnum):
-    """``%3ASPR`` values (query only in the official command list)."""
+    """``%3ASPR`` values (setting them is not in the official list; see docs/protocol.md)."""
 
     AUTO = "0"
     RATIO_4_3 = "1"

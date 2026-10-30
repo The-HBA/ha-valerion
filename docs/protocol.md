@@ -56,9 +56,11 @@ See `custom_components/valerion/lib/protocol.py` for the full list and
   and `5` (HLG) only appear in HDR replies.
 - `%3MOTN`: the command sheet and the response sheet disagree; the response
   sheet (`0` Off, `1` Custom, `2` Film, `3` Clear, `4` Standard, `5` Smooth)
-  is used here.
+  is used here. The VisionMaster Pro2 refuses `2` (Film) with `ERR2`
+  in every format tested (see below).
 - `%3ASPR` is query-only in the official list, but setting it works on the
-  VisionMaster Max (see below).
+  VisionMaster Max and the VisionMaster Pro2 while an HDMI signal is playing
+  (see below).
 - `%3LSMN ?`, `%3ZMMN ?`, `%3FCMN ?` are actions written as queries: they
   open the lens-shift, zoom and focus menus on screen and reply `OK`.
 
@@ -117,6 +119,41 @@ the table above: `%3VOLM=0`, `%2SVER=V02.01.00E.Q0718 00 OEM01.0.0.0`
 (`INF1`, `INF2`, `NAME`, `SVER`, `INST`) can therefore be read in light
 standby.
 
+## Observed with HDMI signals: VisionMaster Pro2, firmware V02.01.00E.Q0718 (2026-10-30)
+
+Measured with SDR, HDR10 and Dolby Vision files played from a media player
+on an HDMI input, through the integration's *Send raw command* action and
+`scripts/awollink.py raw`. Every setting was put back afterwards.
+
+| Signal | `%3SINF ?` | `%3PICL ?` |
+| --- | --- | --- |
+| SDR 1080p 24 Hz | `1920*1080p@24Hz 0 3 1 0 0` | `Vivid,Standard,Sports,Energy Saving,PC/Game,Theater,FILMMAKER MODE` |
+| HDR10 4K 24 Hz | `3840*2160p@24Hz 0 3 1 1 2` | `HDR Vivid,HDR Standard,HDR Sports,HDR Energy Saving,HDR Game,HDR Theater,FILMMAKER MODE,IMAX Mode` |
+| Dolby Vision 4K 24 Hz | `3840*2160p@24Hz 0 1 3 4 0` | `Dolby Vision Bright,Dolby Vision Dark,Dolby Vision Custom` |
+| Dolby Vision 4K 60 Hz | `3840*2160p@60Hz 0 1 3 4 2` | same as 4K 24 Hz |
+
+| Set command | SDR | HDR10 | Dolby Vision |
+| --- | --- | --- | --- |
+| `%3GAMA 0`..`3` | `OK`, read back | `ERR3` | `ERR3` |
+| `%3GAMA 4` | `ERR3` | not tried | not tried |
+| `%3DYTM 1`, `2` | `ERR3` | `OK`, read back | `ERR3` |
+| `%3MOTN 0`, `1`, `3`, `4`, `5` | `OK` | `OK` | `OK` |
+| `%3MOTN 2` | `ERR2` | `ERR2` | `ERR2` |
+| `%3ASPR 0`..`9` | `OK`, each read back | `4` and `3`: `OK` | `4` and `3`: `OK`, the picture changed to 21:9 and back |
+| `%3LASL 8` | | `OK`, read back | |
+| `%3ENBL 1` | | | `OK`, read back |
+
+- **A locked setting can still be read.** `%3GAMA ?` answers `1` (2.2) in
+  Dolby Vision although gamma cannot be set there, and `4` (SMPTE 2084) in
+  HDR10. `%3DYTM ?` answers in every format. Only a set command shows
+  whether a setting is locked. The HDR10 tests ran in *FILMMAKER MODE*;
+  whether other picture modes unlock gamma in HDR10 is still open.
+- **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
+  `ERR2`, as reported for the Max.
+- **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
+  Pro2 most likely has no motorised lens shift; `%3ZMMN ?` opened the zoom
+  menu (2026-10-29).
+
 ## Reported: VisionMaster Max (Michael Konieczki, 2026-10-29)
 
 Measured by Michael Konieczki on his VisionMaster Max (firmware not stated).
@@ -154,9 +191,13 @@ Not yet confirmed on the Pro2.
 
 ## Open questions (to be measured on real hardware)
 
-- Meaning of the `%3SINF` codes (audio format, colour depth, colour format,
-  HDR format, colour space) while an HDMI signal is playing, and the
-  `%3PICL` lists for HDR10, HDR10+ and Dolby Vision.
+- The meaning of each `%3SINF` code (audio format, colour depth, colour
+  format, HDR format, colour space), checked against the replies above.
+- The `%3PICL` list for HDR10+ and HLG signals.
+- The motion enhancement names the Pro2 shows in its own menu (it refuses
+  `%3MOTN 2`, Film in both sheet tabs).
+- Whether gamma can be set in HDR10 in picture modes other than
+  *FILMMAKER MODE*.
 - Which fan and temperature slots are filled on other models.
 - What the extra `%2SVER` fields (`83`, `OEM01.0.0.0`) mean.
 - Whether `%2ERST` is supported on other models or firmware.
@@ -165,10 +206,5 @@ Not yet confirmed on the Pro2.
   of polling.
 - Whether `%2SRCH` is answered while the projector is in standby (that would
   allow telling standby apart from "another controller is connected").
-- Whether `%3ASPR <n>` sets the aspect ratio on the Pro2 as it does on the
-  Max (needs an HDMI signal). First try on the Pro2 (firmware
-  V02.01.00E.Q0718, 2026-10-30, through the *Send raw command* action):
-  `%3ASPR 4` replied `%3ASPR=ERR2`. Still to confirm whether an HDMI
-  signal was playing at the time; without one, `ERR2` is expected.
 - Whether the Pro2 ever leaves light standby for a silent or unreachable
   state, and after how long.

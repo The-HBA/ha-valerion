@@ -52,6 +52,9 @@
       "picture_mode": {
         "default": "mdi:palette"
       },
+      "aspect_ratio": {
+        "default": "mdi:aspect-ratio"
+      },
       "gamma": {
         "default": "mdi:gamma"
       },

@@ -18,10 +18,10 @@ This is an independent community project. It is not affiliated with, endorsed by
 | Media player | State on / standby / off, power on (Wake-on-LAN) and off, input (Home, HDMI 1-3), volume, mute |
 | Remote | Sends the remote keys by name with `remote.send_command` (see [Remote keys](#remote-keys)); on/off switches the projector |
 | Buttons | *Lens shift menu*, *Zoom menu*, *Focus menu* (open the menu on screen). The navigation keys (up, down, left, right, OK, return, menu, settings, home) are also buttons, disabled by default; enable them on the device page if you want them on a dashboard |
-| Selects | *Picture mode* (the list matches the current SDR/HDR/HDR10+/Dolby Vision format); under Configuration: *Gamma*, *Dynamic tone mapping*, *Color temperature*, *Enhanced black level*, *Motion enhancement*. A setting that is locked for the current signal shows as unavailable |
+| Selects | *Picture mode* (the list matches the current SDR/HDR/HDR10+/Dolby Vision format), *Aspect ratio* (Auto, 4:3, Zoom, 16:9, 21:9, 32:9 and four anamorphic ratios; can only be changed while an HDMI signal is playing); under Configuration: *Gamma*, *Dynamic tone mapping*, *Color temperature*, *Enhanced black level*, *Motion enhancement*. A setting that is locked for the current signal shows as unavailable |
 | Number | *Laser level* (0-10 slider) |
 | Sensor | *AWOL Link status* (diagnostic): answering, silent, refused or unreachable, so the history shows how deeply the projector sleeps in standby |
-| More sensors *(planned)* | Input resolution, video/audio/HDR format, colour depth and space, aspect ratio, fan speeds, temperatures, LED/error status, firmware version |
+| More sensors *(planned)* | Input resolution, video/audio/HDR format, colour depth and space, fan speeds, temperatures, LED/error status, firmware version |
 
 ## Compatibility
 
@@ -91,9 +91,10 @@ Standby differs between models. In light standby (seen on the VisionMaster Pro2)
 
 ## Known limitations
 
-- Only the settings that AWOL Link documents are supported. AWOL's command list documents aspect ratio as read-only, so the integration only reads it for now. Setting it does work on the VisionMaster Max while an HDMI signal is playing (tested by Michael Konieczki); it will be added once it is confirmed on more models.
+- The integration only uses commands from AWOL's official command list, with one exception: the list documents aspect ratio as read-only, but setting it works while an HDMI signal is playing. This was tested on the VisionMaster Pro2 (all ten values with SDR, HDR10 and Dolby Vision, firmware V02.01.00E.Q0718) and on the VisionMaster Max (by Michael Konieczki). Without a signal the projector refuses the change.
 - After a long standby (more than a day), some projectors switch Wi-Fi off completely. Wake-on-LAN cannot reach them then, and only the IR remote switches them on (seen on the VisionMaster Max).
-- Some settings are locked depending on the picture format (for example gamma presets in SDR only, dynamic tone mapping in HDR10 only). The projector reports these as unavailable.
+- Some settings are locked depending on the picture format (for example gamma presets in SDR only, dynamic tone mapping in HDR10 only). The projector may still report a value for a locked setting, so the select can look changeable; trying to change it then shows a clear "locked" message.
+- Not every model has every feature. The VisionMaster Pro2, for example, refuses the *Film* motion enhancement mode and the lens shift menu; Home Assistant then shows a message explaining why.
 - Picture settings are read about once a minute (and at once after a change from Home Assistant or a picture-mode change), so a change made with the IR remote can take up to a minute to show.
 - *Warm 1* and *Warm 2* colour temperature only work when the projector's menu language is English (US); this is a known firmware issue.
 - There is no play/pause/media information: AWOL Link does not expose the Android TV side of the projector.

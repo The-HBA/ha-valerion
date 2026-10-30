@@ -115,6 +115,16 @@ STATIC_COMMANDS: Final[tuple[Command, ...]] = (
 _EXTRA_CONTEXT: Final[dict[str, tuple[Command, ...]]] = {
     protocol.PICTURE_MODE.code: (protocol.PICTURE_MODE_LIST,),
 }
+#: Command errors with a clearer explanation than ``setting_locked`` (ERR3) or
+#: ``command_rejected``, keyed by (error, command code).
+_ERROR_MESSAGES: Final[dict[tuple[str, str], str]] = {
+    (protocol.ERR_PARAMETER, protocol.COLOR_TEMPERATURE.code): "color_temperature_rejected",
+    (protocol.ERR_PARAMETER, protocol.MOTION_ENHANCEMENT.code): "motion_mode_rejected",
+    (protocol.ERR_PARAMETER, protocol.ASPECT_RATIO.code): "aspect_ratio_rejected",
+    (protocol.ERR_UNAVAILABLE, protocol.LENS_SHIFT_MENU.code): "lens_menu_unavailable",
+    (protocol.ERR_UNAVAILABLE, protocol.ZOOM_MENU.code): "lens_menu_unavailable",
+    (protocol.ERR_UNAVAILABLE, protocol.FOCUS_MENU.code): "lens_menu_unavailable",
+}
 #: Values that only make sense while the projector is on.
 _VOLATILE_CODES: Final = frozenset(
     cmd.code for cmd in (*CORE_COMMANDS, *FAST_COMMANDS, *SLOW_COMMANDS)
@@ -377,18 +387,14 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         except AwolLinkAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except AwolLinkCommandError as err:
-            if err.is_unavailable:
+            # The failed line starts with its header, for example "%3MOTN 2".
+            key = _ERROR_MESSAGES.get((err.error, err.command[2:6]))
+            if key is None and err.is_unavailable:
+                key = "setting_locked"
+            if key is not None:
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
-                    translation_key="setting_locked",
-                    translation_placeholders={"command": err.command},
-                ) from err
-            if err.error == protocol.ERR_PARAMETER and err.command.startswith(
-                protocol.COLOR_TEMPERATURE.header
-            ):
-                raise HomeAssistantError(
-                    translation_domain=DOMAIN,
-                    translation_key="color_temperature_rejected",
+                    translation_key=key,
                     translation_placeholders={"command": err.command},
                 ) from err
             raise HomeAssistantError(

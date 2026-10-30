@@ -1,7 +1,7 @@
 """Select entities for the Valerion integration.
 
-Picture mode and the picture settings that have a fixed list of values.
-Each setting belongs to the active picture mode, and some are locked for the
+Picture mode, aspect ratio and the picture settings that have a fixed list
+of values. Each setting belongs to the active picture mode, and some are locked for the
 current signal (gamma presets in SDR only, dynamic tone mapping in HDR10
 only); a locked setting shows as unavailable.
 """
@@ -20,6 +20,7 @@ from .const import DOMAIN
 from .entity import ValerionEntity
 from .lib import (
     SETTABLE_GAMMA,
+    AspectRatio,
     ColorTemperature,
     DynamicToneMapping,
     EnhancedBlackLevel,
@@ -57,6 +58,14 @@ class ValerionSettingDescription(SelectEntityDescription):
 
 
 SETTINGS: tuple[ValerionSettingDescription, ...] = (
+    # Not in the official list as a set command, but verified on the Pro2 for
+    # every value with SDR, HDR10 and Dolby Vision (docs/protocol.md).
+    ValerionSettingDescription(
+        key="aspect_ratio",
+        translation_key="aspect_ratio",
+        command=protocol.ASPECT_RATIO,
+        values=AspectRatio,
+    ),
     ValerionSettingDescription(
         key="gamma",
         translation_key="gamma",

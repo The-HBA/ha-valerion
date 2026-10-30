@@ -84,6 +84,21 @@
       "picture_mode": {
         "name": "Picture mode"
       },
+      "aspect_ratio": {
+        "name": "Aspect ratio",
+        "state": {
+          "auto": "Auto",
+          "ratio_4_3": "4:3",
+          "zoom": "Zoom",
+          "ratio_16_9": "16:9",
+          "ratio_21_9": "21:9",
+          "ratio_32_9": "32:9",
+          "anamorphic_16_9": "Anamorphic 16:9",
+          "anamorphic_2_39_1": "Anamorphic 2.39:1",
+          "anamorphic_1_85_1": "Anamorphic 1.85:1",
+          "anamorphic_2_0_1": "Anamorphic 2.0:1"
+        }
+      },
       "gamma": {
         "name": "Gamma",
         "state": {
@@ -178,6 +193,15 @@
     },
     "color_temperature_rejected": {
       "message": "The projector refused {command} (ERR2). Warm 1 and Warm 2 only work when the projector's menu language is English (US), a known firmware issue."
+    },
+    "motion_mode_rejected": {
+      "message": "The projector refused {command} (ERR2): it does not offer this motion enhancement mode. For example, the VisionMaster Pro2 has no Film mode."
+    },
+    "aspect_ratio_rejected": {
+      "message": "The projector refused {command} (ERR2). The aspect ratio can only be changed while an HDMI signal is playing."
+    },
+    "lens_menu_unavailable": {
+      "message": "The projector refused {command} (ERR3). This model may not have a motorized lens shift, zoom or focus, or the menu cannot be opened right now. You can disable this button on the device page if your projector does not support it."
     },
     "value_not_settable": {
       "message": "{value} is reported by the projector but cannot be set."

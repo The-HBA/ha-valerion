@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-10-30
+
+### Added
+- *Aspect ratio* select: Auto, 4:3, Zoom, 16:9, 21:9, 32:9 and four anamorphic ratios. The projector accepts a change only while an HDMI signal is playing. Setting the aspect ratio is not in AWOL's official command list, but it was tested on the VisionMaster Pro2 and the VisionMaster Max.
+
+### Changed
+- Clearer error messages when the projector refuses a motion enhancement mode it does not offer (for example *Film* on the VisionMaster Pro2), an aspect ratio change without a signal, or a lens shift, zoom or focus menu its model does not support.
+
 ## [0.0.6] - 2026-10-30
 
 ### Added
