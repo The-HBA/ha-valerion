@@ -209,6 +209,11 @@ on an HDMI input, through the integration's *Send raw command* action and
   projector resets it.
 - **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
   `ERR2`, as reported for the Max.
+- **Aspect ratio with HDR10+ and HLG (Pro2, V02.01.00E.Q0718,
+  2026-10-31):** Hattan changed the aspect ratio from Home Assistant while
+  each format played; both accepted the change. The HDR10+ film started in
+  21:9, a value set earlier for another film, so the projector may keep
+  the aspect ratio per format or picture mode (not measured).
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
   Pro2 most likely has no motorised lens shift; `%3ZMMN ?` opened the zoom
   menu (2026-10-29). `%3FCMN` from the *Focus menu* button returned no

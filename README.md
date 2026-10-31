@@ -45,7 +45,7 @@ The projector locks some settings depending on the video format. Measured on a V
 | Color temperature | Yes | Yes | Yes | Yes | Yes | Yes |
 | Enhanced black level | Yes, all modes | Yes, all modes | Yes, all modes | Yes, all modes | Yes, all modes | Yes |
 | Motion enhancement | Yes, except Film | Yes, except Film | Yes, except Film | Yes, except Film | Yes, except Film | No |
-| Aspect ratio | Yes | Yes | Not tested yet | Not tested yet | Yes | No |
+| Aspect ratio | Yes | Yes | Yes | Yes | Yes | No |
 | Laser level | Yes | Yes | Yes | Yes | Yes | Yes |
 
 A setting that is locked shows as unavailable in Home Assistant (see [Locked settings](#locked-settings)). Aspect ratio can only be changed while an HDMI signal is playing.
