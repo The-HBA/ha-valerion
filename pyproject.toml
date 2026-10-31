@@ -31,7 +31,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "PLR2004", "SLF001", "ARG001", "ARG002", "ANN", "D", "PT011", "S104", "TC001", "TC002", "TC003"]
+"tests/**" = ["S101", "S105", "S106", "PLR2004", "PLR0917", "SLF001", "ARG001", "ARG002", "ANN", "D", "PT011", "S104", "TC001", "TC002", "TC003"]
 "custom_components/valerion/*.py" = ["ARG001"]  # hass argument is part of the HA platform API
 "custom_components/valerion/lib/cli.py" = ["T201", "PLR0911", "C901", "PLR0912", "PTH123", "ASYNC230"]
 

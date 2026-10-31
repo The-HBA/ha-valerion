@@ -1,0 +1,456 @@
+# serializer version: 1
+# name: test_entities[select.living_room_aspect_ratio-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'auto',
+        'ratio_4_3',
+        'zoom',
+        'ratio_16_9',
+        'ratio_21_9',
+        'ratio_32_9',
+        'anamorphic_16_9',
+        'anamorphic_2_39_1',
+        'anamorphic_1_85_1',
+        'anamorphic_2_0_1',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.living_room_aspect_ratio',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Aspect ratio',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Aspect ratio',
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'aspect_ratio',
+    'unique_id': 'f0:ed:51:c4:4c:a8_aspect_ratio',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.living_room_aspect_ratio-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room Aspect ratio',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'auto',
+        'ratio_4_3',
+        'zoom',
+        'ratio_16_9',
+        'ratio_21_9',
+        'ratio_32_9',
+        'anamorphic_16_9',
+        'anamorphic_2_39_1',
+        'anamorphic_1_85_1',
+        'anamorphic_2_0_1',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_aspect_ratio',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'ratio_16_9',
+  })
+# ---
+# name: test_entities[select.living_room_color_temperature-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'warm1',
+        'warm2',
+        'standard',
+        'cool',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.living_room_color_temperature',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Color temperature',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Color temperature',
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'color_temperature',
+    'unique_id': 'f0:ed:51:c4:4c:a8_color_temperature',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.living_room_color_temperature-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room Color temperature',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'warm1',
+        'warm2',
+        'standard',
+        'cool',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_color_temperature',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'standard',
+  })
+# ---
+# name: test_entities[select.living_room_dynamic_tone_mapping-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'low',
+        'high',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.living_room_dynamic_tone_mapping',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Dynamic tone mapping',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Dynamic tone mapping',
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'dynamic_tone_mapping',
+    'unique_id': 'f0:ed:51:c4:4c:a8_dynamic_tone_mapping',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.living_room_dynamic_tone_mapping-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room Dynamic tone mapping',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'low',
+        'high',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_dynamic_tone_mapping',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'low',
+  })
+# ---
+# name: test_entities[select.living_room_enhanced_black_level-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'low',
+        'medium',
+        'high',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.living_room_enhanced_black_level',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Enhanced black level',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Enhanced black level',
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'enhanced_black_level',
+    'unique_id': 'f0:ed:51:c4:4c:a8_enhanced_black_level',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.living_room_enhanced_black_level-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room Enhanced black level',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'low',
+        'medium',
+        'high',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_enhanced_black_level',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'low',
+  })
+# ---
+# name: test_entities[select.living_room_gamma-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'gamma_2_0',
+        'gamma_2_2',
+        'gamma_2_4',
+        'bt1886',
+        'smpte2084',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.living_room_gamma',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Gamma',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Gamma',
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'gamma',
+    'unique_id': 'f0:ed:51:c4:4c:a8_gamma',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.living_room_gamma-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room Gamma',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'gamma_2_0',
+        'gamma_2_2',
+        'gamma_2_4',
+        'bt1886',
+        'smpte2084',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_gamma',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unavailable',
+  })
+# ---
+# name: test_entities[select.living_room_motion_enhancement-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'custom',
+        'film',
+        'clear',
+        'standard',
+        'smooth',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.living_room_motion_enhancement',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Motion enhancement',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Motion enhancement',
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'motion_enhancement',
+    'unique_id': 'f0:ed:51:c4:4c:a8_motion_enhancement',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.living_room_motion_enhancement-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room Motion enhancement',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'custom',
+        'film',
+        'clear',
+        'standard',
+        'smooth',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_motion_enhancement',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---
+# name: test_entities[select.living_room_picture_mode-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'HDR Standard',
+        'HDR Vivid',
+        'HDR Theater',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.living_room_picture_mode',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Picture mode',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Picture mode',
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'picture_mode',
+    'unique_id': 'f0:ed:51:c4:4c:a8_picture_mode',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.living_room_picture_mode-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room Picture mode',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'HDR Standard',
+        'HDR Vivid',
+        'HDR Theater',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_picture_mode',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'HDR Theater',
+  })
+# ---

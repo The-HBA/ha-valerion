@@ -38,6 +38,8 @@ class FakeProjector:
     values: dict[str, str] = field(default_factory=dict)
     #: Headers that answer ERR3 on query or set.
     unavailable: set[str] = field(default_factory=set)
+    #: Error per header for set commands, e.g. {"%3MOTN": "ERR2"}.
+    refused: dict[str, str] = field(default_factory=dict)
     #: If True the projector accepts connections but never greets (standby).
     silent: bool = False
     #: Delay before every reply, to simulate the real half-second latency.
@@ -117,8 +119,11 @@ class FakeProjector:
             await writer.drain()
 
     def _reply(self, header: str, argument: str) -> str:
-        if header in self.unavailable:
-            return f"{header}=ERR3"
+        error = "ERR3" if header in self.unavailable else None
+        if argument != "?":
+            error = error or self.refused.get(header)
+        if error:
+            return f"{header}={error}"
         if argument == "?":
             if header.endswith(("LSMN", "ZMMN", "FCMN")):
                 return f"{header}=OK"  # lens menus: actions written as queries

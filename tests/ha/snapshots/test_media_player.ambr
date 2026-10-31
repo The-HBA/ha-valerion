@@ -1,0 +1,72 @@
+# serializer version: 1
+# name: test_entities[media_player.living_room-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <MediaPlayerEntityCapabilityAttribute.INPUT_SOURCE_LIST: 'source_list'>: list([
+        'Home',
+        'HDMI 1',
+        'HDMI 2',
+        'HDMI 3',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'media_player',
+    'entity_category': None,
+    'entity_id': 'media_player.living_room',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': <MediaPlayerDeviceClass.PROJECTOR: 'projector'>,
+    'original_icon': None,
+    'original_name': None,
+    'platform': 'valerion',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': <MediaPlayerEntityFeature: 3468>,
+    'translation_key': None,
+    'unique_id': 'f0:ed:51:c4:4c:a8_media_player',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[media_player.living_room-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      'busy': False,
+      'connection': <Connection.ANSWERING: 'answering'>,
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'projector',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room',
+      <MediaPlayerEntityStateAttribute.MEDIA_VOLUME_MUTED: 'is_volume_muted'>: False,
+      'power_state': 'on',
+      <MediaPlayerEntityStateAttribute.INPUT_SOURCE: 'source'>: 'HDMI 1',
+      <MediaPlayerEntityCapabilityAttribute.INPUT_SOURCE_LIST: 'source_list'>: list([
+        'Home',
+        'HDMI 1',
+        'HDMI 2',
+        'HDMI 3',
+      ]),
+      <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <MediaPlayerEntityFeature: 3468>,
+      <MediaPlayerEntityStateAttribute.MEDIA_VOLUME_LEVEL: 'volume_level'>: 0.35,
+    }),
+    'context': <ANY>,
+    'entity_id': 'media_player.living_room',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'on',
+  })
+# ---

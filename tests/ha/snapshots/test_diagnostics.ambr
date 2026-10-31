@@ -1,0 +1,117 @@
+# serializer version: 1
+# name: test_diagnostics
+  dict({
+    'coordinator': dict({
+      'last_greeting': 'PJLINK 0 ',
+      'last_update_success': True,
+      'update_interval': '0:00:10',
+    }),
+    'entry': dict({
+      'data': dict({
+        'host': '**REDACTED**',
+      }),
+      'options': dict({
+      }),
+      'title': '**REDACTED**',
+      'unique_id': '**REDACTED**',
+    }),
+    'learned_locks': dict({
+      'firmware': 'V02.01.00E.Q0718',
+      'learned': list([
+        dict({
+          'code': 'LASL',
+          'hdr': 'hdr10',
+          'picture_mode': 'HDR Theater',
+        }),
+      ]),
+      'unsupported': list([
+      ]),
+    }),
+    'state': dict({
+      'busy': False,
+      'connection': 'answering',
+      'identity': dict({
+        'color': 'Elgant Grey',
+        'inputs': list([
+          '30',
+          '31',
+          '32',
+          '33',
+        ]),
+        'manufacturer': 'AWOL VISION',
+        'model': 'VisionMaster Pro2',
+        'name': 'Living room',
+        'pjlink_class': '2',
+        'recommended_resolution': '3840 x 2160',
+        'software_version': 'V02.01.00E.Q0718 83 OEM01.0.0.0',
+      }),
+      'last_error': None,
+      'locked': list([
+        'GAMA',
+        'LASL',
+      ]),
+      'picture_modes': list([
+        'HDR Standard',
+        'HDR Vivid',
+        'HDR Theater',
+      ]),
+      'power': '1',
+      'signal': dict({
+        'audio_format': '3',
+        'color_depth': '2',
+        'color_format': '1',
+        'color_primaries': '2',
+        'decoded': dict({
+          'audio': '3',
+          'chroma': '1',
+          'depth': '2',
+          'has_signal': True,
+          'hdr': '1',
+          'primaries': '2',
+          'timing': '3840×2160p 24 Hz',
+        }),
+        'hdr_format': '1',
+        'raw': '3840*2160p@24Hz 3 2 1 1 2',
+        'video_format': '3840*2160p@24Hz',
+      }),
+      'unavailable': list([
+      ]),
+      'values': dict({
+        'ASPR': '3',
+        'AVMT': '20',
+        'CLSS': '2',
+        'CLTP': '2',
+        'DYTM': '1',
+        'ENBL': '1',
+        'FANS': '1770 1710 0 0 0 0 0',
+        'GAMA': '4',
+        'INF1': 'AWOL VISION',
+        'INF2': 'VisionMaster Pro2',
+        'INFO': 'Elgant Grey',
+        'INPT': '31',
+        'INST': '30 31 32 33',
+        'LASL': '7',
+        'LEDS': '0',
+        'MOTN': '0',
+        'NAME': 'Living room',
+        'PICL': 'HDR Standard,HDR Vivid,HDR Theater',
+        'PICT': 'HDR Theater',
+        'POWR': '1',
+        'RRES': '3840 x 2160',
+        'SINF': '3840*2160p@24Hz 3 2 1 1 2',
+        'SVER': 'V02.01.00E.Q0718 83 OEM01.0.0.0',
+        'TEMP': '33 48 0 0 0 0 0 0',
+        'VOLM': '35',
+      }),
+    }),
+    'wake_on_lan': dict({
+      'last_wake': dict({
+        'sent_to': list([
+          'broadcast',
+          'projector',
+        ]),
+      }),
+      'mac_known': False,
+    }),
+  })
+# ---

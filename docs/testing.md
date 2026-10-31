@@ -18,10 +18,29 @@ virtual environment there (CI runs them in their own job):
 
 ```bash
 pip install -r requirements_test_ha.txt
-pytest tests/ha
+pytest tests/ha --cov=custom_components/valerion --cov-report=term-missing
 ```
 
 Without Home Assistant installed, `pytest` skips `tests/ha`.
+
+On Windows or macOS, Docker gives the same Linux environment:
+
+```bash
+docker run --rm -it -v "$PWD:/src" -w /src python:3.14-slim   sh -c "pip install -r requirements_test_ha.txt && pytest tests/ha -p no:cacheprovider"
+```
+
+| File | Covers |
+| --- | --- |
+| `test_config_flow.py` | Setup and settings dialogs |
+| `test_init.py` | Setup, unload, removal, migration |
+| `test_coordinator.py` | Polling, standby, power, locks, error messages |
+| `test_<platform>.py` | Each entity type, plus a snapshot of its entities |
+| `test_services.py` | *Send raw command* |
+| `test_diagnostics.py` | Diagnostics download (snapshot) |
+
+Snapshots live in `tests/ha/snapshots/`. After an intended change to an
+entity or to the diagnostics, update them with `--snapshot-update` and
+review the diff.
 
 ## Against a projector, without Home Assistant
 
