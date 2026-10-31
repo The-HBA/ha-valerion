@@ -1,6 +1,6 @@
 [project]
 name = "ha-valerion"
-version = "0.0.15"
+version = "0.0.16"
 description = "Home Assistant integration for Valerion projectors over AWOL Link"
 readme = "README.md"
 license = { text = "MIT" }

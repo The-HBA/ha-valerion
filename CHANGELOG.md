@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.16] - 2026-10-31
+
 ### Fixed
 - *Send raw command*: an unknown class 3 code (for example `%3ZZZZ ?`) now returns `ERR1` at once instead of a timeout after 3 seconds.
 - After a restart, picture settings show their value on the second poll. Before, a setting could stay *unknown* for up to a minute when *Picture mode* was disabled.
