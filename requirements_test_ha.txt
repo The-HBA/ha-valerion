@@ -1,0 +1,5 @@
+# Home Assistant level tests (tests/ha). Linux only; installs Home Assistant.
+# Pin the release that matches the Home Assistant version under test
+# (0.13.375 = Home Assistant 2026.10.4). It pins its own pytest versions,
+# so it is kept apart from requirements_dev.txt.
+pytest-homeassistant-custom-component==0.13.375

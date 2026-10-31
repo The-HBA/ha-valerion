@@ -11,6 +11,22 @@ import asyncio
 from dataclasses import dataclass, field
 import hashlib
 
+#: Replies of a VisionMaster Pro2 that is on, used by default in tests.
+DEFAULT_VALUES = {
+    "%1POWR": "1",
+    "%2INPT": "31",
+    "%1AVMT": "20",
+    "%3VOLM": "35",
+    "%1INF1": "AWOL VISION",
+    "%1INF2": "VisionMaster Pro2",
+    "%1INFO": "Elgant Grey",
+    "%1NAME": "Living room",
+    "%2SVER": "V02.01.00E.Q0718 83 OEM01.0.0.0",
+    "%3PICT": "HDR Theater",
+    "%3PICL": "HDR Standard,HDR Vivid,HDR Theater",
+    "%3LASL": "7",
+}
+
 
 @dataclass
 class FakeProjector:

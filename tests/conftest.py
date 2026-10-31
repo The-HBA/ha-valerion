@@ -6,6 +6,9 @@ which needs Home Assistant. On machines without Home Assistant (Windows
 laptops, the library CI job) we register the package by hand so that
 ``custom_components.valerion.lib`` can be imported on its own. When Home
 Assistant is installed the real package is used.
+
+The Home Assistant level tests in ``tests/ha`` are skipped without Home
+Assistant; they run in their own CI job on Linux.
 """
 
 from __future__ import annotations
@@ -21,10 +24,11 @@ PACKAGE_DIR = ROOT / "custom_components" / "valerion"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-if (
-    importlib.util.find_spec("homeassistant") is None
-    and "custom_components.valerion" not in sys.modules
-):
+HAS_HOME_ASSISTANT = importlib.util.find_spec("homeassistant") is not None
+
+collect_ignore = [] if HAS_HOME_ASSISTANT else ["ha"]
+
+if not HAS_HOME_ASSISTANT and "custom_components.valerion" not in sys.modules:
     import custom_components  # namespace package, no __init__.py
 
     spec = importlib.machinery.ModuleSpec("custom_components.valerion", None, is_package=True)
