@@ -5,7 +5,7 @@ Circle driver:
 
 * The projector serves ONE control session at a time. A second connection is
   accepted but never greeted until the first one closes. Holding a session
-  open locks out the Valerion app and VMote, so this client opens a session,
+  open locks out other AWOL Link apps, so this client opens a session,
   does its work and closes it again. Several commands may be sent inside one
   session; that is much faster than one connection per command.
 * In standby the projector accepts the TCP connection but never answers.

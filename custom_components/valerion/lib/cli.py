@@ -10,8 +10,8 @@ Run from the repository root::
     python scripts/awollink.py --host 192.168.1.50 wake AA:BB:CC:DD:EE:FF
     python scripts/awollink.py discover 192.168.1.50
 
-Every command opens one short session and closes it again, so the Valerion
-app and VMote keep working in between.
+Every command opens one short session and closes it again, so other apps
+that use AWOL Link keep working in between.
 """
 
 from __future__ import annotations

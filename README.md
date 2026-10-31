@@ -129,7 +129,7 @@ response_variable: reply
 
 ## How it works
 
-AWOL Link allows only one control connection at a time. If something holds it open, the Valerion app and VMote stop working. This integration never keeps the connection: every poll and command connects, does its work and disconnects.
+AWOL Link allows only one control connection at a time. If something holds it open, other apps that use AWOL Link stop working. This integration never keeps the connection: every poll and command connects, does its work and disconnects.
 
 Switching on sends a Wake-on-LAN packet to the MAC address, both as a broadcast and straight to the projector's IP address so it also crosses VLANs, and repeats it for up to 45 seconds. The *AWOL Link status* sensor shows how the projector sleeps: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is off) or *unreachable*.
 
@@ -160,14 +160,14 @@ If a setting stays unavailable or a menu button stays hidden when it should not,
 | --- | --- |
 | Setup says *could not reach the projector* | The IP address is right and the projector is on. Between networks (VLANs), the router allows TCP 4352 from Home Assistant to the projector. See [Requirements](#requirements). |
 | Setup says *the projector refused the connection* | AWOL Link is switched off on the projector. See [Requirements](#requirements), step 1. |
-| Setup says *accepted the connection but did not answer* | The projector is in deep standby, or the Valerion app or VMote is connected. Switch the projector on and close those apps. See [How it works](#how-it-works). |
+| Setup says *accepted the connection but did not answer* | The projector is in deep standby, or another app that uses AWOL Link is connected. Switch the projector on and close that app. See [How it works](#how-it-works). |
 | Setup says *rejected the security code* | Enter the code exactly as set under AWOL Link on the projector. |
 | The projector does not switch on from standby | The MAC address is set (gear button, see [Setup](#setup)) and UDP 9 is allowed to the projector. After more than a day in standby some models only wake by IR. See [Known limitations](#known-limitations). |
 | A setting is greyed out | It is locked for the current signal and picture mode. See [What works with which signal](#what-works-with-which-signal) and [Locked settings](#locked-settings). |
 | Warm 1 or Warm 2 color temperature is refused | Set the projector's menu language to English (US). |
 | A menu button or motion mode shows an error | Your model may not have it. See [What works on which projector](#what-works-on-which-projector). |
 | A lens shift, zoom or focus button disappeared | The projector refused that menu, so it was hidden. See [Locked settings](#locked-settings) to bring it back. |
-| The Valerion app or VMote cannot connect | Only one app can be connected at a time. The integration connects briefly every 10 seconds (every 30 in standby), so try again. See [How it works](#how-it-works). |
+| Another app that uses AWOL Link cannot connect | Only one app can be connected at a time. The integration connects for a moment every 10 seconds (every 30 in standby). An app that connects during that moment waits until the integration is done. See [How it works](#how-it-works). |
 | A change made with the IR remote shows late | Settings are read about once a minute. |
 
 ### Reporting a problem

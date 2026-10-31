@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Messages and README now say "another app that uses AWOL Link" instead of naming specific apps. The README explains that an app connecting during a poll only waits a moment.
+
 ## [0.0.13] - 2026-10-31
 
 ### Added

@@ -2,7 +2,7 @@
 
 One coordinator per projector. It opens a short AWOL Link session on every
 poll, asks only for what the enabled entities need, and closes the session
-again so the Valerion app and VMote are never locked out.
+again so other apps that use AWOL Link are never locked out.
 """
 
 from __future__ import annotations
@@ -167,7 +167,7 @@ class ProjectorData:
     connection: Connection = Connection.UNREACHABLE
     power: PowerState | None = None
     #: True while an "on" projector is silent, probably because another
-    #: controller (Valerion app, VMote) holds the single control session.
+    #: app that uses AWOL Link holds the single control session.
     busy: bool = False
     #: Raw reply values keyed by command code, for example ``{"POWR": "1"}``.
     values: dict[str, str] = field(default_factory=dict)

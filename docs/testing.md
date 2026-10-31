@@ -12,8 +12,8 @@ scripted replies, so they run on any operating system.
 
 ## Against a projector, without Home Assistant
 
-The command line tool opens one short session per call, so the Valerion app
-and VMote keep working in between:
+The command line tool opens one short session per call, so other apps that
+use AWOL Link keep working in between:
 
 ```bash
 python scripts/awollink.py --host <ip> probe
