@@ -269,8 +269,10 @@ class AwolLinkClient:
                 await writer.drain()
                 data = await reader.readuntil(b"\r")
         except TimeoutError as err:
+            # Silence is not a refusal (that is PJLINK ERRA): a busy projector
+            # must not make Home Assistant ask for the security code again.
             msg = "no answer to the authentication digest"
-            raise AwolLinkAuthError(msg) from err
+            raise AwolLinkUnresponsiveError(msg) from err
         except (asyncio.IncompleteReadError, ConnectionError, OSError) as err:
             msg = f"connection closed during authentication: {err}"
             raise AwolLinkConnectionError(msg) from err

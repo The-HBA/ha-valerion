@@ -279,7 +279,12 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                         self._store(await session.query_many(list(STATIC_COMMANDS)))
                         self._apply_identity()
         except AwolLinkAuthError as err:
-            raise ConfigEntryAuthFailed(str(err)) from err
+            # Home Assistant starts the reauth flow for this exception.
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN,
+                translation_key="invalid_auth",
+                translation_placeholders={"error": str(err)},
+            ) from err
         except AwolLinkUnresponsiveError as err:
             return self._handle_silent(str(err))
         except AwolLinkRefusedError as err:
@@ -453,6 +458,19 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             last_error=last_error,
         )
 
+    def _auth_failed(self, err: AwolLinkAuthError) -> ConfigEntryAuthFailed:
+        """Ask the user for the security code again and describe the failure.
+
+        Home Assistant starts the reauth flow by itself only when a poll or
+        the setup fails; an action that fails has to start it here.
+        """
+        self.config_entry.async_start_reauth(self.hass)
+        return ConfigEntryAuthFailed(
+            translation_domain=DOMAIN,
+            translation_key="invalid_auth",
+            translation_placeholders={"error": str(err)},
+        )
+
     # ----------------------------------------------------------------- commands
     @contextmanager
     def _command_errors(self) -> Iterator[None]:
@@ -460,7 +478,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         try:
             yield
         except AwolLinkAuthError as err:
-            raise ConfigEntryAuthFailed(str(err)) from err
+            raise self._auth_failed(err) from err
         except AwolLinkCommandError as err:
             # The failed line starts with its header, for example "%3MOTN 2".
             code = err.command[2:6]
@@ -625,7 +643,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                     await session.send(protocol.POWER, PowerState.ON)
                 break
             except AwolLinkAuthError as err:
-                raise ConfigEntryAuthFailed(str(err)) from err
+                raise self._auth_failed(err) from err
             except AwolLinkCommandError as err:
                 if err.is_unavailable:
                     break  # already on or warming up

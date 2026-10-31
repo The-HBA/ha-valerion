@@ -97,6 +97,10 @@ Settings > Devices & services > Add integration > **Valerion**. Enter the IP add
 
 To add or change the MAC address later, open Settings > Devices & services > Valerion and press the gear button next to the projector.
 
+To change the IP address, port or security code, use **Reconfigure** in the three-dot menu of the same entry. Entities and history stay.
+
+If a security code is set or changed on the projector, Home Assistant shows *Reauthentication required* on the Integrations page. Enter the new code there.
+
 ## Removal
 
 1. Settings > Devices & services > Valerion > three dots > **Delete**. This also deletes the learned locks.
@@ -167,6 +171,7 @@ If a setting stays unavailable or a menu button stays hidden when it should not,
 | Setup says *the projector refused the connection* | AWOL Link is switched off on the projector. See [Requirements](#requirements), step 1. |
 | Setup says *accepted the connection but did not answer* | The projector is in deep standby, or another app that uses AWOL Link is connected. Switch the projector on and close that app. See [How it works](#how-it-works). |
 | Setup says *rejected the security code* | Enter the code exactly as set under AWOL Link on the projector. |
+| *Reauthentication required* on the Integrations page | The security code on the projector was set or changed. Open the notice and enter the new code. |
 | The projector does not switch on from standby | The MAC address is set (gear button, see [Setup](#setup)) and UDP 9 is allowed to the projector. After more than a day in standby some models only wake by IR. See [Known limitations](#known-limitations). |
 | A setting is greyed out | It is locked for the current signal and picture mode. See [What works with which signal](#what-works-with-which-signal) and [Locked settings](#locked-settings). |
 | Warm 1 or Warm 2 color temperature is refused | Set the projector's menu language to English (US). |

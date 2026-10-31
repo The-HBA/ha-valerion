@@ -243,8 +243,9 @@ async def test_bad_greetings(greeting: bytes | None, error: type[Exception]) -> 
 
 
 async def test_no_answer_to_the_digest() -> None:
+    # Silence is "not answering", not a wrong code (that would start a reauth).
     async with _scripted(b"PJLINK 1 498e4a67\r") as port:
-        with pytest.raises(AwolLinkAuthError, match="no answer"):
+        with pytest.raises(AwolLinkUnresponsiveError, match="no answer"):
             await _local(port, security_code="1234").probe()
 
 

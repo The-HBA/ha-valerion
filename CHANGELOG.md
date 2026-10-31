@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.18] - 2026-10-31
+
+### Added
+- *Reconfigure* in the projector's three-dot menu: change the IP address, port or security code without removing the projector.
+- When the projector refuses the security code, Home Assistant asks for the new one (*Reauthentication required*). Before, the projector only stayed unavailable.
+- The security code field hides what is typed.
+
+### Fixed
+- A projector that is slow to answer after the security code is treated as not answering, not as a wrong code.
+
 ## [0.0.17] - 2026-10-31
 
 ### Fixed

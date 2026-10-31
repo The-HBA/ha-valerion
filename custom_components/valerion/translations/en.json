@@ -16,6 +16,30 @@
           "security_code": "Only if you set a security code in the AWOL Link menu. Leave empty otherwise.",
           "mac": "Needed to switch the projector on from standby (Wake-on-LAN). Find it under All Settings > System > About > Status. Optional: it can be added later with the settings (gear) button of the projector's entry."
         }
+      },
+      "reauth_confirm": {
+        "title": "Security code for {name}",
+        "description": "The projector at {host} refused the connection: its AWOL Link security code was set or changed. Enter the code set under All Settings > Inputs > External Inputs > AWOL Link.",
+        "data": {
+          "security_code": "AWOL Link security code"
+        },
+        "data_description": {
+          "security_code": "Leave empty if the code was removed on the projector."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure {name}",
+        "description": "Change the connection details. Entities, history and dashboards stay as they are. The MAC address is changed with the settings (gear) button.",
+        "data": {
+          "host": "IP address",
+          "port": "Port",
+          "security_code": "AWOL Link security code"
+        },
+        "data_description": {
+          "host": "The projector's IP address on your network.",
+          "port": "Leave at 4352 unless you changed it on the projector.",
+          "security_code": "Only if you set a security code in the AWOL Link menu. Leave empty otherwise."
+        }
       }
     },
     "error": {
@@ -28,7 +52,9 @@
       "unknown": "Unexpected error, see the Home Assistant log."
     },
     "abort": {
-      "already_configured": "This projector is already configured."
+      "already_configured": "This projector is already configured.",
+      "reauth_successful": "The security code was saved. The projector is connected again.",
+      "reconfigure_successful": "The new connection details were saved."
     }
   },
   "options": {
@@ -258,6 +284,9 @@
     }
   },
   "exceptions": {
+    "invalid_auth": {
+      "message": "The projector rejected the security code ({error}). Enter the new code in the notice on the Integrations page."
+    },
     "cannot_connect": {
       "message": "Could not reach the projector: {error}"
     },
