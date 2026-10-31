@@ -200,6 +200,13 @@ on an HDMI input, through the integration's *Send raw command* action and
   `%3GAMA 1` and `%3LASL 10` answered `OK`. Hattan's tests from Home
   Assistant the same day agree: motion enhancement and aspect ratio
   blocked, everything else working.
+  Later the same day, with real changes in FILMMAKER MODE: `%3GAMA 2`
+  (2.4) and back to `1` (2.2) answered `OK` and read back; `%3CLTP` and
+  `%3ENBL` changes answered `OK`. Gamma is not locked in 3D. One earlier
+  gamma change during 3D (integration v0.0.15) was refused, cause unknown
+  (possibly sent while the projector switched to 3D). An aspect ratio of
+  21:9 set before a 3D film was back at 16:9 for the next 2D film: the
+  projector resets it.
 - **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
   `ERR2`, as reported for the Max.
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
