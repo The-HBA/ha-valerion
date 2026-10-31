@@ -1,0 +1,38 @@
+name: Model test report
+description: Share test results from your projector model (see docs/help-test.md)
+labels: [model report]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for testing. The tests are listed in [Help test your projector](https://github.com/The-HBA/ha-valerion/blob/main/docs/help-test.md). Please never paste your AWOL Link security code.
+  - type: input
+    id: model
+    attributes:
+      label: Projector model and firmware
+      placeholder: VisionMaster Max, V02.01.00E.Q0718
+    validations:
+      required: true
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+      placeholder: 0.0.12
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: 2026.10.4
+  - type: textarea
+    id: results
+    attributes:
+      label: Results
+      description: Test number and what happened, for example "Level 1.2 lens shift menu opened on screen".
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics and logs
+      description: Attach the diagnostics download from the device page.

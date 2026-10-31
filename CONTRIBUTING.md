@@ -2,6 +2,10 @@
 
 Thank you for helping make Valerion projectors work better with Home Assistant.
 
+## Testing your projector model
+
+All testing so far was done on a VisionMaster Pro2. If you own another model, [Help test your projector](docs/help-test.md) lists tests that run entirely in Home Assistant, from easy to advanced.
+
 ## Reporting a problem
 
 Open an issue with the bug report template. Please attach the integration diagnostics (device page > three dots > Download diagnostics) and, when it is a protocol question, the output of the command line tool (see below). Never paste your security code.

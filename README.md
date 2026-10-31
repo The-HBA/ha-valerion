@@ -9,7 +9,9 @@ Thanks also to [tinogo's Unfolded Circle driver](https://github.com/tinogo/uc-in
 
 This is an independent community project, not affiliated with or supported by Valerion or AWOL Vision. The Valerion and AWOL names and logos belong to their owners. AI-assisted tooling was used during development; every change is reviewed by the maintainer and tested on a real projector.
 
-**Status:** early development. The 0.0.x releases are tested on a VisionMaster Pro2; v0.1.0 will be the first complete version.
+**Status:** early development. v0.1.0 will be the first complete version.
+
+**All testing so far was done on a VisionMaster Pro2.** If you own another model, please [help test it](docs/help-test.md). Everything is done in Home Assistant and most tests take a few minutes.
 
 ## Screenshots
 
@@ -54,7 +56,7 @@ HLG and HDR10+ are not measured yet. A setting that is locked shows as unavailab
 
 ## What works on which projector
 
-AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. Reports from other models are welcome.
+AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. Own one of the untested models? See [Help test your projector](docs/help-test.md).
 
 | | VisionMaster Pro2 | VisionMaster Max | Other models |
 | --- | --- | --- | --- |
