@@ -15,14 +15,10 @@ This is an independent community project, not affiliated with or supported by Va
 
 ## Screenshots
 
-VisionMaster Pro2 playing a 4K HDR10 film:
+VisionMaster Pro2 with a 4K SDR signal:
 
 <p align="center">
-  <img src="docs/images/device-page.png" alt="Projector device page in Home Assistant with power, volume, aspect ratio, picture mode, laser level and navigation buttons" width="100%">
-</p>
-<p align="center">
-  <img src="docs/images/configuration.png" alt="Signal sensors and picture settings: color temperature, dynamic tone mapping, black level, gamma, motion" width="49%">
-  <img src="docs/images/diagnostics.png" alt="Diagnostic sensors: audio format, color depth and format, fans, temperatures, LED status" width="49%">
+  <img src="docs/images/device-page.png" alt="Projector device page in Home Assistant: power, volume, navigation buttons, laser level, signal sensors, picture settings under Configuration, diagnostic sensors" width="100%">
 </p>
 
 ## Features
@@ -41,16 +37,16 @@ VisionMaster Pro2 playing a 4K HDR10 film:
 
 The projector locks some settings depending on the video format. Measured on a VisionMaster Pro2, firmware V02.01.00E.Q0718:
 
-| Setting | SDR | HDR10 | HDR10+ | HLG | Dolby Vision |
-| --- | --- | --- | --- | --- | --- |
-| Picture mode | Yes | Yes | Yes (Vivid, Game, Standard, Theater) | Yes (same as HDR10) | Yes (Bright, Dark, Custom) |
-| Gamma | Yes (2.0, 2.2, 2.4, BT.1886) | No, fixed at SMPTE 2084 | No, fixed at SMPTE 2084 | No | No |
-| Dynamic tone mapping | No | Yes | No | No | No |
-| Color temperature | Not tested yet | Yes | Yes | Yes | Yes |
-| Enhanced black level | Yes | Yes | Yes | Yes | Yes |
-| Motion enhancement | Yes, except Film | Yes, except Film | Yes, except Film | Yes, except Film | Yes, except Film |
-| Aspect ratio | Yes | Yes | Not tested yet | Not tested yet | Yes |
-| Laser level | Yes | Yes | Yes | Yes | Yes |
+| Setting | SDR | HDR10 | HDR10+ | HLG | Dolby Vision | 3D (MVC) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Picture mode | Yes | Yes | Yes (Vivid, Game, Standard, Theater) | Yes (same as HDR10) | Yes (Bright, Dark, Custom) | Yes (same as SDR) |
+| Gamma | Yes (2.0, 2.2, 2.4, BT.1886) | No, fixed at SMPTE 2084 | No, fixed at SMPTE 2084 | No | No | Yes |
+| Dynamic tone mapping | No | Yes | No | No | No | No |
+| Color temperature | Yes | Yes | Yes | Yes | Yes | Yes |
+| Enhanced black level | Yes, all modes | Yes, all modes | Yes, all modes | Yes, all modes | Yes, all modes | Yes |
+| Motion enhancement | Yes, except Film | Yes, except Film | Yes, except Film | Yes, except Film | Yes, except Film | No |
+| Aspect ratio | Yes | Yes | Not tested yet | Not tested yet | Yes | No |
+| Laser level | Yes | Yes | Yes | Yes | Yes | Yes |
 
 A setting that is locked shows as unavailable in Home Assistant (see [Locked settings](#locked-settings)). Aspect ratio can only be changed while an HDMI signal is playing.
 
@@ -63,10 +59,10 @@ AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. Ow
 | Tested with this integration | Yes | Not yet | Not yet |
 | Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Unknown |
 | Aspect ratio | Yes | Yes | Unknown |
-| Motion enhancement *Film* | No | Unknown | Unknown |
+| Motion enhancement | Yes, all except Film | Unknown | Unknown |
 | Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | Unknown |
 | Zoom menu | Yes | Yes | Unknown |
-| Focus menu | No error (menu not yet seen on screen) | Yes | Unknown |
+| Focus menu | Yes | Yes | Unknown |
 
 The Max column comes from Michael Konieczki's tests with VMote.
 

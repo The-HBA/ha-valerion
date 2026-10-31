@@ -154,7 +154,7 @@ on an HDMI input, through the integration's *Send raw command* action and
 | `%3ASPR 0`..`9` | `OK`, each read back | `4` and `3`: `OK` | `4` and `3`: `OK`, the picture changed to 21:9 and back |
 | `%3LASL` | `OK` | `OK`, read back | `OK` |
 | `%3ENBL` | `OK` | `OK` | `OK`, read back |
-| `%3CLTP` | | `OK` | `OK` |
+| `%3CLTP` | `OK` | `OK` | `OK` |
 
 - **A locked setting can still be read.** `%3GAMA ?` answers `1` (2.2) in
   Dolby Vision although gamma cannot be set there, and `4` (SMPTE 2084) in
@@ -186,12 +186,26 @@ on an HDMI input, through the integration's *Send raw command* action and
   were refused with `ERR3` in every HLG picture mode; colour temperature,
   enhanced black level, laser level and motion enhancement changes worked
   (`%3MOTN 2`, Film, refused with `ERR2` as in every format).
+- **SDR colour temperature and black level (Pro2, V02.01.00E.Q0718,
+  2026-10-31):** colour temperature changes work with SDR. Enhanced black
+  level changes work in every picture mode of every format, FILMMAKER MODE
+  included (Dolby Vision has no FILMMAKER MODE).
+- **3D, frame packing (Pro2, V02.01.00E.Q0718, 2026-10-31):** an MVC 3D
+  film played from Kodi. `%3SINF` = `1920*2205p@24Hz 0 3 1 0 0` (SDR,
+  12-bit YUV 4:2:2, BT.709), `%2IRES` = `1920 x 2205`, `%2RRES` =
+  `3840 x 2160`. 2205 lines is HDMI frame packing: two 1080-line pictures
+  with a 45-line gap. Nothing else marks 3D, so the HDR format reads SDR.
+  `%3PICL` = the SDR list. Sets with the current value: `%3ASPR 3`,
+  `%3MOTN 0` and `%3DYTM 0` refused with `ERR3`; `%3CLTP 2`, `%3ENBL 3`,
+  `%3GAMA 1` and `%3LASL 10` answered `OK`. Hattan's tests from Home
+  Assistant the same day agree: motion enhancement and aspect ratio
+  blocked, everything else working.
 - **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
   `ERR2`, as reported for the Max.
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
   Pro2 most likely has no motorised lens shift; `%3ZMMN ?` opened the zoom
   menu (2026-10-29). `%3FCMN` from the *Focus menu* button returned no
-  error (2026-10-31; not yet confirmed on screen).
+  error (2026-10-31); Hattan confirmed the focus menu works (2026-10-31).
 
 ## Signal information codes (`%3SINF`)
 
