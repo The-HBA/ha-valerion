@@ -149,6 +149,11 @@ _ERROR_MESSAGES: Final[dict[tuple[str, str], str]] = {
     (protocol.ERR_UNAVAILABLE, protocol.ZOOM_MENU.code): "lens_menu_unavailable",
     (protocol.ERR_UNAVAILABLE, protocol.FOCUS_MENU.code): "lens_menu_unavailable",
 }
+#: Menus a model may lack altogether (no motorised lens shift, zoom or
+#: focus); an ERR3 while the projector is on marks them unsupported.
+_MENU_CODES: Final = frozenset(
+    cmd.code for cmd in (protocol.LENS_SHIFT_MENU, protocol.ZOOM_MENU, protocol.FOCUS_MENU)
+)
 #: Values that only make sense while the projector is on.
 _VOLATILE_CODES: Final = frozenset(
     cmd.code for cmd in (*CORE_COMMANDS, *FAST_COMMANDS, *SLOW_COMMANDS)
@@ -171,6 +176,8 @@ class ProjectorData:
     #: Settings locked for the current signal format and picture mode, known
     #: in advance or learned from an earlier refused change.
     locked: frozenset[str] = frozenset()
+    #: Command codes this projector does not support (learned, see ``_MENU_CODES``).
+    unsupported: frozenset[str] = frozenset()
     identity: DeviceIdentity = field(default_factory=DeviceIdentity)
     signal: SignalInfo | None = None
     picture_modes: tuple[str, ...] = ()
@@ -326,9 +333,9 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
     def _apply_identity(self) -> None:
         identity = _identity_from_values(self._values)
         self._identity_loaded = True
-        had_locks = bool(self._locks.learned)
+        had_locks = bool(self._locks.learned or self._locks.unsupported)
         if self._locks.check_firmware(identity.firmware):
-            if had_locks and not self._locks.learned:
+            if had_locks and not (self._locks.learned or self._locks.unsupported):
                 _LOGGER.info("Firmware changed to %s; learned locks cleared", identity.firmware)
             self._save_locks()
         if identity != self._identity:
@@ -421,6 +428,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             values=dict(self._values),
             unavailable=frozenset(self._unavailable),
             locked=self._current_locks(),
+            unsupported=self._locks.unsupported,
             identity=self._identity,
             signal=SignalInfo.parse(signal_raw) if signal_raw is not None else None,
             picture_modes=tuple(split_picture_mode_list(picl_raw)) if picl_raw else (),
@@ -437,7 +445,14 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             raise ConfigEntryAuthFailed(str(err)) from err
         except AwolLinkCommandError as err:
             # The failed line starts with its header, for example "%3MOTN 2".
-            key = _ERROR_MESSAGES.get((err.error, err.command[2:6]))
+            code = err.command[2:6]
+            if err.is_unavailable and code in _MENU_CODES and self._learn_unsupported(code):
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="lens_menu_unsupported",
+                    translation_placeholders={"command": err.command},
+                ) from err
+            key = _ERROR_MESSAGES.get((err.error, code))
             if key is None and err.is_unavailable:
                 key = "setting_locked"
             if key is not None:
@@ -507,8 +522,21 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             self._save_locks()
             self._publish()
 
+    def _learn_unsupported(self, code: str) -> bool:
+        """Remember that this projector lacks a menu; return True if newly learned.
+
+        Only while the projector is on: in standby a refusal says nothing
+        about the model.
+        """
+        if self.data is None or not self.data.is_on or not self._locks.mark_unsupported(code):
+            return False
+        _LOGGER.info("Learned that this projector does not support %s", code)
+        self._save_locks()
+        self._publish()
+        return True
+
     async def async_forget_locks(self) -> None:
-        """Forget every learned lock, for example after a mistaken refusal."""
+        """Forget every learned lock and unsupported menu, for example after a mistaken refusal."""
         if self._locks.clear():
             self._save_locks()
             self._publish()
@@ -654,6 +682,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
                 values=dict(self._values),
                 unavailable=frozenset(self._unavailable),
                 locked=self._current_locks(),
+                unsupported=self._locks.unsupported,
                 signal=(
                     SignalInfo.parse(self._values[protocol.SIGNAL_INFO.code])
                     if protocol.SIGNAL_INFO.code in self._values

@@ -148,8 +148,9 @@ on an HDMI input, through the integration's *Send raw command* action and
 | `%3MOTN 0`, `1`, `3`, `4`, `5` | `OK` | `OK` | `OK` |
 | `%3MOTN 2` | `ERR2` | `ERR2` | `ERR2` |
 | `%3ASPR 0`..`9` | `OK`, each read back | `4` and `3`: `OK` | `4` and `3`: `OK`, the picture changed to 21:9 and back |
-| `%3LASL 8` | | `OK`, read back | |
-| `%3ENBL 1` | | | `OK`, read back |
+| `%3LASL` | `OK` | `OK`, read back | `OK` |
+| `%3ENBL` | `OK` | `OK` | `OK`, read back |
+| `%3CLTP` | | `OK` | `OK` |
 
 - **A locked setting can still be read.** `%3GAMA ?` answers `1` (2.2) in
   Dolby Vision although gamma cannot be set there, and `4` (SMPTE 2084) in
@@ -168,7 +169,8 @@ on an HDMI input, through the integration's *Send raw command* action and
   `ERR2`, as reported for the Max.
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
   Pro2 most likely has no motorised lens shift; `%3ZMMN ?` opened the zoom
-  menu (2026-10-29).
+  menu (2026-10-29). `%3FCMN` from the *Focus menu* button returned no
+  error (2026-10-31; not yet confirmed on screen).
 
 ## Signal information codes (`%3SINF`)
 

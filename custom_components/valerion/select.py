@@ -64,6 +64,7 @@ SETTINGS: tuple[ValerionSettingDescription, ...] = (
     ValerionSettingDescription(
         key="aspect_ratio",
         translation_key="aspect_ratio",
+        entity_category=EntityCategory.CONFIG,
         command=protocol.ASPECT_RATIO,
         values=AspectRatio,
     ),
@@ -125,6 +126,7 @@ class ValerionPictureModeSelect(ValerionEntity, SelectEntity):
     """The picture mode, from the list the projector offers for the current signal."""
 
     _attr_translation_key = "picture_mode"
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: ValerionCoordinator) -> None:
         """Initialize the select."""

@@ -31,8 +31,8 @@ VisionMaster Pro2 playing a 4K HDR10 film:
 | --- | --- |
 | Media player | Power on and off, input (Home, HDMI 1-3), volume, mute |
 | Remote | Sends remote keys by name (see [Remote keys](#remote-keys)) |
-| Buttons | Up, down, left, right, OK, return, menu, settings, home; lens shift, zoom and focus menus |
-| Selects | Picture mode, aspect ratio, gamma, dynamic tone mapping, color temperature, enhanced black level, motion enhancement |
+| Buttons | Up, down, left, right, OK, return, menu, settings, home. Under Configuration: lens shift, zoom and focus menus |
+| Selects | Under Configuration: picture mode, aspect ratio, gamma, dynamic tone mapping, color temperature, enhanced black level, motion enhancement |
 | Number | Laser level (0 to 10) |
 | Sensors | Video signal and HDR format. Diagnostic: audio format, color depth, color format, color primaries, LED status, fans, temperatures, AWOL Link status |
 | Binary sensor | Problem: on when the projector reports a fault (overheating, fan error) |
@@ -46,11 +46,11 @@ The projector locks some settings depending on the video format. Measured on a V
 | Picture mode | Yes | Yes | Yes (Bright, Dark, Custom) |
 | Gamma | Yes (2.0, 2.2, 2.4, BT.1886) | No, fixed at SMPTE 2084 | No |
 | Dynamic tone mapping | No | Yes | No |
-| Color temperature | Yes | Yes | Not tested yet |
-| Enhanced black level | Not tested yet | Yes | Yes |
+| Color temperature | Not tested yet | Yes | Yes |
+| Enhanced black level | Yes | Yes | Yes |
 | Motion enhancement | Yes, except Film | Yes, except Film | Yes, except Film |
 | Aspect ratio | Yes | Yes | Yes |
-| Laser level | Not tested yet | Yes | Not tested yet |
+| Laser level | Yes | Yes | Yes |
 
 HLG and HDR10+ are not measured yet. A setting that is locked shows as unavailable in Home Assistant (see [Locked settings](#locked-settings)). Aspect ratio can only be changed while an HDMI signal is playing.
 
@@ -64,9 +64,9 @@ AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. Ow
 | Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Unknown |
 | Aspect ratio | Yes | Yes | Unknown |
 | Motion enhancement *Film* | No | Unknown | Unknown |
-| Lens shift menu | No (no motorised lens shift) | Yes | Unknown |
+| Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | Unknown |
 | Zoom menu | Yes | Yes | Unknown |
-| Focus menu | Not tested yet | Yes | Unknown |
+| Focus menu | No error (menu not yet seen on screen) | Yes | Unknown |
 
 The Max column comes from Michael Konieczki's tests with VMote.
 
@@ -140,7 +140,9 @@ The projector reports a value even for a setting it will not change, so Home Ass
 - **Built-in:** the locks in the signal table above.
 - **Learned:** when the projector refuses a change as locked, Home Assistant remembers it for that format and picture mode. Learned locks survive restarts and are forgotten after a firmware update.
 
-If a setting stays unavailable when it should not, enable and press the *Forget learned locks* button on the device page.
+Menus work the same way. If the projector refuses the lens shift, zoom or focus menu, the model does not have it, and Home Assistant hides that button.
+
+If a setting stays unavailable or a menu button stays hidden when it should not, enable and press the *Forget learned locks* button on the device page.
 
 ## Known limitations
 
@@ -153,6 +155,22 @@ If a setting stays unavailable when it should not, enable and press the *Forget 
 - The signal code meanings come from AWOL support via Michael Konieczki. Dolby TrueHD Atmos shows as *Dolby Audio*, and *Several audio tracks* means the file has more than one audio track.
 
 ## Troubleshooting
+
+| Problem | What to check |
+| --- | --- |
+| Setup says *could not reach the projector* | The IP address is right and the projector is on. Between networks (VLANs), the router allows TCP 4352 from Home Assistant to the projector. See [Requirements](#requirements). |
+| Setup says *the projector refused the connection* | AWOL Link is switched off on the projector. See [Requirements](#requirements), step 1. |
+| Setup says *accepted the connection but did not answer* | The projector is in deep standby, or the Valerion app or VMote is connected. Switch the projector on and close those apps. See [How it works](#how-it-works). |
+| Setup says *rejected the security code* | Enter the code exactly as set under AWOL Link on the projector. |
+| The projector does not switch on from standby | The MAC address is set (gear button, see [Setup](#setup)) and UDP 9 is allowed to the projector. After more than a day in standby some models only wake by IR. See [Known limitations](#known-limitations). |
+| A setting is greyed out | It is locked for the current signal and picture mode. See [What works with which signal](#what-works-with-which-signal) and [Locked settings](#locked-settings). |
+| Warm 1 or Warm 2 color temperature is refused | Set the projector's menu language to English (US). |
+| A menu button or motion mode shows an error | Your model may not have it. See [What works on which projector](#what-works-on-which-projector). |
+| A lens shift, zoom or focus button disappeared | The projector refused that menu, so it was hidden. See [Locked settings](#locked-settings) to bring it back. |
+| The Valerion app or VMote cannot connect | Only one app can be connected at a time. The integration connects briefly every 10 seconds (every 30 in standby), so try again. See [How it works](#how-it-works). |
+| A change made with the IR remote shows late | Settings are read about once a minute. |
+
+### Reporting a problem
 
 Please include in an issue: Home Assistant version, integration version, projector model and firmware, whether a security code is set, and the diagnostics download (device page > three dots > Download diagnostics). Debug logging on the integration page captures the raw protocol exchange.
 

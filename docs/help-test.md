@@ -25,7 +25,7 @@ Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?tem
 ## Level 1: easy (a few minutes, no settings changed)
 
 1. **Device info.** Open the projector's device page. Are model and firmware correct?
-2. **Lens menus.** Press *Lens shift menu*, *Zoom menu* and *Focus menu* (under Configuration). Does the menu appear on the projector, or does Home Assistant show an error?
+2. **Lens menus.** Press *Lens shift menu*, *Zoom menu* and *Focus menu* (under Configuration). Does the menu appear on the projector, or does Home Assistant show an error? A refused menu button hides itself, so note which one before you press.
 3. **Navigation buttons.** Press Up, Down, OK, Return and Home. Does the projector react?
 4. **Sensors.** Play something and look at *Video signal*, *HDR format* and the diagnostic sensors (audio format, color depth, fans, temperatures). Do the values look right?
 5. **Diagnostics.** Download diagnostics while a video is playing and attach it to your report.

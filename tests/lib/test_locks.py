@@ -9,6 +9,7 @@ from custom_components.valerion.lib import HdrFormat, LearnedLock, LockTable, pr
 GAMMA = protocol.GAMMA.code
 TONE_MAPPING = protocol.DYNAMIC_TONE_MAPPING.code
 LASER = protocol.LASER_LEVEL.code
+LENS_SHIFT = protocol.LENS_SHIFT_MENU.code
 
 
 def test_known_locks_apply_in_every_picture_mode() -> None:
@@ -75,6 +76,7 @@ def test_round_trip_through_json() -> None:
     table = LockTable("V02.01.00E.Q0718")
     table.learn(HdrFormat.HLG, "FILMMAKER MODE", GAMMA)
     table.learn(None, "Standard", protocol.ASPECT_RATIO.code)
+    table.mark_unsupported(LENS_SHIFT)
     stored = json.loads(json.dumps(table.as_dict()))
     assert stored == {
         "firmware": "V02.01.00E.Q0718",
@@ -82,10 +84,33 @@ def test_round_trip_through_json() -> None:
             {"hdr": "hlg", "picture_mode": "FILMMAKER MODE", "code": GAMMA},
             {"hdr": "no_signal", "picture_mode": "Standard", "code": protocol.ASPECT_RATIO.code},
         ],
+        "unsupported": [LENS_SHIFT],
     }
     restored = LockTable.from_dict(stored)
     assert restored.firmware == table.firmware
     assert restored.learned == table.learned
+    assert restored.unsupported == {LENS_SHIFT}
+
+
+def test_unsupported_commands_are_remembered_until_cleared() -> None:
+    table = LockTable()
+    assert table.mark_unsupported(LENS_SHIFT)
+    assert not table.mark_unsupported(LENS_SHIFT)
+    assert table.unsupported == {LENS_SHIFT}
+    assert table.clear()
+    assert table.unsupported == frozenset()
+    assert not table.clear()
+
+
+def test_firmware_change_clears_unsupported_commands() -> None:
+    table = LockTable("V02.01.00E.Q0718", unsupported=(LENS_SHIFT,))
+    assert table.check_firmware("V02.02.00E.Q0901")
+    assert table.unsupported == frozenset()
+
+
+def test_stored_tables_without_unsupported_still_load() -> None:
+    assert LockTable.from_dict({"firmware": "V1", "learned": []}).unsupported == frozenset()
+    assert LockTable.from_dict({"unsupported": "LSMN"}).unsupported == frozenset()
 
 
 def test_from_dict_tolerates_missing_and_malformed_data() -> None:

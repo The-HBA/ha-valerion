@@ -55,7 +55,7 @@ from .models import (
 from .protocol import AwolLinkProtocolError, Command, Response, parse_command_line
 from .wol import DEFAULT_BROADCAST, build_magic_packet, normalize_mac, send_magic_packet
 
-__version__ = "0.0.12"
+__version__ = "0.0.13"
 
 __all__ = [
     "ALL_PICTURE_MODES",

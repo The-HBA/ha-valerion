@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.13] - 2026-10-31
+
+### Added
+- Lens shift, zoom and focus menu buttons hide themselves on projectors without that menu. The first time the projector refuses a menu while it is on, Home Assistant remembers it, marks the button unavailable and hides it. *Forget learned locks* or a firmware update brings it back. Buttons you hid yourself are never touched.
+- README: troubleshooting table with links to the fixes.
+
+### Changed
+- *Picture mode* and *Aspect ratio* moved to the Configuration section of the device page, next to the other picture settings. Names, entity IDs and history stay the same. Like the other Configuration entities, they no longer appear on the auto-generated Overview dashboard; add them to your own dashboard if you use them there.
+- README: laser level, enhanced black level and color temperature results added to the signal table.
+
 ## [0.0.12] - 2026-10-31
 
 ### Added

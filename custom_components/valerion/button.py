@@ -1,6 +1,9 @@
 """Button entities for the Valerion integration.
 
-The lens-shift, zoom and focus menus get a button each. The navigation keys
+The lens-shift, zoom and focus menus get a button each. A menu the
+projector refuses while on (no motorised lens on that model) is remembered,
+and its button becomes unavailable and hidden until *Forget learned locks*
+or a firmware update. The navigation keys
 are also buttons, for dashboards; they cost nothing until pressed, so they
 are enabled by default (until v0.0.10 they were disabled; the config entry
 migration in ``__init__.py`` switches those back on). A last, disabled
@@ -14,6 +17,8 @@ from typing import TYPE_CHECKING
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.const import EntityCategory
+from homeassistant.core import callback
+from homeassistant.helpers import entity_registry as er
 
 from .const import NAVIGATION_KEYS
 from .entity import ValerionEntity
@@ -52,7 +57,12 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     async_add_entities(
         [
-            *(ValerionButton(coordinator, description) for description in BUTTONS),
+            *(
+                (ValerionMenuButton if description.key in _LENS_MENUS else ValerionButton)(
+                    coordinator, description
+                )
+                for description in BUTTONS
+            ),
             ValerionForgetLocksButton(coordinator),
         ]
     )
@@ -76,6 +86,43 @@ class ValerionButton(ValerionEntity, ButtonEntity):
         await self.coordinator.async_request_refresh()
 
 
+class ValerionMenuButton(ValerionButton):
+    """A lens-shift, zoom or focus menu, hidden when the projector lacks it."""
+
+    @property
+    def _unsupported(self) -> bool:
+        return self._press.command.code in self.coordinator.data.unsupported
+
+    @property
+    def available(self) -> bool:
+        """Unavailable once the projector has refused this menu."""
+        return super().available and not self._unsupported
+
+    async def async_added_to_hass(self) -> None:
+        """Apply what was learned before the last restart."""
+        await super().async_added_to_hass()
+        self._sync_hidden()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._sync_hidden()
+        super()._handle_coordinator_update()
+
+    @callback
+    def _sync_hidden(self) -> None:
+        """Hide the button while unsupported; never touch one the user hid."""
+        entry = self.registry_entry
+        if entry is None:
+            return
+        if self._unsupported and entry.hidden_by is None:
+            hidden_by: er.RegistryEntryHider | None = er.RegistryEntryHider.INTEGRATION
+        elif not self._unsupported and entry.hidden_by is er.RegistryEntryHider.INTEGRATION:
+            hidden_by = None
+        else:
+            return
+        er.async_get(self.hass).async_update_entity(self.entity_id, hidden_by=hidden_by)
+
+
 class ValerionForgetLocksButton(ValerionEntity, ButtonEntity):
     """Forget the settings learned as locked (stored in Home Assistant)."""
 
@@ -94,5 +141,5 @@ class ValerionForgetLocksButton(ValerionEntity, ButtonEntity):
         return True
 
     async def async_press(self) -> None:
-        """Forget the learned locks."""
+        """Forget the learned locks and unsupported menus."""
         await self.coordinator.async_forget_locks()

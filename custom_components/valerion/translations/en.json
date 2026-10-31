@@ -297,6 +297,9 @@
     "aspect_ratio_rejected": {
       "message": "The projector refused {command} (ERR2). The aspect ratio can only be changed while an HDMI signal is playing."
     },
+    "lens_menu_unsupported": {
+      "message": "The projector refused {command} (ERR3): this model has no motorized lens shift, zoom or focus. The button is now hidden. If this was a mistake, enable and press Forget learned locks on the device page."
+    },
     "lens_menu_unavailable": {
       "message": "The projector refused {command} (ERR3). This model may not have a motorized lens shift, zoom or focus, or the menu cannot be opened right now. You can disable this button on the device page if your projector does not support it."
     },

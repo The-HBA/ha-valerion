@@ -51,18 +51,39 @@ class LockTable:
     """Known locks plus the locks learned on one projector.
 
     Learned locks belong to the firmware they were learned on: a firmware
-    update may unlock settings, so they are dropped when it changes.
+    update may unlock settings, so they are dropped when it changes. The
+    table also remembers commands the projector does not support at all,
+    whatever the signal (a lens-shift menu on a model without a motorised
+    lens), which are dropped the same way.
     """
 
-    def __init__(self, firmware: str | None = None, learned: tuple[LearnedLock, ...] = ()) -> None:
+    def __init__(
+        self,
+        firmware: str | None = None,
+        learned: tuple[LearnedLock, ...] = (),
+        unsupported: tuple[str, ...] = (),
+    ) -> None:
         """Initialize the table."""
         self.firmware = firmware
         self._learned: set[LearnedLock] = set(learned)
+        self._unsupported: set[str] = set(unsupported)
 
     @property
     def learned(self) -> tuple[LearnedLock, ...]:
         """Return the learned locks in a stable order."""
         return tuple(sorted(self._learned))
+
+    @property
+    def unsupported(self) -> frozenset[str]:
+        """Return the command codes this projector does not support."""
+        return frozenset(self._unsupported)
+
+    def mark_unsupported(self, code: str) -> bool:
+        """Remember an unsupported command; return True if it was not known yet."""
+        if code in self._unsupported:
+            return False
+        self._unsupported.add(code)
+        return True
 
     def locked(self, hdr: HdrFormat | None, picture_mode: str | None) -> frozenset[str]:
         """Return the command codes locked for this signal format and picture mode."""
@@ -83,9 +104,10 @@ class LockTable:
         return True
 
     def clear(self) -> bool:
-        """Forget every learned lock; return True if there were any."""
-        had_locks = bool(self._learned)
+        """Forget every learned lock and unsupported command; return True if there were any."""
+        had_locks = bool(self._learned or self._unsupported)
         self._learned.clear()
+        self._unsupported.clear()
         return had_locks
 
     def check_firmware(self, firmware: str | None) -> bool:
@@ -97,7 +119,7 @@ class LockTable:
         if not firmware or firmware == self.firmware:
             return False
         if self.firmware is not None:
-            self._learned.clear()
+            self.clear()
         self.firmware = firmware
         return True
 
@@ -109,6 +131,7 @@ class LockTable:
                 {"hdr": lock.hdr, "picture_mode": lock.picture_mode, "code": lock.code}
                 for lock in self.learned
             ],
+            "unsupported": sorted(self._unsupported),
         }
 
     @classmethod
@@ -125,4 +148,9 @@ class LockTable:
                 )
             except KeyError, TypeError:
                 continue
-        return cls(firmware if isinstance(firmware, str) else None, tuple(learned))
+        unsupported = data.get("unsupported")
+        return cls(
+            firmware if isinstance(firmware, str) else None,
+            tuple(learned),
+            tuple(str(code) for code in unsupported) if isinstance(unsupported, list) else (),
+        )
