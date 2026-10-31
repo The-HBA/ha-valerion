@@ -163,9 +163,9 @@ on an HDMI input, through the integration's *Send raw command* action and
   The integration builds in the locks measured here that also match
   AWOL's rule (dynamic tone mapping locked with SDR and Dolby Vision since
   v0.0.9, gamma with Dolby Vision since v0.0.9 and with HDR10 since
-  v0.0.12, gamma and dynamic tone mapping with HDR10+ since v0.0.14;
-  `lib/locks.py`) and learns any other `ERR3` on a set per signal format and
-  picture mode. HLG is not measured yet.
+  v0.0.12, gamma and dynamic tone mapping with HDR10+ since v0.0.14 and
+  with HLG since v0.0.15; `lib/locks.py`) and learns any other `ERR3` on a
+  set per signal format and picture mode.
 - **HDR10+ (Pro2, V02.01.00E.Q0718, 2026-10-31):** `%3SINF` reported HDR
   format `3` (HDR10+), BT.2020, 12-bit YUV 4:2:2 at 3840x2160p 60 Hz.
   Picture modes: HDR10+ Vivid, HDR10+ Game, HDR10+ Standard, HDR10+ Theater
@@ -173,6 +173,15 @@ on an HDMI input, through the integration's *Send raw command* action and
   were refused with `ERR3` in HDR10+ Theater and HDR10+ Game; colour
   temperature, enhanced black level, laser level and motion enhancement
   changes worked.
+- **HLG (Pro2, V02.01.00E.Q0718, 2026-10-31):** a 4K HEVC Main 10 HLG
+  file played from Kodi. `%3SINF` reported HDR format `2` (HLG), 12-bit
+  YUV 4:2:2 at 3840x2160p 60 Hz, and colour primaries BT.709 although the
+  file is tagged BT.2020. Picture modes: the HDR10 list (HDR Vivid, HDR
+  Standard, HDR Sports, HDR Energy Saving, HDR Game, HDR Theater,
+  FILMMAKER MODE, IMAX Mode). Gamma (reads 2.2) and dynamic tone mapping
+  were refused with `ERR3` in every HLG picture mode; colour temperature,
+  enhanced black level, laser level and motion enhancement changes worked
+  (`%3MOTN 2`, Film, refused with `ERR2` as in every format).
 - **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
   `ERR2`, as reported for the Max.
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
@@ -249,8 +258,8 @@ Not yet confirmed on the Pro2.
 
 ## Open questions (to be measured on real hardware)
 
-- The `%3SINF` reply for HLG signals, and for audio other than PCM.
-- The `%3PICL` list for HLG signals.
+- The `%3SINF` reply for audio other than PCM.
+- Why the Pro2 reports BT.709 primaries for a BT.2020 HLG file.
 - The motion enhancement names the Pro2 shows in its own menu (it refuses
   `%3MOTN 2`, Film in both sheet tabs).
 - Which fan and temperature slots are filled on other models.

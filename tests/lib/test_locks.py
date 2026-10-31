@@ -18,17 +18,16 @@ def test_known_locks_apply_in_every_picture_mode() -> None:
     assert table.locked(HdrFormat.DOLBY_VISION, "Dolby Vision Dark") == {GAMMA, TONE_MAPPING}
     assert table.locked(HdrFormat.HDR10, "HDR Theater") == {GAMMA}
     assert table.locked(HdrFormat.HDR10_PLUS, "HDR10+ Game") == {GAMMA, TONE_MAPPING}
-    # HLG is not measured yet, so its locks are learned.
-    assert table.locked(HdrFormat.HLG, "HDR Theater") == frozenset()
+    assert table.locked(HdrFormat.HLG, "IMAX Mode") == {GAMMA, TONE_MAPPING}
     assert table.locked(None, "Theater") == frozenset()
 
 
 def test_learned_lock_holds_only_for_its_format_and_mode() -> None:
     table = LockTable()
-    assert table.learn(HdrFormat.HLG, "FILMMAKER MODE", GAMMA)
-    assert GAMMA in table.locked(HdrFormat.HLG, "FILMMAKER MODE")
-    assert GAMMA not in table.locked(HdrFormat.HLG, "HDR Theater")
-    assert GAMMA not in table.locked(HdrFormat.SDR, "FILMMAKER MODE")
+    assert table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
+    assert LASER in table.locked(HdrFormat.HLG, "FILMMAKER MODE")
+    assert LASER not in table.locked(HdrFormat.HLG, "HDR Theater")
+    assert LASER not in table.locked(HdrFormat.SDR, "FILMMAKER MODE")
 
 
 def test_learning_a_known_or_repeated_lock_changes_nothing() -> None:
@@ -49,7 +48,7 @@ def test_lock_without_signal_is_kept_apart() -> None:
 def test_firmware_change_clears_learned_locks() -> None:
     table = LockTable()
     assert table.check_firmware("V02.01.00E.Q0718")  # first firmware seen
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", GAMMA)
+    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
     assert not table.check_firmware("V02.01.00E.Q0718")
     assert not table.check_firmware(None)
     assert table.learned
@@ -60,7 +59,7 @@ def test_firmware_change_clears_learned_locks() -> None:
 
 def test_locks_learned_before_the_firmware_was_known_survive_its_arrival() -> None:
     table = LockTable()
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", GAMMA)
+    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
     assert table.check_firmware("V02.01.00E.Q0718")
     assert table.learned
 
@@ -68,21 +67,21 @@ def test_locks_learned_before_the_firmware_was_known_survive_its_arrival() -> No
 def test_clear() -> None:
     table = LockTable()
     assert not table.clear()
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", GAMMA)
+    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
     assert table.clear()
-    assert table.locked(HdrFormat.HLG, "FILMMAKER MODE") == frozenset()
+    assert table.locked(HdrFormat.HLG, "FILMMAKER MODE") == {GAMMA, TONE_MAPPING}
 
 
 def test_round_trip_through_json() -> None:
     table = LockTable("V02.01.00E.Q0718")
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", GAMMA)
+    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
     table.learn(None, "Standard", protocol.ASPECT_RATIO.code)
     table.mark_unsupported(LENS_SHIFT)
     stored = json.loads(json.dumps(table.as_dict()))
     assert stored == {
         "firmware": "V02.01.00E.Q0718",
         "learned": [
-            {"hdr": "hlg", "picture_mode": "FILMMAKER MODE", "code": GAMMA},
+            {"hdr": "hlg", "picture_mode": "FILMMAKER MODE", "code": LASER},
             {"hdr": "no_signal", "picture_mode": "Standard", "code": protocol.ASPECT_RATIO.code},
         ],
         "unsupported": [LENS_SHIFT],

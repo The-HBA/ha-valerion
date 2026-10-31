@@ -23,11 +23,12 @@ if TYPE_CHECKING:
 #: dynamic tone mapping works in HDR10 only and gamma presets in SDR only.
 #: Gamma in HDR10 was refused in every HDR10 picture mode (2026-10-31).
 #: Gamma and dynamic tone mapping in HDR10+ were refused in HDR10+ Theater
-#: and HDR10+ Game (2026-10-31). HLG is not measured yet, so its locks are
-#: learned.
+#: and HDR10+ Game (2026-10-31), and in HLG in every HLG picture mode
+#: (2026-10-31).
 KNOWN_LOCKS: Final[Mapping[HdrFormat, frozenset[str]]] = {
     HdrFormat.SDR: frozenset({protocol.DYNAMIC_TONE_MAPPING.code}),
     HdrFormat.HDR10: frozenset({protocol.GAMMA.code}),
+    HdrFormat.HLG: frozenset({protocol.GAMMA.code, protocol.DYNAMIC_TONE_MAPPING.code}),
     HdrFormat.HDR10_PLUS: frozenset({protocol.GAMMA.code, protocol.DYNAMIC_TONE_MAPPING.code}),
     HdrFormat.DOLBY_VISION: frozenset({protocol.GAMMA.code, protocol.DYNAMIC_TONE_MAPPING.code}),
 }

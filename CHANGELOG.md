@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.15] - 2026-10-31
+
+### Added
+- HLG: gamma and dynamic tone mapping show as unavailable as soon as HLG plays. The projector refuses both in every HLG picture mode (measured on a VisionMaster Pro2).
+- README: HLG column in the signal table.
+
+### Changed
+- README: device page screenshot cropped.
+
 ## [0.0.14] - 2026-10-31
 
 ### Added
