@@ -42,6 +42,16 @@ Snapshots live in `tests/ha/snapshots/`. After an intended change to an
 entity or to the diagnostics, update them with `--snapshot-update` and
 review the diff.
 
+## Coverage
+
+CI fails when either layer drops below 95%. Each layer is measured by its
+own tests:
+
+| Layer | Command |
+| --- | --- |
+| Protocol library (`lib/`) | `pytest --cov=custom_components/valerion/lib --cov-report=term-missing` |
+| Home Assistant code | `pytest tests/ha --cov=custom_components/valerion` then `coverage report --show-missing --omit="custom_components/valerion/lib/*"` |
+
 ## Against a projector, without Home Assistant
 
 The command line tool opens one short session per call, so other apps that

@@ -59,6 +59,8 @@ def test_split_multi_value(raw: str, expected: list[str]) -> None:
         ("Standard\nVivid\nPC/Game", ["Standard", "Vivid", "PC/Game"]),
         ("HDR Theater", ["HDR Theater"]),
         ("Standard Vivid Sports Theater", ["Standard", "Vivid", "Sports", "Theater"]),
+        # A name the official list does not know is kept as it is.
+        ("Calibrated 2", ["Calibrated 2"]),
         ("", []),
     ],
 )

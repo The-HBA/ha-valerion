@@ -54,14 +54,15 @@ async def test_entities(
     await snapshot_platform(hass, entity_registry, snapshot, mock_config_entry.entry_id)
 
 
+@pytest.mark.parametrize("delay", [0, 0.01])
 async def test_send_command(
-    hass: HomeAssistant, projector: FakeProjector, coordinator: ValerionCoordinator
+    hass: HomeAssistant, projector: FakeProjector, coordinator: ValerionCoordinator, delay: float
 ) -> None:
     projector.received.clear()
     await _call(
         hass,
         SERVICE_SEND_COMMAND,
-        **{ATTR_COMMAND: ["down", "OK"], ATTR_NUM_REPEATS: 2, ATTR_DELAY_SECS: 0},
+        **{ATTR_COMMAND: ["down", "OK"], ATTR_NUM_REPEATS: 2, ATTR_DELAY_SECS: delay},
     )
     down, ok = key_press("down").line, key_press("ok").line
     sent = [line for line in projector.received if not line.endswith(" ?")]

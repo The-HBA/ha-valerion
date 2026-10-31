@@ -63,6 +63,7 @@ def test_parse_response(line: str, cls: int, code: str, value: str) -> None:
     assert response.is_error == value.startswith("ERR")
     assert response.is_ok == (value == "OK")
     assert response.matches(Command(cls, code))
+    assert response.header == f"%{cls}{code}"
 
 
 @pytest.mark.parametrize("line", ["PJLINK 0", "garbage", "%1POWR 1", ""])

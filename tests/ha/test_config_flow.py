@@ -75,6 +75,19 @@ async def test_user_flow_without_mac_or_name(
     assert result["result"].unique_id is None
 
 
+async def test_user_flow_without_name_or_model(
+    hass: HomeAssistant, projector: FakeProjector, mock_setup_entry: AsyncMock
+) -> None:
+    del projector.values["%1NAME"]
+    del projector.values["%1INF2"]
+    flow_id = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {CONF_HOST: "127.0.0.1", CONF_PORT: projector.port}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Valerion"
+
+
 async def test_user_flow_with_security_code(
     hass: HomeAssistant, socket_enabled: None, mock_setup_entry: AsyncMock
 ) -> None:

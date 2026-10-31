@@ -155,9 +155,6 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
             "busy": data.busy,
         }
 
-    def _power_is(self, state: PowerState) -> bool:
-        return self.coordinator.data.power == state
-
 
 _POWER_TO_STATE: dict[PowerState, MediaPlayerState] = {
     PowerState.ON: MediaPlayerState.ON,

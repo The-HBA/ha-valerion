@@ -28,6 +28,7 @@ from homeassistant.const import (
     STATE_ON,
     STATE_STANDBY,
     STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
     Platform,
 )
 from homeassistant.core import HomeAssistant, State
@@ -81,6 +82,21 @@ async def test_state_and_attributes(hass: HomeAssistant, coordinator: ValerionCo
     assert state.attributes[ATTR_MEDIA_VOLUME_MUTED] is False
     assert state.attributes["power_state"] == "on"
     assert state.attributes["connection"] == "answering"
+
+
+async def test_unknown_power_and_volume_values(
+    hass: HomeAssistant, projector: FakeProjector, coordinator: ValerionCoordinator
+) -> None:
+    # Values outside the command list are shown as unknown, never as a guess.
+    projector.values["%3VOLM"] = "loud"
+    await poll(hass, coordinator)
+    assert ATTR_MEDIA_VOLUME_LEVEL not in _state(hass).attributes
+
+    projector.values["%1POWR"] = "7"
+    await poll(hass, coordinator)
+    state = _state(hass)
+    assert state.state == STATE_UNKNOWN
+    assert state.attributes["power_state"] is None
 
 
 async def test_select_source(

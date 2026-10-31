@@ -18,7 +18,8 @@ jobs:
         with:
           python-version: "3.14"
       - run: pip install -r requirements_dev.txt
-      - run: pytest
+      # Each layer is measured by its own tests and must stay above 95%.
+      - run: pytest --cov=custom_components/valerion/lib --cov-report=term-missing --cov-fail-under=95
 
   home-assistant:
     name: Home Assistant
@@ -30,4 +31,5 @@ jobs:
           python-version: "3.14"
       - run: pip install -r requirements_test_ha.txt
       # Coverage of the Home Assistant code; the library job covers lib/.
-      - run: pytest tests/ha --cov=custom_components/valerion --cov-report=term-missing
+      - run: pytest tests/ha --cov=custom_components/valerion --cov-report=
+      - run: coverage report --show-missing --omit="custom_components/valerion/lib/*" --fail-under=95
