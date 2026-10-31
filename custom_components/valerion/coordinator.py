@@ -158,6 +158,8 @@ _MENU_CODES: Final = frozenset(
 _VOLATILE_CODES: Final = frozenset(
     cmd.code for cmd in (*CORE_COMMANDS, *FAST_COMMANDS, *SLOW_COMMANDS)
 ) - {protocol.POWER.code}
+#: Connection states in which the projector cannot be controlled.
+_LOST: Final = frozenset({Connection.REFUSED, Connection.UNREACHABLE})
 
 
 @dataclass(frozen=True)
@@ -240,6 +242,8 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         self._identity = DeviceIdentity()
         self._identity_loaded = False
         self._silent_polls = 0
+        #: Whether the projector was lost at the last poll, so it is logged once.
+        self._lost = False
         self._poll_counter = 0
         self._transition_until: float | None = None
         self._last_power: PowerState | None = None
@@ -427,6 +431,12 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         busy: bool = False,
         last_error: str | None = None,
     ) -> ProjectorData:
+        lost = connection in _LOST
+        if lost and not self._lost:
+            _LOGGER.info("Projector at %s is unavailable: %s", self.client.host, last_error)
+        elif self._lost and not lost:
+            _LOGGER.info("Projector at %s is back online", self.client.host)
+        self._lost = lost
         signal_raw = self._values.get(protocol.SIGNAL_INFO.code)
         picl_raw = self._values.get(protocol.PICTURE_MODE_LIST.code)
         return ProjectorData(

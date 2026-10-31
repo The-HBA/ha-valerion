@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, patch
@@ -160,6 +161,23 @@ async def test_unreachable_means_off(hass: HomeAssistant, coordinator: ValerionC
     assert coordinator.data.power == PowerState.OFF
     assert coordinator.data.last_error == "no route to host"
     assert coordinator.data.value(protocol.INPUT) is None
+
+
+async def test_unavailable_and_back_are_logged_once(
+    hass: HomeAssistant,
+    projector: FakeProjector,
+    coordinator: ValerionCoordinator,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger="custom_components.valerion")
+    with patch.object(
+        coordinator.client, "_open", side_effect=AwolLinkConnectionError("no route to host")
+    ):
+        await poll(hass, coordinator, times=3)
+    await poll(hass, coordinator, times=2)
+    messages = [r.getMessage() for r in caplog.records if r.name.endswith("coordinator")]
+    assert messages.count("Projector at 127.0.0.1 is unavailable: no route to host") == 1
+    assert messages.count("Projector at 127.0.0.1 is back online") == 1
 
 
 async def test_slow_tier_about_once_a_minute(

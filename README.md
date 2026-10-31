@@ -101,6 +101,11 @@ Settings > Devices & services > Add integration > **Valerion**. Enter the IP add
 
 To add or change the MAC address later, open Settings > Devices & services > Valerion and press the gear button next to the projector.
 
+## Removal
+
+1. Settings > Devices & services > Valerion > three dots > **Delete**. This also deletes the learned locks.
+2. HACS > Valerion > three dots > **Remove**, then restart Home Assistant.
+
 ## Remote keys
 
 `up`, `down`, `left`, `right`, `ok`, `return`, `menu`, `settings`, `home`, `volume_up`, `volume_down`, `lens_shift`, `zoom`, `focus`
@@ -130,6 +135,8 @@ response_variable: reply
 ## How it works
 
 AWOL Link allows only one control connection at a time. If something holds it open, other apps that use AWOL Link stop working. This integration never keeps the connection: every poll and command connects, does its work and disconnects.
+
+Home Assistant reads the projector every 10 seconds while it is on and every 30 seconds in standby. Picture settings, fans and temperatures are read about once a minute, and right after the picture mode changes.
 
 Switching on sends a Wake-on-LAN packet to the MAC address, both as a broadcast and straight to the projector's IP address so it also crosses VLANs, and repeats it for up to 45 seconds. The *AWOL Link status* sensor shows how the projector sleeps: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is off) or *unreachable*.
 

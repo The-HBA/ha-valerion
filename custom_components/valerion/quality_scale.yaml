@@ -5,10 +5,10 @@ rules:
   # Bronze
   action-setup: done
   appropriate-polling: done
-  brands: todo
+  brands: done
   common-modules: done
   config-flow: done
-  config-flow-test-coverage: todo
+  config-flow-test-coverage: done
   dependency-transparency:
     status: exempt
     comment: No external requirements; the protocol library ships inside the integration.
@@ -16,9 +16,9 @@ rules:
   docs-conditions:
     status: exempt
     comment: The integration provides no conditions.
-  docs-high-level-description: todo
-  docs-installation-instructions: todo
-  docs-removal-instructions: todo
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
   docs-triggers:
     status: exempt
     comment: The integration provides no triggers.
@@ -35,27 +35,37 @@ rules:
   # Silver
   action-exceptions: done
   config-entry-unloading: done
-  docs-configuration-parameters: todo
-  docs-installation-parameters: todo
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
   entity-unavailable: done
   integration-owner: done
-  log-when-unavailable: todo
+  log-when-unavailable: done
   parallel-updates: done
-  reauthentication-flow: todo
-  test-coverage: todo
+  reauthentication-flow:
+    status: todo
+    comment: Planned with the security-code test on a real projector.
+  test-coverage: done
 
   # Gold
   devices: done
   diagnostics: done
-  discovery: todo
-  discovery-update-info: todo
-  docs-data-update: todo
-  docs-examples: todo
-  docs-known-limitations: todo
-  docs-supported-devices: todo
-  docs-supported-functions: todo
-  docs-troubleshooting: todo
-  docs-use-cases: todo
+  discovery:
+    status: todo
+    comment: The UDP search reply carries no MAC or serial; zeroconf from the Google TV side still to be checked.
+  discovery-update-info:
+    status: todo
+    comment: Depends on discovery.
+  docs-data-update: done
+  docs-examples:
+    status: todo
+    comment: Automation examples planned for v0.1.0.
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases:
+    status: todo
+    comment: Planned for v0.1.0.
   dynamic-devices:
     status: exempt
     comment: One config entry is one projector.
@@ -65,8 +75,12 @@ rules:
   entity-translations: done
   exception-translations: done
   icon-translations: done
-  reconfiguration-flow: todo
-  repair-issues: todo
+  reconfiguration-flow:
+    status: todo
+    comment: Planned with the security-code test (change IP address or code).
+  repair-issues:
+    status: todo
+    comment: A likely case is AWOL Link switched off on the projector.
   stale-devices:
     status: exempt
     comment: One config entry is one projector.
@@ -76,4 +90,6 @@ rules:
   inject-websession:
     status: exempt
     comment: Raw TCP protocol, no HTTP session.
-  strict-typing: todo
+  strict-typing:
+    status: todo
+    comment: The protocol library is checked with mypy strict; the Home Assistant code is not yet.

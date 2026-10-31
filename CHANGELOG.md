@@ -13,6 +13,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 - Tests for every entity, the coordinator, *Send raw command* and diagnostics, run in a test Home Assistant.
+- Tests for the command line tool and UDP discovery. Test coverage is above 95% for the protocol library and for the Home Assistant code, and CI keeps it there.
+- The log shows one line when the projector becomes unavailable (AWOL Link off or unreachable) and one when it is back.
+- README: how to remove the integration, and how often values are read.
 
 ## [0.0.15] - 2026-10-31
 
