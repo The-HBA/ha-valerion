@@ -1,10 +1,11 @@
 """Button entities for the Valerion integration.
 
 The lens-shift, zoom and focus menus get a button each. The navigation keys
-are also buttons, but disabled by default: most people use the remote entity
-or the physical remote, and the buttons are there for dashboards. A last,
-disabled button forgets the learned locks, in case a setting was learned
-as locked by mistake.
+are also buttons, for dashboards; they cost nothing until pressed, so they
+are enabled by default (until v0.0.10 they were disabled; the config entry
+migration in ``__init__.py`` switches those back on). A last, disabled
+button forgets the learned locks, in case a setting was learned as locked
+by mistake.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.const import EntityCategory
 
+from .const import NAVIGATION_KEYS
 from .entity import ValerionEntity
 from .lib import key_press
 
@@ -26,7 +28,6 @@ if TYPE_CHECKING:
 PARALLEL_UPDATES = 1
 
 _LENS_MENUS = ("lens_shift", "zoom", "focus")
-_NAVIGATION_KEYS = ("up", "down", "left", "right", "ok", "return", "menu", "settings", "home")
 
 #: The description key is the key name in ``lib.keys.KEYS``.
 BUTTONS: tuple[ButtonEntityDescription, ...] = (
@@ -38,14 +39,7 @@ BUTTONS: tuple[ButtonEntityDescription, ...] = (
         )
         for name in _LENS_MENUS
     ),
-    *(
-        ButtonEntityDescription(
-            key=name,
-            translation_key=f"key_{name}",
-            entity_registry_enabled_default=False,
-        )
-        for name in _NAVIGATION_KEYS
-    ),
+    *(ButtonEntityDescription(key=name, translation_key=f"key_{name}") for name in NAVIGATION_KEYS),
 )
 
 

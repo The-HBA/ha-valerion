@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.11] - 2026-10-31
+
+### Changed
+- The navigation key buttons (up, down, left, right, OK, return, menu, settings, home) are now enabled by default, ready for dashboards. When you update, the ones that were disabled by default are switched on once; any button you disabled yourself stays disabled. Home Assistant reloads the projector about 30 seconds after the first start, which is normal.
+
 ## [0.0.10] - 2026-10-30
 
 ### Added

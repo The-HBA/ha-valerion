@@ -34,6 +34,9 @@ POWER_ON_RETRY: Final = timedelta(seconds=2)
 #: How often turn_on repeats the Wake-on-LAN packet while it waits.
 WOL_RESEND: Final = timedelta(seconds=6)
 
+#: Remote keys that also get a button (names from ``lib.keys.KEYS``).
+NAVIGATION_KEYS: Final = ("up", "down", "left", "right", "ok", "return", "menu", "settings", "home")
+
 SOURCE_NAMES: Final[dict[str, str]] = {
     "30": "Home",
     "31": "HDMI 1",

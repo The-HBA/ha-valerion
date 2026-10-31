@@ -49,6 +49,8 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the UI setup of a projector."""
 
     VERSION = 1
+    #: 2 (v0.0.11): navigation key buttons enabled by default.
+    MINOR_VERSION = 2
 
     @staticmethod
     @callback
