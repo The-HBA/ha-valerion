@@ -46,6 +46,7 @@ def test_decode_line_strips_padding() -> None:
         ("%3PICT=HDR Theater", 3, "PICT", "HDR Theater"),
         ("%3PICT=ERR3", 3, "PICT", "ERR3"),
         ("%2SVER=", 2, "SVER", ""),
+        ("%3ZZZZ?=ERR1", 3, "ZZZZ", "ERR1"),
         (
             "%3SINF=Video format: 4K60\nHDR format: HDR10",
             3,

@@ -108,7 +108,8 @@ class FakeProjector:
                 return f"{header}=OK"  # lens menus: actions written as queries
             if header in self.values:
                 return f"{header}={self.values[header]}"
-            return f"{header}=ERR1"
+            # The Pro2 keeps the ? in the header for unknown class 3 codes.
+            return f"{header}?=ERR1" if header.startswith("%3") else f"{header}=ERR1"
         if header in self.values or header.endswith(("RCNC", "SVOL")):
             if header in self.values:
                 self.values[header] = argument

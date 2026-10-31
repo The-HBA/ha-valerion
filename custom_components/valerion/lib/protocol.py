@@ -39,7 +39,11 @@ ERROR_CODES: Final[dict[str, str]] = {
     ERR_AUTH: "authentication failed",
 }
 
-_RESPONSE_RE: Final = re.compile(r"^%(?P<cls>[0-9])(?P<code>[A-Z0-9]{4})=(?P<value>.*)$", re.DOTALL)
+#: Unknown class 3 queries come back with the ``?`` in the header
+#: (``%3ZZZZ?=ERR1``), so an optional ``?`` before ``=`` is accepted.
+_RESPONSE_RE: Final = re.compile(
+    r"^%(?P<cls>[0-9])(?P<code>[A-Z0-9]{4})\??=(?P<value>.*)$", re.DOTALL
+)
 _COMMAND_LINE_RE: Final = re.compile(r"^%(?P<cls>[1-9])(?P<code>[A-Za-z0-9]{4}) (?P<value>\S.*)$")
 
 

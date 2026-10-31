@@ -65,6 +65,15 @@ async def test_query_many_collects_errors(projector: FakeProjector) -> None:
     assert dytm.error == "ERR1"
 
 
+async def test_unknown_class3_query_raises_err1(projector: FakeProjector) -> None:
+    # The Pro2 answers "%3ZZZZ ?" with "%3ZZZZ?=ERR1"; it must not time out.
+    client = _client(projector)
+    async with client.session() as session:
+        with pytest.raises(AwolLinkCommandError) as excinfo:
+            await session.raw("%3ZZZZ ?")
+    assert excinfo.value.error == "ERR1"
+
+
 async def test_set_error_raises_command_error(projector: FakeProjector) -> None:
     client = _client(projector)
     with pytest.raises(AwolLinkCommandError) as excinfo:

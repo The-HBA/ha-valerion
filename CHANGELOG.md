@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- *Send raw command*: an unknown class 3 code (for example `%3ZZZZ ?`) now returns `ERR1` at once instead of a timeout after 3 seconds.
+
 ## [0.0.15] - 2026-10-31
 
 ### Added
