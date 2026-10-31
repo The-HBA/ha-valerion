@@ -231,6 +231,10 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         #: Set after a picture-mode change: every picture setting belongs to
         #: the mode, so the slow tier is read again on the next poll.
         self._settings_stale = False
+        #: Slow-tier codes read so far. An entity that asks for a code not in
+        #: here (the first poll runs before any entity exists) gets it read
+        #: on the next poll instead of up to a minute later.
+        self._slow_read: set[str] = set()
         #: The picture mode for which a missing list entry was last re-read.
         self._list_checked_for: str | None = None
         self._identity = DeviceIdentity()
@@ -288,15 +292,17 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         self._poll_counter += 1
         commands: list[Command] = [cmd for cmd in CORE_COMMANDS if cmd is not protocol.POWER]
         commands += [cmd for cmd in FAST_COMMANDS if cmd.code in wanted]
+        slow = [cmd for cmd in SLOW_COMMANDS if cmd.code in wanted]
         slow_due = (
             self._poll_counter % SLOW_TIER_EVERY == 1
             or not self._identity_loaded
             or self._settings_stale
+            or any(cmd.code not in self._slow_read for cmd in slow)
         )
-        slow = [cmd for cmd in SLOW_COMMANDS if cmd.code in wanted]
         if slow_due:
             commands += slow
             self._settings_stale = False
+            self._slow_read.update(cmd.code for cmd in slow)
         if not self._identity_loaded:
             commands += list(STATIC_COMMANDS)
 
@@ -355,7 +361,9 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         # identity arrives later (or changes after a firmware update), correct
         # the existing device entry. Before the first setup there is none yet.
         registry = dr.async_get(self.hass)
-        device = registry.async_get_device(identifiers={(DOMAIN, self.device_id)})
+        device = registry.async_get_device_by_identifier(
+            (DOMAIN, self.device_id), self.config_entry.entry_id
+        )
         if device is None:
             return
         details = self.device_details()

@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 - *Send raw command*: an unknown class 3 code (for example `%3ZZZZ ?`) now returns `ERR1` at once instead of a timeout after 3 seconds.
+- After a restart, picture settings show their value on the second poll. Before, a setting could stay *unknown* for up to a minute when *Picture mode* was disabled.
+- No deprecation warning from Home Assistant 2026.10 when the device page is updated with the model and firmware.
+
+### Added
+- Tests for every entity, the coordinator, *Send raw command* and diagnostics, run in a test Home Assistant.
 
 ## [0.0.15] - 2026-10-31
 
