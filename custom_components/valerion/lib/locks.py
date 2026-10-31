@@ -21,10 +21,11 @@ if TYPE_CHECKING:
 #: Locks that hold on every model: measured on the VisionMaster Pro2
 #: (firmware V02.01.00E.Q0718, 2026-10-30) and matching AWOL's rule that
 #: dynamic tone mapping works in HDR10 only and gamma presets in SDR only.
-#: Gamma in HDR10 is not listed: it was only measured in FILMMAKER MODE and
-#: may be settable in other modes, so it is learned instead.
+#: Gamma in HDR10 was refused in every HDR10 picture mode (2026-10-31).
+#: HLG and HDR10+ are not measured yet, so their locks are learned.
 KNOWN_LOCKS: Final[Mapping[HdrFormat, frozenset[str]]] = {
     HdrFormat.SDR: frozenset({protocol.DYNAMIC_TONE_MAPPING.code}),
+    HdrFormat.HDR10: frozenset({protocol.GAMMA.code}),
     HdrFormat.DOLBY_VISION: frozenset({protocol.GAMMA.code, protocol.DYNAMIC_TONE_MAPPING.code}),
 }
 

@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.12] - 2026-10-31
+
+### Changed
+- *Gamma* is now a built-in lock for HDR10: it shows as unavailable in every HDR10 picture mode from the start. The projector refused gamma changes in all eight HDR10 picture modes on a VisionMaster Pro2. HLG and HDR10+ are not measured yet and are still learned.
+- README: screenshots, and tables of which settings work with which signal and on which projector.
+
 ## [0.0.11] - 2026-10-31
 
 ### Changed

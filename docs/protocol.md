@@ -55,6 +55,8 @@ See `custom_components/valerion/lib/protocol.py` for the full list and
 `models.py` for the value tables. Points worth knowing:
 
 - `%1POWR`: `0` standby, `1` on, `2` off. This differs from standard PJLink.
+  The VisionMaster Pro2 (firmware V02.01.00E.Q0718) refuses `%1POWR 2`
+  with `ERR2` (2026-10-31), so it has no full off over AWOL Link.
 - `%1AVMT`: `21` mute, `20` unmute. Audio only; the picture cannot be blanked.
 - `%3PICL ?` lists the picture modes valid for the current signal; `%3PICT`
   sets one by its exact name (`HDR Theater`, `PC/Game`, `FILMMAKER MODE`).
@@ -152,13 +154,16 @@ on an HDMI input, through the integration's *Send raw command* action and
 - **A locked setting can still be read.** `%3GAMA ?` answers `1` (2.2) in
   Dolby Vision although gamma cannot be set there, and `4` (SMPTE 2084) in
   HDR10. `%3DYTM ?` answers in every format. Only a set command shows
-  whether a setting is locked. The HDR10 tests ran in *FILMMAKER MODE*;
-  whether other picture modes unlock gamma in HDR10 is still open.
-  Since v0.0.9 the integration builds in the locks measured here that
-  also match AWOL's rule (dynamic tone mapping locked with SDR and Dolby
-  Vision, gamma with Dolby Vision; `lib/locks.py`) and learns any other
-  `ERR3` on a set per signal format and picture mode. Gamma in HDR10 is
-  learned, not built in, until other picture modes are measured.
+  whether a setting is locked. Gamma is locked in HDR10 in every picture
+  mode: *FILMMAKER MODE* (2026-10-30), then all eight HDR10 modes on
+  2026-10-31 from the integration's gamma select (*HDR Theater* switched
+  gamma to SMPTE 2084 by itself). Colour temperature, enhanced black level
+  and dynamic tone mapping changes worked in HDR10 the same day.
+  The integration builds in the locks measured here that also match
+  AWOL's rule (dynamic tone mapping locked with SDR and Dolby Vision since
+  v0.0.9, gamma with Dolby Vision since v0.0.9 and with HDR10 since
+  v0.0.12; `lib/locks.py`) and learns any other `ERR3` on a set per signal
+  format and picture mode. HLG and HDR10+ are not measured yet.
 - **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
   `ERR2`, as reported for the Max.
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
