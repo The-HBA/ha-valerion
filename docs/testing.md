@@ -10,6 +10,19 @@ pytest
 The library tests start a fake AWOL Link server on localhost that replays
 scripted replies, so they run on any operating system.
 
+## In Home Assistant, without a projector
+
+These tests set up the integration in a test Home Assistant, against the
+same fake server. Home Assistant runs on Linux only, so use a separate
+virtual environment there (CI runs them in their own job):
+
+```bash
+pip install -r requirements_test_ha.txt
+pytest tests/ha
+```
+
+Without Home Assistant installed, `pytest` skips `tests/ha`.
+
 ## Against a projector, without Home Assistant
 
 The command line tool opens one short session per call, so other apps that

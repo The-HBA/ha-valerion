@@ -33,6 +33,8 @@ mypy
 pytest
 ```
 
+Home Assistant level tests need Linux and their own environment, see `docs/testing.md`.
+
 The folder `custom_components/valerion/lib` must stay free of Home Assistant imports; a test enforces this so the library can be published on its own later.
 
 ## Pull requests
