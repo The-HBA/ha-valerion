@@ -49,6 +49,10 @@ to be confirmed.
 | ERR4 | Projector malfunction |
 | ERRA | Authentication failed |
 
+An unknown class 3 query is answered with the `?` inside the header:
+`%3ZZZZ ?` gets `%3ZZZZ?=ERR1` (Pro2, V02.01.00E.Q0718, 2026-10-31).
+Unknown class 1 and 2 queries get the normal `%1ZZZZ=ERR1`.
+
 ## Commands
 
 See `custom_components/valerion/lib/protocol.py` for the full list and
@@ -256,8 +260,40 @@ Not yet confirmed on the Pro2.
 | `8` | Anamorphic 1.85:1 |
 | `9` | Anamorphic 2.0:1 |
 
+## Undocumented commands: probe on the VisionMaster Pro2 (2026-10-31)
+
+Firmware V02.01.00E.Q0718, projector on, SDR 1080p 60 Hz playing, sound
+through an AV receiver. Only read-only `?` queries were sent, 25 per session.
+1,561 guessed codes were tried:
+
+- 324 names in each of classes 1, 2 and 3: common projector, TV and PJLink
+  setting abbreviations (picture adjustments, noise reduction, 3D, keystone,
+  zoom and focus, projection, light, fan and power, identity, audio, input
+  and CEC, playback, motion, HDR).
+- Every ordered 4-letter abbreviation that keeps the first letter of 33
+  setting words (for example BRIGHTNESS, CONTRAST, SATURATION, SHARPNESS,
+  SOUND, PICTURE), class 3.
+
+Every code not listed below answered `ERR1`.
+
+| Query | Reply | Meaning |
+| --- | --- | --- |
+| `%1INF1 ?`, `%2INF1 ?` | `AWOL VISION` | Manufacturer (standard PJLink) |
+| `%1INF2 ?`, `%2INF2 ?` | `VisionMaster Pro2` | Product name (standard PJLink) |
+| `%3SNDM ?` | `ERR3` | Exists, not available now. Probably sound mode |
+| `%3AUDI ?` | `ERR3` | Exists, not available now. Audio, meaning unknown |
+| `%3BASS ?` | `ERR3` | Exists, not available now. Probably bass |
+| `%3TREB ?` | `ERR3` | Exists, not available now. Probably treble |
+
+The four audio codes may answer when the projector's own speakers play.
+No code was found for brightness, contrast, saturation, sharpness, tint,
+noise reduction, keystone, 3D or playback state. None of these codes is
+used by the integration.
+
 ## Open questions (to be measured on real hardware)
 
+- What `%3SNDM`, `%3AUDI`, `%3BASS` and `%3TREB` answer when the
+  projector's own speakers are used.
 - The `%3SINF` reply for audio other than PCM.
 - Why the Pro2 reports BT.709 primaries for a BT.2020 HLG file.
 - The motion enhancement names the Pro2 shows in its own menu (it refuses
