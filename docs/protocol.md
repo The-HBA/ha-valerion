@@ -163,8 +163,16 @@ on an HDMI input, through the integration's *Send raw command* action and
   The integration builds in the locks measured here that also match
   AWOL's rule (dynamic tone mapping locked with SDR and Dolby Vision since
   v0.0.9, gamma with Dolby Vision since v0.0.9 and with HDR10 since
-  v0.0.12; `lib/locks.py`) and learns any other `ERR3` on a set per signal
-  format and picture mode. HLG and HDR10+ are not measured yet.
+  v0.0.12, gamma and dynamic tone mapping with HDR10+ since v0.0.14;
+  `lib/locks.py`) and learns any other `ERR3` on a set per signal format and
+  picture mode. HLG is not measured yet.
+- **HDR10+ (Pro2, V02.01.00E.Q0718, 2026-10-31):** `%3SINF` reported HDR
+  format `3` (HDR10+), BT.2020, 12-bit YUV 4:2:2 at 3840x2160p 60 Hz.
+  Picture modes: HDR10+ Vivid, HDR10+ Game, HDR10+ Standard, HDR10+ Theater
+  (no FILMMAKER MODE). Gamma (stays SMPTE 2084) and dynamic tone mapping
+  were refused with `ERR3` in HDR10+ Theater and HDR10+ Game; colour
+  temperature, enhanced black level, laser level and motion enhancement
+  changes worked.
 - **Aspect ratio:** without a signal the first Pro2 try (`%3ASPR 4`) replied
   `ERR2`, as reported for the Max.
 - **Lens shift:** `%3LSMN ?` replied `ERR3` while playing Dolby Vision. The
@@ -241,13 +249,10 @@ Not yet confirmed on the Pro2.
 
 ## Open questions (to be measured on real hardware)
 
-- The `%3SINF` replies for HDR10+ and HLG signals, and for audio other
-  than PCM.
-- The `%3PICL` list for HDR10+ and HLG signals.
+- The `%3SINF` reply for HLG signals, and for audio other than PCM.
+- The `%3PICL` list for HLG signals.
 - The motion enhancement names the Pro2 shows in its own menu (it refuses
   `%3MOTN 2`, Film in both sheet tabs).
-- Whether gamma can be set in HDR10 in picture modes other than
-  *FILMMAKER MODE*.
 - Which fan and temperature slots are filled on other models.
 - What the extra `%2SVER` fields (`83`, `OEM01.0.0.0`) mean.
 - Whether `%2ERST` is supported on other models or firmware.

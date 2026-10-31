@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.14] - 2026-10-31
+
+### Added
+- HDR10+: gamma and dynamic tone mapping show as unavailable as soon as HDR10+ plays. The projector refuses both in HDR10+ (measured on a VisionMaster Pro2).
+- README: HDR10+ column in the signal table.
+
 ### Changed
 - Messages and README now say "another app that uses AWOL Link" instead of naming specific apps. The README explains that an app connecting during a poll only waits a moment.
 

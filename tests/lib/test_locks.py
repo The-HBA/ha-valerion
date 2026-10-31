@@ -17,6 +17,7 @@ def test_known_locks_apply_in_every_picture_mode() -> None:
     assert table.locked(HdrFormat.SDR, "Theater") == {TONE_MAPPING}
     assert table.locked(HdrFormat.DOLBY_VISION, "Dolby Vision Dark") == {GAMMA, TONE_MAPPING}
     assert table.locked(HdrFormat.HDR10, "HDR Theater") == {GAMMA}
+    assert table.locked(HdrFormat.HDR10_PLUS, "HDR10+ Game") == {GAMMA, TONE_MAPPING}
     # HLG is not measured yet, so its locks are learned.
     assert table.locked(HdrFormat.HLG, "HDR Theater") == frozenset()
     assert table.locked(None, "Theater") == frozenset()

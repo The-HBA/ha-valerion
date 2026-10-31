@@ -41,18 +41,18 @@ VisionMaster Pro2 playing a 4K HDR10 film:
 
 The projector locks some settings depending on the video format. Measured on a VisionMaster Pro2, firmware V02.01.00E.Q0718:
 
-| Setting | SDR | HDR10 | Dolby Vision |
-| --- | --- | --- | --- |
-| Picture mode | Yes | Yes | Yes (Bright, Dark, Custom) |
-| Gamma | Yes (2.0, 2.2, 2.4, BT.1886) | No, fixed at SMPTE 2084 | No |
-| Dynamic tone mapping | No | Yes | No |
-| Color temperature | Not tested yet | Yes | Yes |
-| Enhanced black level | Yes | Yes | Yes |
-| Motion enhancement | Yes, except Film | Yes, except Film | Yes, except Film |
-| Aspect ratio | Yes | Yes | Yes |
-| Laser level | Yes | Yes | Yes |
+| Setting | SDR | HDR10 | HDR10+ | Dolby Vision |
+| --- | --- | --- | --- | --- |
+| Picture mode | Yes | Yes | Yes (Vivid, Game, Standard, Theater) | Yes (Bright, Dark, Custom) |
+| Gamma | Yes (2.0, 2.2, 2.4, BT.1886) | No, fixed at SMPTE 2084 | No, fixed at SMPTE 2084 | No |
+| Dynamic tone mapping | No | Yes | No | No |
+| Color temperature | Not tested yet | Yes | Yes | Yes |
+| Enhanced black level | Yes | Yes | Yes | Yes |
+| Motion enhancement | Yes, except Film | Yes, except Film | Yes, except Film | Yes, except Film |
+| Aspect ratio | Yes | Yes | Not tested yet | Yes |
+| Laser level | Yes | Yes | Yes | Yes |
 
-HLG and HDR10+ are not measured yet. A setting that is locked shows as unavailable in Home Assistant (see [Locked settings](#locked-settings)). Aspect ratio can only be changed while an HDMI signal is playing.
+HLG is not measured yet. A setting that is locked shows as unavailable in Home Assistant (see [Locked settings](#locked-settings)). Aspect ratio can only be changed while an HDMI signal is playing.
 
 ## What works on which projector
 

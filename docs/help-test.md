@@ -20,7 +20,7 @@ Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?tem
 | VisionMaster Max | Do the lens shift, zoom and focus menu buttons work? Does Wake-on-LAN switch it on from standby? Is *Film* motion enhancement available? |
 | VisionMaster Pro | Everything: nothing has been tested yet |
 | VisionMaster Plus2, Plus | Everything: nothing has been tested yet |
-| VisionMaster Pro2 | HLG and HDR10+ picture modes and locks. Results on firmware other than V02.01.00E.Q0718 |
+| VisionMaster Pro2 | HLG picture modes and locks. Results on firmware other than V02.01.00E.Q0718 |
 
 ## Level 1: easy (a few minutes, no settings changed)
 
