@@ -57,7 +57,7 @@ from .lib import (
     split_multi_value,
     split_picture_mode_list,
 )
-from .lib.locks import hdr_key
+from .lib.locks import signal_key
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -518,7 +518,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         if signal_raw is None:
             return frozenset()
         return self._locks.locked(
-            SignalInfo.parse(signal_raw).hdr, self._values.get(protocol.PICTURE_MODE.code)
+            SignalInfo.parse(signal_raw), self._values.get(protocol.PICTURE_MODE.code)
         )
 
     def _learn_lock(self, command: Command, value: str | int) -> None:
@@ -532,10 +532,10 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         mode = self._values.get(protocol.PICTURE_MODE.code)
         if signal_raw is None or not mode or self._values.get(command.code) == str(value):
             return
-        hdr = SignalInfo.parse(signal_raw).hdr
-        if self._locks.learn(hdr, mode, command.code):
+        signal = SignalInfo.parse(signal_raw)
+        if self._locks.learn(signal, mode, command.code):
             _LOGGER.info(
-                "Learned that %s is locked with %s in %s", command.code, hdr_key(hdr), mode
+                "Learned that %s is locked with %s in %s", command.code, signal_key(signal), mode
             )
             self._save_locks()
             self._publish()

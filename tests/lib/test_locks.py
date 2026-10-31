@@ -4,51 +4,87 @@ from __future__ import annotations
 
 import json
 
-from custom_components.valerion.lib import HdrFormat, LearnedLock, LockTable, protocol
+from custom_components.valerion.lib import (
+    HdrFormat,
+    LearnedLock,
+    LockTable,
+    SignalInfo,
+    protocol,
+)
 
 GAMMA = protocol.GAMMA.code
 TONE_MAPPING = protocol.DYNAMIC_TONE_MAPPING.code
 LASER = protocol.LASER_LEVEL.code
 LENS_SHIFT = protocol.LENS_SHIFT_MENU.code
+MOTION = protocol.MOTION_ENHANCEMENT.code
+ASPECT_RATIO = protocol.ASPECT_RATIO.code
+
+#: An MVC film on the Pro2: 3D frame packing, reported as SDR.
+THREE_D = SignalInfo.parse("1920*2205p@24Hz 0 3 1 0 0")
+
+
+def signal(hdr: HdrFormat) -> SignalInfo:
+    """Return a 4K signal in the given HDR format."""
+    return SignalInfo.parse(f"3840*2160p@24Hz 0 3 1 {hdr.value} 0")
 
 
 def test_known_locks_apply_in_every_picture_mode() -> None:
     table = LockTable()
-    assert table.locked(HdrFormat.SDR, "Theater") == {TONE_MAPPING}
-    assert table.locked(HdrFormat.DOLBY_VISION, "Dolby Vision Dark") == {GAMMA, TONE_MAPPING}
-    assert table.locked(HdrFormat.HDR10, "HDR Theater") == {GAMMA}
-    assert table.locked(HdrFormat.HDR10_PLUS, "HDR10+ Game") == {GAMMA, TONE_MAPPING}
-    assert table.locked(HdrFormat.HLG, "IMAX Mode") == {GAMMA, TONE_MAPPING}
+    assert table.locked(signal(HdrFormat.SDR), "Theater") == {TONE_MAPPING}
+    assert table.locked(signal(HdrFormat.DOLBY_VISION), "Dolby Vision Dark") == {
+        GAMMA,
+        TONE_MAPPING,
+    }
+    assert table.locked(signal(HdrFormat.HDR10), "HDR Theater") == {GAMMA}
+    assert table.locked(signal(HdrFormat.HDR10_PLUS), "HDR10+ Game") == {GAMMA, TONE_MAPPING}
+    assert table.locked(signal(HdrFormat.HLG), "IMAX Mode") == {GAMMA, TONE_MAPPING}
     assert table.locked(None, "Theater") == frozenset()
 
 
 def test_learned_lock_holds_only_for_its_format_and_mode() -> None:
     table = LockTable()
-    assert table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
-    assert LASER in table.locked(HdrFormat.HLG, "FILMMAKER MODE")
-    assert LASER not in table.locked(HdrFormat.HLG, "HDR Theater")
-    assert LASER not in table.locked(HdrFormat.SDR, "FILMMAKER MODE")
+    assert table.learn(signal(HdrFormat.HLG), "FILMMAKER MODE", LASER)
+    assert LASER in table.locked(signal(HdrFormat.HLG), "FILMMAKER MODE")
+    assert LASER not in table.locked(signal(HdrFormat.HLG), "HDR Theater")
+    assert LASER not in table.locked(signal(HdrFormat.SDR), "FILMMAKER MODE")
 
 
 def test_learning_a_known_or_repeated_lock_changes_nothing() -> None:
     table = LockTable()
-    assert not table.learn(HdrFormat.DOLBY_VISION, "Dolby Vision Bright", GAMMA)
-    assert table.learn(HdrFormat.HLG, "HDR Standard", LASER)
-    assert not table.learn(HdrFormat.HLG, "HDR Standard", LASER)
+    assert not table.learn(signal(HdrFormat.DOLBY_VISION), "Dolby Vision Bright", GAMMA)
+    assert table.learn(signal(HdrFormat.HLG), "HDR Standard", LASER)
+    assert not table.learn(signal(HdrFormat.HLG), "HDR Standard", LASER)
     assert table.learned == (LearnedLock("hlg", "HDR Standard", LASER),)
+
+
+def test_3d_has_its_own_known_locks() -> None:
+    table = LockTable()
+    assert table.locked(THREE_D, "FILMMAKER MODE") == {ASPECT_RATIO, MOTION, TONE_MAPPING}
+    assert table.locked(signal(HdrFormat.SDR), "FILMMAKER MODE") == {TONE_MAPPING}
+
+
+def test_lock_learned_in_3d_does_not_hold_for_2d() -> None:
+    # 3D reads as SDR; a lock learned there must not grey out 2D SDR films.
+    table = LockTable()
+    assert table.learn(THREE_D, "FILMMAKER MODE", LASER)
+    assert table.learned == (LearnedLock("3d", "FILMMAKER MODE", LASER),)
+    assert LASER in table.locked(THREE_D, "FILMMAKER MODE")
+    assert LASER not in table.locked(signal(HdrFormat.SDR), "FILMMAKER MODE")
+    assert not table.learn(THREE_D, "FILMMAKER MODE", MOTION)  # already known
 
 
 def test_lock_without_signal_is_kept_apart() -> None:
     table = LockTable()
-    table.learn(None, "Standard", protocol.ASPECT_RATIO.code)
-    assert table.locked(None, "Standard") == {protocol.ASPECT_RATIO.code}
-    assert table.locked(HdrFormat.SDR, "Standard") == {TONE_MAPPING}
+    table.learn(None, "Standard", ASPECT_RATIO)
+    assert table.locked(None, "Standard") == {ASPECT_RATIO}
+    assert table.locked(SignalInfo.parse("0*0p@0Hz 0 0 0 0 0"), "Standard") == {ASPECT_RATIO}
+    assert table.locked(signal(HdrFormat.SDR), "Standard") == {TONE_MAPPING}
 
 
 def test_firmware_change_clears_learned_locks() -> None:
     table = LockTable()
     assert table.check_firmware("V02.01.00E.Q0718")  # first firmware seen
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
+    table.learn(signal(HdrFormat.HLG), "FILMMAKER MODE", LASER)
     assert not table.check_firmware("V02.01.00E.Q0718")
     assert not table.check_firmware(None)
     assert table.learned
@@ -59,7 +95,7 @@ def test_firmware_change_clears_learned_locks() -> None:
 
 def test_locks_learned_before_the_firmware_was_known_survive_its_arrival() -> None:
     table = LockTable()
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
+    table.learn(signal(HdrFormat.HLG), "FILMMAKER MODE", LASER)
     assert table.check_firmware("V02.01.00E.Q0718")
     assert table.learned
 
@@ -67,14 +103,14 @@ def test_locks_learned_before_the_firmware_was_known_survive_its_arrival() -> No
 def test_clear() -> None:
     table = LockTable()
     assert not table.clear()
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
+    table.learn(signal(HdrFormat.HLG), "FILMMAKER MODE", LASER)
     assert table.clear()
-    assert table.locked(HdrFormat.HLG, "FILMMAKER MODE") == {GAMMA, TONE_MAPPING}
+    assert table.locked(signal(HdrFormat.HLG), "FILMMAKER MODE") == {GAMMA, TONE_MAPPING}
 
 
 def test_round_trip_through_json() -> None:
     table = LockTable("V02.01.00E.Q0718")
-    table.learn(HdrFormat.HLG, "FILMMAKER MODE", LASER)
+    table.learn(signal(HdrFormat.HLG), "FILMMAKER MODE", LASER)
     table.learn(None, "Standard", protocol.ASPECT_RATIO.code)
     table.mark_unsupported(LENS_SHIFT)
     stored = json.loads(json.dumps(table.as_dict()))

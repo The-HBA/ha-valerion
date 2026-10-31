@@ -306,6 +306,34 @@ async def test_refused_setting_is_learned_and_forgotten(
     assert hass_storage[LOCK_STORE]["data"]["learned"] == []
 
 
+async def test_3d_locks_stay_apart_from_2d(
+    hass: HomeAssistant,
+    projector: FakeProjector,
+    coordinator: ValerionCoordinator,
+    hass_storage: dict[str, Any],
+) -> None:
+    # An MVC film: frame packing reads as SDR, with the SDR picture modes.
+    projector.values["%3SINF"] = "1920*2205p@24Hz 0 3 1 0 0"
+    projector.values["%3PICT"] = "FILMMAKER MODE"
+    projector.values["%3PICL"] = "Standard,Theater,FILMMAKER MODE"
+    await poll(hass, coordinator)
+    assert coordinator.data.locked == frozenset({"ASPR", "MOTN", "DYTM"})
+
+    projector.refused["%3LASL"] = "ERR3"
+    with pytest.raises(HomeAssistantError):
+        await coordinator.async_send(protocol.LASER_LEVEL, 5)
+    assert "LASL" in coordinator.data.locked
+    await _save_locks(hass)
+    assert hass_storage[LOCK_STORE]["data"]["learned"] == [
+        {"hdr": "3d", "picture_mode": "FILMMAKER MODE", "code": "LASL"}
+    ]
+
+    # The same picture mode with a 2D SDR film: only the SDR lock.
+    projector.values["%3SINF"] = "1920*1080p@24Hz 0 3 1 0 0"
+    await poll(hass, coordinator)
+    assert coordinator.data.locked == frozenset({"DYTM"})
+
+
 async def test_refusal_of_current_value_is_not_learned(
     hass: HomeAssistant, projector: FakeProjector, coordinator: ValerionCoordinator
 ) -> None:

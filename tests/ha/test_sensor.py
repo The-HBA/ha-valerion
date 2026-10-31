@@ -48,6 +48,16 @@ async def test_no_signal(
     assert _state(hass, "hdr_format") == "no_signal"
 
 
+async def test_3d_signal(
+    hass: HomeAssistant, projector: FakeProjector, coordinator: ValerionCoordinator
+) -> None:
+    # An MVC film on the Pro2: frame packing, reported as SDR.
+    projector.values["%3SINF"] = "1920*2205p@24Hz 0 3 1 0 0"
+    await poll(hass, coordinator)
+    assert _state(hass, "video_signal") == f"1920{chr(0xD7)}1080p 24 Hz 3D"
+    assert _state(hass, "hdr_format") == "sdr"
+
+
 async def test_signal_query_refused(
     hass: HomeAssistant, projector: FakeProjector, coordinator: ValerionCoordinator
 ) -> None:

@@ -19,7 +19,7 @@ from .exceptions import (
     AwolLinkUnresponsiveError,
 )
 from .keys import KEYS, KeyPress, key_press
-from .locks import KNOWN_LOCKS, LearnedLock, LockTable
+from .locks import KNOWN_3D_LOCKS, KNOWN_LOCKS, LearnedLock, LockTable
 from .models import (
     ALL_PICTURE_MODES,
     LASER_LEVEL_MAX,
@@ -55,7 +55,7 @@ from .models import (
 from .protocol import AwolLinkProtocolError, Command, Response, parse_command_line
 from .wol import DEFAULT_BROADCAST, build_magic_packet, normalize_mac, send_magic_packet
 
-__version__ = "0.0.16"
+__version__ = "0.0.17"
 
 __all__ = [
     "ALL_PICTURE_MODES",
@@ -63,6 +63,7 @@ __all__ = [
     "DEFAULT_PORT",
     "DEFAULT_TIMEOUT",
     "KEYS",
+    "KNOWN_3D_LOCKS",
     "KNOWN_LOCKS",
     "LASER_LEVEL_MAX",
     "LASER_LEVEL_MIN",

@@ -316,6 +316,12 @@ _TIMING = re.compile(
     r"(?P<width>\d+)\s*[*xX]\s*(?P<height>\d+)\s*(?P<scan>[pPiI])?\s*@\s*(?P<rate>\d+(?:\.\d+)?)\s*Hz"
 )
 
+#: Heights of HDMI 3D frame packing (HDMI 1.4) and the height of one eye's
+#: picture: the left and right pictures are sent one above the other with a
+#: gap between them. Nothing else in ``%3SINF`` marks 3D; an MVC film on the
+#: Pro2 reported ``1920*2205p@24Hz`` with HDR format SDR (2026-10-31).
+FRAME_PACKED_HEIGHTS: Final = {2205: 1080, 1470: 720, 2228: 1080}
+
 
 @dataclass(frozen=True, slots=True)
 class VideoTiming:
@@ -325,6 +331,11 @@ class VideoTiming:
     height: int
     interlaced: bool
     refresh_rate: float
+
+    @property
+    def is_3d(self) -> bool:
+        """Return True for a 3D frame-packed signal (two pictures stacked)."""
+        return self.height in FRAME_PACKED_HEIGHTS
 
     @classmethod
     def parse(cls, value: str) -> VideoTiming | None:
@@ -340,9 +351,14 @@ class VideoTiming:
         )
 
     def __str__(self) -> str:
-        """Return the timing as text: width, multiplication sign, height, ``p 24 Hz``."""
+        """Return the timing as text: width, multiplication sign, height, ``p 24 Hz``.
+
+        3D shows the height of one eye's picture: 1920 by 1080, then ``3D``.
+        """
         scan = "i" if self.interlaced else "p"
-        return f"{self.width}×{self.height}{scan} {self.refresh_rate:g} Hz"  # noqa: RUF001
+        height = FRAME_PACKED_HEIGHTS.get(self.height, self.height)
+        text = f"{self.width}×{height}{scan} {self.refresh_rate:g} Hz"  # noqa: RUF001
+        return f"{text} 3D" if self.is_3d else text
 
 
 @dataclass(frozen=True, slots=True)
@@ -375,6 +391,12 @@ class SignalInfo:
             return False
         timing = self.timing
         return timing is None or (timing.width > 0 and timing.refresh_rate > 0)
+
+    @property
+    def is_3d(self) -> bool:
+        """Return True while a 3D frame-packed signal plays."""
+        timing = self.timing
+        return timing is not None and timing.is_3d
 
     @property
     def audio(self) -> AudioFormat | None:

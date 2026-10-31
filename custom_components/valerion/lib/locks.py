@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
 from . import protocol
-from .models import HdrFormat
+from .models import HdrFormat, SignalInfo
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -33,22 +33,51 @@ KNOWN_LOCKS: Final[Mapping[HdrFormat, frozenset[str]]] = {
     HdrFormat.DOLBY_VISION: frozenset({protocol.GAMMA.code, protocol.DYNAMIC_TONE_MAPPING.code}),
 }
 
+#: Locks during 3D (frame packing), whatever the HDR format reads: aspect
+#: ratio, motion enhancement and dynamic tone mapping were refused with an
+#: MVC film on the Pro2 (firmware V02.01.00E.Q0718, 2026-10-31).
+KNOWN_3D_LOCKS: Final = frozenset(
+    {
+        protocol.ASPECT_RATIO.code,
+        protocol.MOTION_ENHANCEMENT.code,
+        protocol.DYNAMIC_TONE_MAPPING.code,
+    }
+)
+
 #: Stored instead of an HDR format while no signal is playing.
 NO_SIGNAL: Final = "no_signal"
+
+#: Stored instead of an HDR format while a 3D signal plays. 3D reads as SDR,
+#: so without its own name a lock learned in 3D would also hold for 2D films.
+THREE_D: Final = "3d"
 
 
 @dataclass(frozen=True, order=True)
 class LearnedLock:
     """One setting the projector refused for a signal format and picture mode."""
 
-    hdr: str  # lower-case ``HdrFormat`` member name or ``NO_SIGNAL``
+    hdr: str  # lower-case ``HdrFormat`` member name, ``THREE_D`` or ``NO_SIGNAL``
     picture_mode: str
     code: str
 
 
-def hdr_key(hdr: HdrFormat | None) -> str:
-    """Return the stored name of a signal format, for example ``dolby_vision``."""
+def signal_key(signal: SignalInfo | None) -> str:
+    """Return the stored name of a signal format, for example ``dolby_vision`` or ``3d``."""
+    if signal is None:
+        return NO_SIGNAL
+    if signal.is_3d:
+        return THREE_D
+    hdr = signal.hdr
     return hdr.name.lower() if hdr is not None else NO_SIGNAL
+
+
+def _known_locks(signal: SignalInfo | None) -> frozenset[str]:
+    if signal is None:
+        return frozenset()
+    if signal.is_3d:
+        return KNOWN_3D_LOCKS
+    hdr = signal.hdr
+    return KNOWN_LOCKS.get(hdr, frozenset()) if hdr is not None else frozenset()
 
 
 class LockTable:
@@ -89,22 +118,21 @@ class LockTable:
         self._unsupported.add(code)
         return True
 
-    def locked(self, hdr: HdrFormat | None, picture_mode: str | None) -> frozenset[str]:
-        """Return the command codes locked for this signal format and picture mode."""
-        known = KNOWN_LOCKS.get(hdr, frozenset()) if hdr is not None else frozenset()
-        key = hdr_key(hdr)
+    def locked(self, signal: SignalInfo | None, picture_mode: str | None) -> frozenset[str]:
+        """Return the command codes locked for this signal and picture mode."""
+        key = signal_key(signal)
         learned = {
             lock.code
             for lock in self._learned
             if lock.hdr == key and lock.picture_mode == picture_mode
         }
-        return known | learned
+        return _known_locks(signal) | learned
 
-    def learn(self, hdr: HdrFormat | None, picture_mode: str, code: str) -> bool:
+    def learn(self, signal: SignalInfo | None, picture_mode: str, code: str) -> bool:
         """Remember a refused setting; return True if it was not known yet."""
-        if code in self.locked(hdr, picture_mode):
+        if code in self.locked(signal, picture_mode):
             return False
-        self._learned.add(LearnedLock(hdr_key(hdr), picture_mode, code))
+        self._learned.add(LearnedLock(signal_key(signal), picture_mode, code))
         return True
 
     def clear(self) -> bool:

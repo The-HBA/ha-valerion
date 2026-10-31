@@ -143,6 +143,8 @@ The projector reports a value even for a setting it will not change, so Home Ass
 - **Built-in:** the locks in the signal table above.
 - **Learned:** when the projector refuses a change as locked, Home Assistant remembers it for that format and picture mode. Learned locks survive restarts and are forgotten after a firmware update.
 
+3D counts as its own format. The projector reports 3D as SDR, so Home Assistant recognizes it by the picture size (two pictures stacked, for example 1920×2205) and shows it as *1920×1080p 24 Hz 3D*.
+
 Menus work the same way. If the projector refuses the lens shift, zoom or focus menu, the model does not have it, and Home Assistant hides that button.
 
 If a setting stays unavailable or a menu button stays hidden when it should not, enable and press the *Forget learned locks* button on the device page.

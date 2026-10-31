@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.17] - 2026-10-31
+
+### Fixed
+- 3D: a setting refused during a 3D film no longer shows as unavailable for 2D SDR films in the same picture mode. The projector reports 3D as SDR. If aspect ratio or motion enhancement stays greyed out with a 2D film, enable and press *Forget learned locks* once.
+
+### Added
+- 3D films (frame packing, for example MVC from Kodi) are recognized. Aspect ratio, motion enhancement and dynamic tone mapping show as unavailable during 3D (measured on a VisionMaster Pro2).
+- *Video signal* shows 3D as `1920×1080p 24 Hz 3D` instead of `1920×2205p 24 Hz`.
+- README: 3D column in the signal table, color temperature in SDR, a new device page screenshot.
+
 ## [0.0.16] - 2026-10-31
 
 ### Fixed

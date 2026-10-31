@@ -230,6 +230,30 @@ def test_video_timing_text() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("raw", "text"),
+    [
+        # Measured on the Pro2 with an MVC film (2026-10-31).
+        ("1920*2205p@24Hz", "1920\u00d71080p 24 Hz 3D"),
+        ("1280*1470p@60Hz", "1280\u00d7720p 60 Hz 3D"),
+        ("1920*2228i@60Hz", "1920\u00d71080i 60 Hz 3D"),
+    ],
+)
+def test_frame_packed_3d(raw: str, text: str) -> None:
+    timing = VideoTiming.parse(raw)
+    assert timing is not None
+    assert timing.is_3d
+    assert str(timing) == text
+
+
+def test_signal_info_3d() -> None:
+    three_d = SignalInfo.parse("1920*2205p@24Hz 0 3 1 0 0")
+    assert three_d.is_3d
+    assert three_d.hdr is HdrFormat.SDR  # nothing else marks 3D
+    assert not SignalInfo.parse("1920*1080p@24Hz 0 3 1 0 0").is_3d
+    assert not SignalInfo.parse("255").is_3d
+
+
 def test_parse_number_list() -> None:
     assert parse_number_list("1770 1710 0 0 0 0 0") == (1770, 1710, 0, 0, 0, 0, 0)
     assert parse_number_list("33 48 x") == (33, 48, None)
