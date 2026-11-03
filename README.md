@@ -11,7 +11,7 @@ This is an independent community project, not affiliated with or supported by Va
 
 **Status:** early development. v0.1.0 will be the first complete version.
 
-**Most testing so far was done on a VisionMaster Pro2, plus one user report from a VisionMaster Plus2.** If you own another model, please [help test it](docs/help-test.md). Everything is done in Home Assistant and most tests take a few minutes.
+**Most testing so far was done on a VisionMaster Pro2, plus user reports from a VisionMaster Plus2 and an Aetherion Max.** If you own another model, please [help test it](docs/help-test.md). Everything is done in Home Assistant and most tests take a few minutes.
 
 ## Screenshots
 
@@ -52,23 +52,24 @@ A setting that is locked shows as unavailable in Home Assistant (see [Locked set
 
 ## What works on which projector
 
-AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. Own one of the untested models? See [Help test your projector](docs/help-test.md).
+AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. One user report shows it also answers on the Aetherion Max. Own one of the untested models? See [Help test your projector](docs/help-test.md).
 
-| | VisionMaster Pro2 | VisionMaster Max | VisionMaster Plus2 | Other models |
-| --- | --- | --- | --- | --- |
-| Tested with this integration | Yes | Not yet | One user report | Not yet |
-| Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Under investigation | Unknown |
-| Aspect ratio | Yes | Yes | Unknown | Unknown |
-| Motion enhancement | Yes, all except Film | Film works; others not reported | Unknown | Unknown |
-| Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | No (the projector refuses it; the button hides itself) | Unknown |
-| Zoom menu | Yes | Yes | Unknown | Unknown |
-| Focus menu | Yes | Yes | Unknown | Unknown |
+| | VisionMaster Pro2 | VisionMaster Max | VisionMaster Plus2 | Aetherion Max | Other models |
+| --- | --- | --- | --- | --- | --- |
+| Tested with this integration | Yes | Not yet | One user report | One user report | Not yet |
+| Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Under investigation | Leaves the network; switching on timed out (under investigation) | Unknown |
+| Security code | Not tested yet | Not tested yet | Not tested yet | Reported as rejected (under investigation) | Unknown |
+| Aspect ratio | Yes | Yes | Unknown | Unknown | Unknown |
+| Motion enhancement | Yes, all except Film | Film works; others not reported | Unknown | Unknown | Unknown |
+| Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | No (the projector refuses it; the button hides itself) | Unknown | Unknown |
+| Zoom menu | Yes | Yes | Unknown | Unknown | Unknown |
+| Focus menu | Yes | Yes | Unknown | Unknown | Unknown |
 
-The Max column comes from Michael Konieczki's tests with VMote. The Plus2 column comes from one user report on firmware V0000.01.00E.Q0718.
+The Max column comes from Michael Konieczki's tests with VMote. The Plus2 and Aetherion Max columns each come from one user report, on firmware V0000.01.00E.Q0718 and V0000.01.00U.Q1015.
 
 ## Requirements
 
-- Projector firmware V02.01.00E.Q0718 (August 2026) or newer. The Plus2 report shows V0000.01.00E.Q0718, and AWOL Link answered on it.
+- Projector firmware V02.01.00E.Q0718 (August 2026) or newer. User reports show V0000.01.00E.Q0718 on the Plus2 and V0000.01.00U.Q1015 on the Aetherion Max, and AWOL Link answered on both.
 - Home Assistant 2026.9 or newer
 - Home Assistant must reach the projector on TCP port 4352. If the projector is on another network (VLAN), also allow UDP port 9 for Wake-on-LAN.
 
