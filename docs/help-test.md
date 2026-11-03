@@ -11,7 +11,7 @@ Everything below is done in Home Assistant. No computer tools, scripts or comman
 
 ## Report your results
 
-Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?template=model_report.yml) and write what you saw. "Works", "error message: ..." or "nothing happened" is enough. Please attach the diagnostics download (device page > three dots > Download diagnostics). It does not contain your IP address, MAC address or security code.
+Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?template=model_report.yml) and write what you saw. "Works", "error message: ..." or "nothing happened" is enough. Please attach the diagnostics download (device page > three dots > Download diagnostics). It does not contain your IP address, MAC address, security code or projector name.
 
 ## Open questions
 

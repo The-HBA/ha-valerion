@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import logging
 
 import pytest
 
@@ -247,6 +248,22 @@ async def test_no_answer_to_the_digest() -> None:
     async with _scripted(b"PJLINK 1 498e4a67\r") as port:
         with pytest.raises(AwolLinkUnresponsiveError, match="no answer"):
             await _local(port, security_code="1234").probe()
+
+
+async def test_only_erra_is_a_wrong_code(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+    async with _scripted(b"PJLINK 1 498e4a67\r", b"PJLINK OK\r") as port:
+        assert await _local(port, security_code="1234").probe() == "PJLINK 1 498e4a67"
+    assert "PJLINK OK" in caplog.text
+    assert protocol.auth_digest("1234", "498e4a67") not in caplog.text
+
+
+async def test_erra_after_the_digest_is_a_wrong_code(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+    async with _scripted(b"PJLINK 1 498e4a67\r", b"PJLINK ERRA\r") as port:
+        with pytest.raises(AwolLinkAuthError, match="rejected"):
+            await _local(port, security_code="1234").probe()
+    assert "PJLINK ERRA" in caplog.text
 
 
 async def test_connection_closed_during_authentication() -> None:

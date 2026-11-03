@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.19] - 2026-11-03
+
+### Fixed
+- Privacy: the diagnostics download could contain the projector's IP address inside an error message. It no longer does. The projector's name is now hidden as well. A file you downloaded earlier can still contain them.
+- Security code: only the projector's own refusal counts as a wrong code. Before, any unexpected reply did. One report of a code being rejected is still open, and this may not solve it.
+
+### Added
+- Debug logging shows the projector's reply to the security code, but never the code.
+
 ## [0.0.18] - 2026-10-31
 
 ### Added

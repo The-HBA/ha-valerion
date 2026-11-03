@@ -35,7 +35,6 @@ from .exceptions import (
 )
 from .protocol import (
     GREETING_AUTH_FAILED,
-    GREETING_AUTH_OK,
     GREETING_PREFIX,
     AwolLinkProtocolError,
     Command,
@@ -277,7 +276,11 @@ class AwolLinkClient:
             msg = f"connection closed during authentication: {err}"
             raise AwolLinkConnectionError(msg) from err
         text = decode_line(data)
-        if text.startswith(GREETING_AUTH_FAILED) or not text.startswith(GREETING_AUTH_OK):
+        # Never log the digest: with a short code it gives the code away.
+        _LOGGER.debug("Reply to the security code: %r", text)
+        # Only ERRA is a refusal. Any other reply carries on: if the session is
+        # not really open, the next command is answered with ERRA or not at all.
+        if text.startswith(GREETING_AUTH_FAILED):
             msg = f"security code rejected: {text!r}"
             raise AwolLinkAuthError(msg)
         await asyncio.sleep(_POST_AUTH_DELAY)

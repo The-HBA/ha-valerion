@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from unittest.mock import patch
 
 from homeassistant.core import HomeAssistant
@@ -44,3 +45,24 @@ async def test_diagnostics(
     # The fake projector listens on a random port, and the wake time changes.
     assert diagnostics == snapshot(exclude=props("port", "time"))
     assert diagnostics["entry"]["data"]["host"] == "**REDACTED**"
+    assert diagnostics["state"]["identity"]["name"] == "**REDACTED**"
+    assert diagnostics["state"]["values"]["NAME"] == "**REDACTED**"
+
+
+async def test_diagnostics_never_show_the_address(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    coordinator: ValerionCoordinator,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    # Error messages name the address, and they are not under a redacted key.
+    host = coordinator.client.host
+    coordinator.async_set_updated_data(
+        coordinator._handle_unreachable(f"timeout connecting to {host}:4352")
+    )
+    coordinator.last_wake = {"time": "now", "error": f"cannot send to {host}"}
+
+    diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, mock_config_entry)
+
+    assert host not in json.dumps(diagnostics)
+    assert diagnostics["state"]["last_error"] == "timeout connecting to **REDACTED**:4352"

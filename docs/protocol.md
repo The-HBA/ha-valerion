@@ -12,7 +12,8 @@ to be confirmed.
 - TCP port 4352, one line per message, terminated by `\r` (carriage return).
 - Greeting on connect: `PJLINK 0` (no security code) or `PJLINK 1 <random>`.
 - Security code: reply with `md5(code + random)` as 32 lowercase hex digits on
-  its own line, then expect `PJLINK 1 OK`. (Standard PJLink would hash
+  its own line, then expect `PJLINK 1 OK` (`PJLINK ERRA` means refused; other
+  replies are logged at debug level, none seen yet). (Standard PJLink would hash
   `random + password` and prefix the digest to the first command; AWOL Link
   does not accept that.)
 - One control session at a time. A second TCP connection is accepted but
