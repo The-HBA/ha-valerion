@@ -59,7 +59,7 @@ AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. Ow
 | Tested with this integration | Yes | Not yet | Not yet |
 | Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Unknown |
 | Aspect ratio | Yes | Yes | Unknown |
-| Motion enhancement | Yes, all except Film | Unknown | Unknown |
+| Motion enhancement | Yes, all except Film | Film works; others not reported | Unknown |
 | Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | Unknown |
 | Zoom menu | Yes | Yes | Unknown |
 | Focus menu | Yes | Yes | Unknown |
