@@ -11,7 +11,7 @@ This is an independent community project, not affiliated with or supported by Va
 
 **Status:** early development. v0.1.0 will be the first complete version.
 
-**All testing so far was done on a VisionMaster Pro2.** If you own another model, please [help test it](docs/help-test.md). Everything is done in Home Assistant and most tests take a few minutes.
+**Most testing so far was done on a VisionMaster Pro2, plus one user report from a VisionMaster Plus2.** If you own another model, please [help test it](docs/help-test.md). Everything is done in Home Assistant and most tests take a few minutes.
 
 ## Screenshots
 
@@ -26,7 +26,7 @@ VisionMaster Pro2 with a 4K SDR signal:
 | Entity | What it does |
 | --- | --- |
 | Media player | Power on and off, input (Home, HDMI 1-3), volume, mute |
-| Remote | Sends remote keys by name (see [Remote keys](#remote-keys)) |
+| Remote | Sends remote keys by name (see [Remote keys](#remote-keys)). Its switch is the projector's power switch, the same as the media player |
 | Buttons | Up, down, left, right, OK, return, menu, settings, home. Under Configuration: lens shift, zoom and focus menus |
 | Selects | Under Configuration: picture mode, aspect ratio, gamma, dynamic tone mapping, color temperature, enhanced black level, motion enhancement |
 | Number | Laser level (0 to 10) |
@@ -54,21 +54,21 @@ A setting that is locked shows as unavailable in Home Assistant (see [Locked set
 
 AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. Own one of the untested models? See [Help test your projector](docs/help-test.md).
 
-| | VisionMaster Pro2 | VisionMaster Max | Other models |
-| --- | --- | --- | --- |
-| Tested with this integration | Yes | Not yet | Not yet |
-| Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Unknown |
-| Aspect ratio | Yes | Yes | Unknown |
-| Motion enhancement | Yes, all except Film | Film works; others not reported | Unknown |
-| Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | Unknown |
-| Zoom menu | Yes | Yes | Unknown |
-| Focus menu | Yes | Yes | Unknown |
+| | VisionMaster Pro2 | VisionMaster Max | VisionMaster Plus2 | Other models |
+| --- | --- | --- | --- | --- |
+| Tested with this integration | Yes | Not yet | One user report | Not yet |
+| Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Under investigation | Unknown |
+| Aspect ratio | Yes | Yes | Unknown | Unknown |
+| Motion enhancement | Yes, all except Film | Film works; others not reported | Unknown | Unknown |
+| Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | No (the projector refuses it; the button hides itself) | Unknown |
+| Zoom menu | Yes | Yes | Unknown | Unknown |
+| Focus menu | Yes | Yes | Unknown | Unknown |
 
-The Max column comes from Michael Konieczki's tests with VMote.
+The Max column comes from Michael Konieczki's tests with VMote. The Plus2 column comes from one user report on firmware V0000.01.00E.Q0718.
 
 ## Requirements
 
-- Projector firmware V02.01.00E.Q0718 (August 2026) or newer
+- Projector firmware V02.01.00E.Q0718 (August 2026) or newer. The Plus2 report shows V0000.01.00E.Q0718, and AWOL Link answered on it.
 - Home Assistant 2026.9 or newer
 - Home Assistant must reach the projector on TCP port 4352. If the projector is on another network (VLAN), also allow UDP port 9 for Wake-on-LAN.
 

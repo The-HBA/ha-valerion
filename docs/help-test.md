@@ -1,6 +1,6 @@
 # Help test your projector
 
-Every test so far was done on one VisionMaster Pro2. AWOL Link is also documented for the VisionMaster Pro, Max, Plus2 and Plus, but nobody has tried this integration on them yet. If you own one of these, or a Pro2 with different firmware, your results help everyone with the same model.
+Most tests so far were done on one VisionMaster Pro2, and there is one user report from a VisionMaster Plus2. AWOL Link is also documented for the VisionMaster Pro, Max and Plus, but nobody has reported trying this integration on them yet. If you own one of these, a Plus2, or a Pro2 with different firmware, your results help everyone with the same model.
 
 Everything below is done in Home Assistant. No computer tools, scripts or command lines needed. Do as many tests as you like, even one helps.
 
@@ -19,7 +19,8 @@ Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?tem
 | --- | --- |
 | VisionMaster Max | Do the lens shift, zoom and focus menu buttons work? Does Wake-on-LAN switch it on from standby? Is *Film* motion enhancement available? |
 | VisionMaster Pro | Everything: nothing has been tested yet |
-| VisionMaster Plus2, Plus | Everything: nothing has been tested yet |
+| VisionMaster Plus2 | What does *AWOL Link status* show in standby? Does Wake-on-LAN switch it on from standby? Do aspect ratio, motion enhancement, zoom and focus work? |
+| VisionMaster Plus | Everything: nothing has been tested yet |
 | VisionMaster Pro2 | Aspect ratio in HDR10+ and HLG. Results on firmware other than V02.01.00E.Q0718 |
 
 ## Level 1: easy (a few minutes, no settings changed)
