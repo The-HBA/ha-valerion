@@ -9,7 +9,7 @@ import socket
 from unittest.mock import patch
 
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_HOST, STATE_UNKNOWN
+from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er, issue_registry as ir
@@ -205,19 +205,15 @@ async def test_two_projectors_share_the_port(
         domain=DOMAIN,
         title="Other room",
         unique_id="aa:bb:cc:dd:ee:ff",
-        data={**enabled_entry.data, CONF_HOST: "localhost"},
+        data=dict(enabled_entry.data),
         options={CONF_STATUS_NOTIFICATIONS: True},
         version=1,
         minor_version=2,
     )
+    await setup_entry(hass, enabled_entry)
     other.add_to_hass(hass)
-    addresses = {"127.0.0.1": {"127.0.0.1"}, "localhost": {"10.0.0.9"}}
-
-    async def resolve(host: str) -> set[str]:
-        return addresses[host]
-
-    with patch("custom_components.valerion.notifications.resolve_ipv4", resolve):
-        await setup_entry(hass, enabled_entry)
+    with patch("custom_components.valerion.notifications.resolve_ipv4", return_value={"10.0.0.9"}):
+        await setup_entry(hass, other)
     assert enabled_entry.runtime_data.notifications_listening is True
     assert other.runtime_data.notifications_listening is True
 
