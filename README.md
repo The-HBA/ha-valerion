@@ -30,7 +30,7 @@ VisionMaster Pro2 with a 4K SDR signal:
 | Buttons | Up, down, left, right, OK, return, menu, settings, home. Under Configuration: lens shift, zoom and focus menus |
 | Selects | Under Configuration: picture mode, aspect ratio, gamma, dynamic tone mapping, color temperature, enhanced black level, motion enhancement |
 | Number | Laser level (0 to 10) |
-| Sensors | Video signal and HDR format. Diagnostic: audio format, color depth, color format, color primaries, LED status, fans, temperatures, AWOL Link status |
+| Sensors | Video signal and HDR format. Diagnostic: audio format, color depth, color format, color primaries, LED status, fans, temperatures, AWOL Link status. With [instant updates](#instant-updates-optional) on: last status notification |
 | Binary sensor | Problem: on when the projector reports a fault (overheating, fan error) |
 
 ## What works with which signal
@@ -102,6 +102,23 @@ To change the IP address, port or security code, use **Reconfigure** in the thre
 
 If a security code is set or changed on the projector, Home Assistant shows *Reauthentication required* on the Integrations page. Enter the new code there.
 
+### Instant updates (optional)
+
+Home Assistant then reads the projector as soon as the power or input changes, instead of at the next poll.
+
+1. Press the gear button and switch on **Instant updates**. The text below it shows the address to use.
+2. On the projector, enter that address under All Settings > Inputs > External Inputs > AWOL Link > Status Notification.
+3. Across VLANs, allow UDP 4352 from the projector to Home Assistant.
+4. Change the input. The *Last status notification* sensor should show the time.
+
+| Good to know | |
+| --- | --- |
+| Only one address | The projector sends to one address only. |
+| Switching it off | The projector's field does not save empty. Enter `127.0.0.1` to stop the messages. |
+| Not covered | Volume sent nothing in our test, and signal changes are not tested. Those still show at the next poll. |
+| Docker | The container needs host networking, or UDP 4352 published. |
+| Tested on | VisionMaster Pro2. Other models may send different messages. |
+
 ## Removal
 
 1. Settings > Devices & services > Valerion > three dots > **Delete**. This also deletes the learned locks.
@@ -138,6 +155,8 @@ response_variable: reply
 AWOL Link allows only one control connection at a time. If something holds it open, other apps that use AWOL Link stop working. This integration never keeps the connection: every poll and command connects, does its work and disconnects.
 
 Home Assistant reads the projector every 10 seconds while it is on and every 30 seconds in standby. Picture settings, fans and temperatures are read about once a minute, and right after the picture mode changes.
+
+With [instant updates](#instant-updates-optional) on, a message from the projector starts a poll right away, at most once every 10 seconds. Messages have no security code, so one is never used as the projector's state, and only messages from the projector's own address count. Polling carries on as usual.
 
 Switching on sends a Wake-on-LAN packet to each MAC address you entered, both as a broadcast and straight to the projector's IP address so it also crosses VLANs, and repeats it for up to 45 seconds. The *AWOL Link status* sensor shows how the projector sleeps: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is off) or *unreachable*.
 
@@ -179,7 +198,9 @@ If a setting stays unavailable or a menu button stays hidden when it should not,
 | A menu button or motion mode shows an error | Your model may not have it. See [What works on which projector](#what-works-on-which-projector). |
 | A lens shift, zoom or focus button disappeared | The projector refused that menu, so it was hidden. See [Locked settings](#locked-settings) to bring it back. |
 | Another app that uses AWOL Link cannot connect | Only one app can be connected at a time. The integration connects for a moment every 10 seconds (every 30 in standby). An app that connects during that moment waits until the integration is done. See [How it works](#how-it-works). |
-| A change made with the IR remote shows late | Settings are read about once a minute. |
+| A change made with the IR remote shows late | Settings are read about once a minute. Power and input can show at once with [instant updates](#instant-updates-optional). |
+| *Last status notification* stays empty | The address is entered on the projector. Across VLANs, the router allows UDP 4352 from the projector to Home Assistant. See [Instant updates](#instant-updates-optional). |
+| *Valerion cannot listen for instant updates* | Another program uses UDP port 4352 on the Home Assistant machine. Everything else keeps working. Close that program and reload the integration, or switch instant updates off. |
 
 ### Reporting a problem
 

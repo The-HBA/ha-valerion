@@ -113,6 +113,9 @@
       },
       "fan_speed": {
         "default": "mdi:fan"
+      },
+      "last_status_notification": {
+        "default": "mdi:bell-ring-outline"
       }
     }
   },

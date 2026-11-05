@@ -48,6 +48,7 @@ Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?tem
    - `%3MOTN 2` tries *Film* motion enhancement.
    - `%3PICL ?` lists the picture modes for the current signal.
 2. **Full power off.** Send `%1POWR 2`. On the Pro2 this is refused. If your projector switches fully off, try switching it on from the media player and tell us whether it came back. Only try this when you can reach the IR remote.
-3. **Debug log of a wake.** On the Valerion integration page choose *Enable debug logging*. Switch the projector on from deep standby (after a night). Then choose *Disable debug logging*: the log downloads. Attach it to your report.
+3. **Instant updates.** Switch them on as described in the [README](../README.md#instant-updates-optional). On the Valerion integration page choose *Enable debug logging*. Change the input, change the volume, start and stop a video, then switch the projector off and on. Choose *Disable debug logging*: the log downloads. Lines with `Status Notification from` show what your projector sends. Attach it to your report.
+4. **Debug log of a wake.** On the Valerion integration page choose *Enable debug logging*. Switch the projector on from deep standby (after a night). Then choose *Disable debug logging*: the log downloads. Attach it to your report.
 
 Thank you for helping.

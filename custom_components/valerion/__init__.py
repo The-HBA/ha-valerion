@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.helpers import config_validation as cv, entity_registry as er
 
-from .const import CONF_SECURITY_CODE, DOMAIN, NAVIGATION_KEYS
+from .const import CONF_SECURITY_CODE, CONF_STATUS_NOTIFICATIONS, DOMAIN, NAVIGATION_KEYS
 from .coordinator import ValerionConfigEntry, ValerionCoordinator, configured_macs, lock_store
 from .lib import AwolLinkClient
+from .notifications import async_start_notifications
 from .services import async_setup_services
 
 if TYPE_CHECKING:
@@ -80,6 +81,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> 
     entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    if entry.options.get(CONF_STATUS_NOTIFICATIONS):
+        await async_start_notifications(hass, entry)
     return True
 
 

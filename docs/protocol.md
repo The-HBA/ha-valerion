@@ -151,7 +151,7 @@ port. They carry no authentication, even with a security code set.
 - Once set, the field does not save empty. Entering `127.0.0.1` stops the messages
   reaching the network.
 - Not tested: signal changes, projector speakers, other models.
-- The integration does not use these messages yet.
+- The integration can use these messages as a signal to poll, as an option. It never takes the state from a message, because anyone on the network could send one.
 
 ### In light standby (same projector, 2026-10-29)
 

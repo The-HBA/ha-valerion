@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.21] - 2026-11-05
+
+### Added
+- Optional instant updates. Home Assistant reads the projector as soon as its power or input changes, instead of at the next poll. Off by default. Switch it on with the settings (gear) button, and enter the address it shows under *Status Notification* on the projector. See [Instant updates](README.md#instant-updates-optional).
+- With instant updates on: a *Last status notification* sensor shows that messages arrive, and the diagnostics download shows how many did.
+
 ## [0.0.20] - 2026-11-05
 
 ### Added

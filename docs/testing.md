@@ -34,6 +34,7 @@ docker run --rm -it -v "$PWD:/src" -w /src python:3.14-slim   sh -c "pip install
 | `test_config_flow.py` | Setup and settings dialogs |
 | `test_init.py` | Setup, unload, removal, migration |
 | `test_coordinator.py` | Polling, standby, power, locks, error messages |
+| `test_notifications.py` | Instant updates: messages start a poll, other senders are ignored, port in use |
 | `test_<platform>.py` | Each entity type, plus a snapshot of its entities |
 | `test_services.py` | *Send raw command* |
 | `test_diagnostics.py` | Diagnostics download (snapshot) |

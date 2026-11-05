@@ -26,6 +26,7 @@ from homeassistant.const import REVOLUTIONS_PER_MINUTE, EntityCategory, UnitOfTe
 from homeassistant.core import callback
 from homeassistant.helpers import entity_registry as er
 
+from .const import CONF_STATUS_NOTIFICATIONS, DOMAIN
 from .coordinator import Connection, ProjectorData, ValerionConfigEntry, ValerionCoordinator
 from .entity import ValerionEntity
 from .lib import (
@@ -41,6 +42,7 @@ from .lib import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from datetime import datetime
     from enum import StrEnum
 
     from homeassistant.core import HomeAssistant
@@ -201,6 +203,15 @@ async def async_setup_entry(
     )
     for description in SLOT_SENSORS:
         _track_slots(hass, entry, async_add_entities, description)
+    notification_sensor = ValerionLastNotificationSensor(coordinator)
+    if entry.options.get(CONF_STATUS_NOTIFICATIONS):
+        async_add_entities([notification_sensor])
+    else:
+        # Switched off again: do not leave a sensor that is no longer provided.
+        registry = er.async_get(hass)
+        found = registry.async_get_entity_id("sensor", DOMAIN, notification_sensor.unique_id or "")
+        if found:
+            registry.async_remove(found)
 
 
 def _track_slots(
@@ -272,6 +283,34 @@ class ValerionLinkStatusSensor(ValerionEntity, SensorEntity):
     def native_value(self) -> str:
         """Return the connection state of the last poll."""
         return self.coordinator.data.connection.value
+
+
+class ValerionLastNotificationSensor(ValerionEntity, SensorEntity):
+    """When the last Status Notification message arrived.
+
+    Only exists with instant updates switched on. It shows that the setting on
+    the projector and the firewall let messages through. It stays empty until
+    the first one after a restart.
+    """
+
+    _attr_translation_key = "last_status_notification"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: ValerionCoordinator) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self.device_id}_last_status_notification"
+
+    @property
+    def available(self) -> bool:
+        """Stay available in standby, when power messages also arrive."""
+        return self.coordinator.last_update_success
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the time of the last message."""
+        return self.coordinator.last_notification_at
 
 
 class ValerionSensor(ValerionEntity, SensorEntity):

@@ -59,6 +59,17 @@ async def async_get_config_entry_diagnostics(
             "last_error": data.last_error,
         },
         "learned_locks": coordinator.locks_as_dict(),
+        "status_notification": {
+            "listening": coordinator.notifications_listening,
+            "received": coordinator.notifications_received,
+            "last_at": (
+                coordinator.last_notification_at.isoformat()
+                if coordinator.last_notification_at
+                else None
+            ),
+            # Only the code: the text of some messages holds the projector's name.
+            "last_code": coordinator.last_notification_header,
+        },
         "wake_on_lan": {
             "mac_known": bool(coordinator.macs),
             "mac_count": len(coordinator.macs),

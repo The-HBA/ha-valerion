@@ -104,6 +104,12 @@
         'VOLM': '35',
       }),
     }),
+    'status_notification': dict({
+      'last_at': None,
+      'last_code': None,
+      'listening': False,
+      'received': 0,
+    }),
     'wake_on_lan': dict({
       'last_wake': dict({
         'sent_to': list([

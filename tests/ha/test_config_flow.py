@@ -18,7 +18,12 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.valerion.const import CONF_MAC_ETHERNET, CONF_SECURITY_CODE, DOMAIN
+from custom_components.valerion.const import (
+    CONF_MAC_ETHERNET,
+    CONF_SECURITY_CODE,
+    CONF_STATUS_NOTIFICATIONS,
+    DOMAIN,
+)
 from custom_components.valerion.coordinator import ValerionCoordinator
 from custom_components.valerion.lib import (
     AwolLinkAuthError,
@@ -239,7 +244,11 @@ async def test_options_flow_sets_and_removes_mac(
     )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert mock_config_entry.options == {CONF_MAC: stored, CONF_MAC_ETHERNET: ""}
+    assert mock_config_entry.options == {
+        CONF_MAC: stored,
+        CONF_MAC_ETHERNET: "",
+        CONF_STATUS_NOTIFICATIONS: False,
+    }
     coordinator = mock_config_entry.runtime_data
     assert coordinator.macs == ((stored,) if stored else ())
 
@@ -260,7 +269,11 @@ async def test_options_flow_keeps_both_macs(
     )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert mock_config_entry.options == {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: ETHERNET_MAC}
+    assert mock_config_entry.options == {
+        CONF_MAC: PROJECTOR_MAC,
+        CONF_MAC_ETHERNET: ETHERNET_MAC,
+        CONF_STATUS_NOTIFICATIONS: False,
+    }
     assert mock_config_entry.runtime_data.macs == (PROJECTOR_MAC, ETHERNET_MAC)
 
 

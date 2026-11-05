@@ -52,10 +52,16 @@ from .models import (
     split_multi_value,
     split_picture_mode_list,
 )
+from .notifications import (
+    NOTIFICATION_PORT,
+    listen_for_notifications,
+    local_address_towards,
+    resolve_ipv4,
+)
 from .protocol import AwolLinkProtocolError, Command, Response, parse_command_line
 from .wol import DEFAULT_BROADCAST, build_magic_packet, normalize_mac, send_magic_packet
 
-__version__ = "0.0.20"
+__version__ = "0.0.21"
 
 __all__ = [
     "ALL_PICTURE_MODES",
@@ -68,6 +74,7 @@ __all__ = [
     "LASER_LEVEL_MAX",
     "LASER_LEVEL_MIN",
     "MODELS",
+    "NOTIFICATION_PORT",
     "SETTABLE_GAMMA",
     "VOLUME_MAX",
     "VOLUME_MIN",
@@ -110,10 +117,13 @@ __all__ = [
     "build_magic_packet",
     "discover",
     "key_press",
+    "listen_for_notifications",
+    "local_address_towards",
     "normalize_mac",
     "parse_command_line",
     "parse_number_list",
     "protocol",
+    "resolve_ipv4",
     "send_magic_packet",
     "split_multi_value",
     "split_picture_mode_list",

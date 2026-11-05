@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC
+from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -62,8 +63,11 @@ from .lib.locks import signal_key
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
+    from datetime import datetime
 
     from homeassistant.core import HomeAssistant
+
+    from .lib import Response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -252,6 +256,11 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         self._lock_store = lock_store(hass, entry.entry_id)
         #: The last Wake-on-LAN attempt, for diagnostics.
         self.last_wake: dict[str, Any] | None = None
+        #: Status Notification, for the sensor and diagnostics.
+        self.notifications_listening = False
+        self.notifications_received = 0
+        self.last_notification_at: datetime | None = None
+        self.last_notification_header: str | None = None
 
     async def async_load_locks(self) -> None:
         """Load the locks learned before the last restart."""
@@ -260,6 +269,23 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
     def locks_as_dict(self) -> dict[str, Any]:
         """Return the learned locks for diagnostics."""
         return self._locks.as_dict()
+
+    @callback
+    def async_notification_received(self, message: Response) -> None:
+        """Poll now, because the projector says something changed.
+
+        The message has no authentication, so nothing in it is used as state.
+        Early polls share the refresh limit of one per 10 seconds, however
+        many messages arrive.
+        """
+        _LOGGER.debug("Status Notification from %s: %s", self.client.host, message.raw)
+        self.notifications_received += 1
+        self.last_notification_at = dt_util.utcnow()
+        self.last_notification_header = message.header
+        self.async_update_listeners()
+        self.config_entry.async_create_background_task(
+            self.hass, self.async_request_refresh(), f"{DOMAIN}_refresh_after_notification"
+        )
 
     # ------------------------------------------------------------------ polling
     async def _async_update_data(self) -> ProjectorData:
