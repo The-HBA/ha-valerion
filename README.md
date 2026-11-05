@@ -58,7 +58,7 @@ AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. On
 | --- | --- | --- | --- | --- | --- |
 | Tested with this integration | Yes | Not yet | One user report | One user report | Not yet |
 | Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Under investigation | Leaves the network; switching on timed out (under investigation) | Unknown |
-| Security code | Not tested yet | Not tested yet | Not tested yet | Reported as rejected (under investigation) | Unknown |
+| Security code | Yes | Not tested yet | Not tested yet | Reported as rejected (under investigation) | Unknown |
 | Aspect ratio | Yes | Yes | Unknown | Unknown | Unknown |
 | Motion enhancement | Yes, all except Film | Film works; others not reported | Unknown | Unknown | Unknown |
 | Lens shift menu | No (no motorised lens shift; the button hides itself) | Yes | No (the projector refuses it; the button hides itself) | Unknown | Unknown |
@@ -75,7 +75,7 @@ The Max column comes from Michael Konieczki's tests with VMote. The Plus2 and Ae
 
 On the projector:
 
-1. Open **All Settings > Inputs > External Inputs > AWOL Link** and switch **AWOL Link** on. A security code is optional. The *Network IP Control Port* switch is not needed.
+1. Open **All Settings > Inputs > External Inputs > AWOL Link** and switch **AWOL Link** on. A security code is optional. To set one, switch AWOL Link off, enter the code and switch AWOL Link on again. The *Network IP Control Port* switch is not needed.
 2. Set the menu language to **English (US)**. In other languages the projector refuses Warm 1 and Warm 2 color temperature (firmware bug).
 3. Give the projector a fixed IP address in your router.
 4. Note the MAC address of the connection the projector uses. It is needed to switch the projector on from deep standby. **All Settings > System > About > Status** shows the Wi-Fi address. For Ethernet, see your router's list of connected devices.

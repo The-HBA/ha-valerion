@@ -12,8 +12,10 @@ to be confirmed.
 - TCP port 4352, one line per message, terminated by `\r` (carriage return).
 - Greeting on connect: `PJLINK 0` (no security code) or `PJLINK 1 <random>`.
 - Security code: reply with `md5(code + random)` as 32 lowercase hex digits on
-  its own line, then expect `PJLINK 1 OK` (`PJLINK ERRA` means refused; other
-  replies are logged at debug level, none seen yet). (Standard PJLink would hash
+  its own line, then expect `PJLINK 1 OK`. `PJLINK ERRA` means refused, and the
+  projector then closes the connection (seen on a VisionMaster Pro2, firmware
+  V02.01.00E.Q0718, 2026-11-05). Other replies are logged at debug level, none
+  seen yet. (Standard PJLink would hash
   `random + password` and prefix the digest to the first command; AWOL Link
   does not accept that.)
 - One control session at a time. A second TCP connection is accepted but
@@ -121,6 +123,35 @@ home screen (no HDMI signal). All documented queries were sent in one session.
 | `%3FANS ?` | `1770 1710 0 0 0 0 0` | Seven fan slots, two in use |
 | `%3TEMP ?` | `33 48 0 0 0 0 0 0` | Eight sensor slots, two in use |
 | `%3LEDS ?` | `0` | Normal |
+
+### Security code (same projector, 2026-11-05)
+
+- **Setting a code:** it only took effect after switching AWOL Link off, entering
+  the code and switching AWOL Link on again.
+- **Greeting with a code:** `PJLINK 1 <random>`, with 8 random characters.
+- **Removing the code:** clear the field. The greeting goes back to `PJLINK 0 `.
+- **In Home Assistant:** the reauthentication form appeared by itself, a wrong code
+  was rejected and the right code was accepted.
+
+### Status Notification (same projector, 2026-11-05)
+
+Enter an IPv4 address under *AWOL Link > Status Notification* and the projector
+sends messages to it. They are UDP datagrams to port 4352 from a random source
+port. They carry no authentication, even with a security code set.
+
+| Event | Message |
+| --- | --- |
+| AWOL Link switched on | `%2LKUP=<network name>` |
+| Input changed | `%2INPT=31`, `%2INPT=30` |
+| Standby | `%2POWR=0` |
+| Power on | `%2POWR=1` |
+
+- Volume up and down sent nothing, with sound going through an AV receiver.
+- Only one address can be entered.
+- Once set, the field does not save empty. Entering `127.0.0.1` stops the messages
+  reaching the network.
+- Not tested: signal changes, projector speakers, other models.
+- The integration does not use these messages yet.
 
 ### In light standby (same projector, 2026-10-29)
 
@@ -328,9 +359,6 @@ used by the integration.
 - Which fan and temperature slots are filled on other models.
 - What the extra `%2SVER` fields (`83`, `OEM01.0.0.0`) mean.
 - Whether `%2ERST` is supported on other models or firmware.
-- What *Status Notification* (an IPv4 address entered on the AWOL Link
-  settings page) sends, and on which port. It may allow push updates instead
-  of polling.
 - Whether `%2SRCH` is answered while the projector is in standby (that would
   allow telling standby apart from "another controller is connected").
 - Whether the Pro2 ever leaves light standby for a silent or unreachable
