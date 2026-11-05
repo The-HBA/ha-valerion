@@ -24,6 +24,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_MAC_ETHERNET,
     CONF_POWER_OFF_MODE,
     DEFAULT_POWER_OFF_MODE,
     DOMAIN,
@@ -210,7 +211,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         entry: ValerionConfigEntry,
         client: AwolLinkClient,
         *,
-        mac: str | None,
+        macs: tuple[str, ...],
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -222,7 +223,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             always_update=False,
         )
         self.client = client
-        self.mac = mac
+        self.macs = macs
         #: Device registry identifier, shared by all entities of this projector.
         self.device_id: str = entry.unique_id or entry.entry_id
         self._values: dict[str, str] = {}
@@ -628,15 +629,17 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
 
         With a known MAC address a Wake-on-LAN packet goes out first and again
         every few seconds while ``%1POWR 1`` is retried, until the projector
-        greets us or the timeout passes.
+        greets us or the timeout passes. With both addresses known each gets
+        its packets, because only the connection in use can wake the projector.
         """
         loop = self.hass.loop
         deadline = loop.time() + POWER_ON_TIMEOUT.total_seconds()
         next_wake = loop.time()
         last_error: Exception | None = None
         while True:
-            if self.mac and loop.time() >= next_wake:
-                await self._async_wake(self.mac)
+            if self.macs and loop.time() >= next_wake:
+                for mac in self.macs:
+                    await self._async_wake(mac)
                 next_wake = loop.time() + WOL_RESEND.total_seconds()
             try:
                 async with self.client.session() as session:
@@ -651,7 +654,7 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
             except AwolLinkConnectionError as err:
                 last_error = err
             if loop.time() >= deadline:
-                if self.mac:
+                if self.macs:
                     raise HomeAssistantError(
                         translation_domain=DOMAIN,
                         translation_key="power_on_timeout",
@@ -731,16 +734,20 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
         )
 
 
-def configured_mac(entry: ConfigEntry) -> str | None:
-    """Return the projector's MAC address for Wake-on-LAN, if one is set.
+def configured_mac(entry: ConfigEntry, key: str) -> str | None:
+    """Return the Wi-Fi or Ethernet MAC address for Wake-on-LAN, if one is set.
 
     The settings (options) win over the first setup, so a MAC can be added,
     changed or removed (empty value) later.
     """
-    mac: str | None = (
-        entry.options[CONF_MAC] if CONF_MAC in entry.options else entry.data.get(CONF_MAC)
-    )
+    mac: str | None = entry.options[key] if key in entry.options else entry.data.get(key)
     return mac or None
+
+
+def configured_macs(entry: ConfigEntry) -> tuple[str, ...]:
+    """Return every different MAC address that is set, Wi-Fi first."""
+    macs = (configured_mac(entry, CONF_MAC), configured_mac(entry, CONF_MAC_ETHERNET))
+    return tuple(dict.fromkeys(mac for mac in macs if mac))
 
 
 def lock_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:

@@ -78,7 +78,7 @@ On the projector:
 1. Open **All Settings > Inputs > External Inputs > AWOL Link** and switch **AWOL Link** on. A security code is optional. The *Network IP Control Port* switch is not needed.
 2. Set the menu language to **English (US)**. In other languages the projector refuses Warm 1 and Warm 2 color temperature (firmware bug).
 3. Give the projector a fixed IP address in your router.
-4. Note the MAC address from **All Settings > System > About > Status**. It is needed to switch the projector on from deep standby.
+4. Note the MAC address of the connection the projector uses. It is needed to switch the projector on from deep standby. **All Settings > System > About > Status** shows the Wi-Fi address. For Ethernet, see your router's list of connected devices.
 
 ## Installation
 
@@ -94,9 +94,9 @@ Copy `custom_components/valerion` into the `custom_components` folder of your Ho
 
 ## Setup
 
-Settings > Devices & services > Add integration > **Valerion**. Enter the IP address, port 4352, the security code if you set one, and the MAC address. The projector must be on or in standby.
+Settings > Devices & services > Add integration > **Valerion**. Enter the IP address, port 4352, the security code if you set one, and the Wi-Fi MAC address, the Ethernet MAC address or both. The projector must be on or in standby.
 
-To add or change the MAC address later, open Settings > Devices & services > Valerion and press the gear button next to the projector.
+To add or change a MAC address later, open Settings > Devices & services > Valerion and press the gear button next to the projector.
 
 To change the IP address, port or security code, use **Reconfigure** in the three-dot menu of the same entry. Entities and history stay.
 
@@ -139,7 +139,7 @@ AWOL Link allows only one control connection at a time. If something holds it op
 
 Home Assistant reads the projector every 10 seconds while it is on and every 30 seconds in standby. Picture settings, fans and temperatures are read about once a minute, and right after the picture mode changes.
 
-Switching on sends a Wake-on-LAN packet to the MAC address, both as a broadcast and straight to the projector's IP address so it also crosses VLANs, and repeats it for up to 45 seconds. The *AWOL Link status* sensor shows how the projector sleeps: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is off) or *unreachable*.
+Switching on sends a Wake-on-LAN packet to each MAC address you entered, both as a broadcast and straight to the projector's IP address so it also crosses VLANs, and repeats it for up to 45 seconds. The *AWOL Link status* sensor shows how the projector sleeps: *answering*, *silent* (deep standby, or another app is connected), *refused* (AWOL Link is off) or *unreachable*.
 
 ## Locked settings
 
@@ -173,7 +173,7 @@ If a setting stays unavailable or a menu button stays hidden when it should not,
 | Setup says *accepted the connection but did not answer* | The projector is in deep standby, or another app that uses AWOL Link is connected. Switch the projector on and close that app. See [How it works](#how-it-works). |
 | Setup says *rejected the security code* | Enter the code exactly as set under AWOL Link on the projector. |
 | *Reauthentication required* on the Integrations page | The security code on the projector was set or changed. Open the notice and enter the new code. |
-| The projector does not switch on from standby | The MAC address is set (gear button, see [Setup](#setup)) and UDP 9 is allowed to the projector. After more than a day in standby some models only wake by IR. See [Known limitations](#known-limitations). |
+| The projector does not switch on from standby | The MAC address of the connection in use is set (gear button, see [Setup](#setup)): Wi-Fi and Ethernet have different addresses. UDP 9 must be allowed to the projector. After more than a day in standby some models only wake by IR. See [Known limitations](#known-limitations). |
 | A setting is greyed out | It is locked for the current signal and picture mode. See [What works with which signal](#what-works-with-which-signal) and [Locked settings](#locked-settings). |
 | Warm 1 or Warm 2 color temperature is refused | Set the projector's menu language to English (US). |
 | A menu button or motion mode shows an error | Your model may not have it. See [What works on which projector](#what-works-on-which-projector). |

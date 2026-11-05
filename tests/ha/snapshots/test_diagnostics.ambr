@@ -111,6 +111,7 @@
           'projector',
         ]),
       }),
+      'mac_count': 0,
       'mac_known': False,
     }),
   })

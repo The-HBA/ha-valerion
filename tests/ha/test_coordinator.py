@@ -22,6 +22,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.valerion.const import (
+    CONF_MAC_ETHERNET,
     CONF_POWER_OFF_MODE,
     DOMAIN,
     INTERVAL_IDLE,
@@ -486,6 +487,31 @@ async def test_power_on_sends_wake_on_lan(
     assert "%1POWR 1" in projector.received
     assert coordinator.last_wake is not None
     assert coordinator.last_wake["sent_to"] == ["broadcast", "projector"]
+
+
+async def test_power_on_wakes_both_macs(hass: HomeAssistant, projector: FakeProjector) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Living room",
+        unique_id=PROJECTOR_MAC,
+        entry_id=ENTRY_ID,
+        data={
+            CONF_HOST: "127.0.0.1",
+            CONF_PORT: projector.port,
+            CONF_MAC: PROJECTOR_MAC,
+            CONF_MAC_ETHERNET: "f0:ed:51:c4:4c:a9",
+        },
+        version=1,
+        minor_version=2,
+    )
+    await setup_entry(hass, entry)
+    coordinator: ValerionCoordinator = entry.runtime_data
+
+    with patch(f"{COORDINATOR}.send_magic_packet", AsyncMock(return_value=[])) as send:
+        await coordinator.async_power_on()
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    assert [call.args[0] for call in send.call_args_list] == [PROJECTOR_MAC, "f0:ed:51:c4:4c:a9"]
 
 
 async def test_wake_on_lan_failure_is_recorded(

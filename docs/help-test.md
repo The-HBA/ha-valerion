@@ -35,7 +35,7 @@ Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?tem
 ## Level 2: medium (needs a video playing)
 
 1. **Standby.** Switch the projector off from Home Assistant. Check the *AWOL Link status* sensor after 1 minute and after 10 minutes: *answering*, *silent* or *unreachable*?
-2. **Power on.** Enter the projector's MAC address (Settings > Devices & services > Valerion > gear button). Switch the projector off, wait 10 minutes, then switch it on from the media player. Did it come on? Try again after a night in standby.
+2. **Power on.** Enter the MAC address of the connection the projector uses, Wi-Fi or Ethernet (Settings > Devices & services > Valerion > gear button). Switch the projector off, wait 10 minutes, then switch it on from the media player. Did it come on? Try again after a night in standby.
 3. **Picture modes.** Open the *Picture mode* list while playing SDR, HDR10, HDR10+, HLG and Dolby Vision. Write down the list for each format.
 4. **Settings per format.** With each format playing, try to change *Gamma*, *Dynamic tone mapping*, *Color temperature*, *Enhanced black level*, *Laser level* and *Aspect ratio*. Note which ones work and which show an error. Set them back afterwards.
 5. **Motion enhancement.** Try every option, including *Film*. Which ones are refused?

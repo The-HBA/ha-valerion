@@ -18,7 +18,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.valerion.const import CONF_SECURITY_CODE, DOMAIN
+from custom_components.valerion.const import CONF_MAC_ETHERNET, CONF_SECURITY_CODE, DOMAIN
 from custom_components.valerion.coordinator import ValerionCoordinator
 from custom_components.valerion.lib import (
     AwolLinkAuthError,
@@ -30,6 +30,8 @@ from custom_components.valerion.lib import (
 from tests.lib.fake_projector import DEFAULT_VALUES, FakeProjector
 
 from .conftest import PROJECTOR_MAC, poll, setup_entry
+
+ETHERNET_MAC = "f0:ed:51:c4:4c:a9"
 
 
 @pytest.fixture
@@ -152,6 +154,7 @@ async def test_user_flow_errors_and_recovery(
     [
         ({CONF_HOST: "not a host!"}, {CONF_HOST: "invalid_host"}),
         ({CONF_HOST: "127.0.0.1", CONF_MAC: "zz:zz"}, {CONF_MAC: "invalid_mac"}),
+        ({CONF_HOST: "127.0.0.1", CONF_MAC_ETHERNET: "zz:zz"}, {CONF_MAC_ETHERNET: "invalid_mac"}),
     ],
 )
 async def test_user_flow_invalid_input(
@@ -236,9 +239,69 @@ async def test_options_flow_sets_and_removes_mac(
     )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert mock_config_entry.options == {CONF_MAC: stored}
+    assert mock_config_entry.options == {CONF_MAC: stored, CONF_MAC_ETHERNET: ""}
     coordinator = mock_config_entry.runtime_data
-    assert coordinator.mac == (stored or None)
+    assert coordinator.macs == ((stored,) if stored else ())
+
+
+async def test_options_flow_keeps_both_macs(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    await setup_entry(hass, mock_config_entry)
+
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_MAC_ETHERNET: "nonsense"}
+    )
+    assert result["errors"] == {CONF_MAC_ETHERNET: "invalid_mac"}
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: "F0-ED-51-C4-4C-A9"}
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert mock_config_entry.options == {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: ETHERNET_MAC}
+    assert mock_config_entry.runtime_data.macs == (PROJECTOR_MAC, ETHERNET_MAC)
+
+
+async def test_same_mac_in_both_fields_is_used_once(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    await setup_entry(hass, mock_config_entry)
+
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: PROJECTOR_MAC}
+    )
+    await hass.async_block_till_done()
+    assert mock_config_entry.runtime_data.macs == (PROJECTOR_MAC,)
+
+
+@pytest.mark.parametrize(
+    ("macs", "stored", "unique_id"),
+    [
+        (
+            {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: ETHERNET_MAC},
+            {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: ETHERNET_MAC},
+            PROJECTOR_MAC,
+        ),
+        ({CONF_MAC_ETHERNET: ETHERNET_MAC}, {CONF_MAC_ETHERNET: ETHERNET_MAC}, ETHERNET_MAC),
+    ],
+)
+async def test_user_flow_with_ethernet_mac(
+    hass: HomeAssistant,
+    projector: FakeProjector,
+    macs: dict[str, str],
+    stored: dict[str, str],
+    unique_id: str,
+) -> None:
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: "127.0.0.1", CONF_PORT: projector.port, **macs}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_HOST: "127.0.0.1", CONF_PORT: projector.port, **stored}
+    assert result["result"].unique_id == unique_id
 
 
 def _reauth_flows(hass: HomeAssistant, entry: MockConfigEntry) -> list[ConfigFlowResult]:

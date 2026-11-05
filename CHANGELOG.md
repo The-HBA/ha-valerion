@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.20] - 2026-11-05
+
+### Added
+- A separate field for the Ethernet MAC address, in the first setup and under the settings (gear) button. Switching on sends Wake-on-LAN to every address you entered. A MAC address entered earlier now shows as the Wi-Fi address and keeps working. Move it to the Ethernet field if that is what it is.
+
 ## [0.0.19] - 2026-11-03
 
 ### Fixed

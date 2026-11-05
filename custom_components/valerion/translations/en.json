@@ -8,13 +8,15 @@
           "host": "IP address",
           "port": "Port",
           "security_code": "AWOL Link security code",
-          "mac": "MAC address"
+          "mac": "Wi-Fi MAC address",
+          "mac_ethernet": "Ethernet MAC address"
         },
         "data_description": {
           "host": "The projector's IP address on your network. Give it a fixed address (DHCP reservation) in your router.",
           "port": "Leave at 4352 unless you changed it on the projector.",
           "security_code": "Only if you set a security code in the AWOL Link menu. Leave empty otherwise.",
-          "mac": "Needed to switch the projector on from standby (Wake-on-LAN). Find it under All Settings > System > About > Status. Optional: it can be added later with the settings (gear) button of the projector's entry."
+          "mac": "Needed to switch the projector on from standby (Wake-on-LAN) when it uses Wi-Fi. Find it under All Settings > System > About > Status. Optional: it can be added later with the settings (gear) button of the projector's entry.",
+          "mac_ethernet": "Needed to switch the projector on from standby when it uses Ethernet. The Status page may only show the Wi-Fi address. Your router's list of connected devices shows the address in use. Optional, like the Wi-Fi address."
         }
       },
       "reauth_confirm": {
@@ -29,7 +31,7 @@
       },
       "reconfigure": {
         "title": "Reconfigure {name}",
-        "description": "Change the connection details. Entities, history and dashboards stay as they are. The MAC address is changed with the settings (gear) button.",
+        "description": "Change the connection details. Entities, history and dashboards stay as they are. MAC addresses are changed with the settings (gear) button.",
         "data": {
           "host": "IP address",
           "port": "Port",
@@ -63,10 +65,12 @@
         "title": "Projector settings",
         "description": "Changes apply right away; the projector's entities and history stay as they are.",
         "data": {
-          "mac": "MAC address"
+          "mac": "Wi-Fi MAC address",
+          "mac_ethernet": "Ethernet MAC address"
         },
         "data_description": {
-          "mac": "Used to switch the projector on from standby with Wake-on-LAN. Find it under All Settings > System > About > Status. Recommended for every model: switching on then also works when the projector has left the network in standby. Leave empty to remove it."
+          "mac": "Used to switch the projector on from standby with Wake-on-LAN when it uses Wi-Fi. Find it under All Settings > System > About > Status. Recommended for every model: switching on then also works when the projector has left the network in standby. Leave empty to remove it.",
+          "mac_ethernet": "The same for a projector on Ethernet. The Status page may only show the Wi-Fi address. Your router's list of connected devices shows the address in use. Leave empty to remove it."
         }
       }
     },

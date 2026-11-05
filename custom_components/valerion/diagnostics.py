@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.const import CONF_HOST, CONF_MAC
 
-from .const import CONF_SECURITY_CODE
+from .const import CONF_MAC_ETHERNET, CONF_SECURITY_CODE
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -16,7 +16,16 @@ if TYPE_CHECKING:
     from .coordinator import ValerionConfigEntry
     from .lib import SignalInfo
 
-TO_REDACT = {CONF_HOST, CONF_MAC, CONF_SECURITY_CODE, "unique_id", "title", "NAME", "name"}
+TO_REDACT = {
+    CONF_HOST,
+    CONF_MAC,
+    CONF_MAC_ETHERNET,
+    CONF_SECURITY_CODE,
+    "unique_id",
+    "title",
+    "NAME",
+    "name",
+}
 
 
 async def async_get_config_entry_diagnostics(
@@ -51,7 +60,8 @@ async def async_get_config_entry_diagnostics(
         },
         "learned_locks": coordinator.locks_as_dict(),
         "wake_on_lan": {
-            "mac_known": coordinator.mac is not None,
+            "mac_known": bool(coordinator.macs),
+            "mac_count": len(coordinator.macs),
             "last_wake": coordinator.last_wake,
         },
     }

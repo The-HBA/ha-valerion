@@ -18,7 +18,7 @@ from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, Tex
 from homeassistant.util.network import is_host_valid
 import probatio
 
-from .const import CONF_SECURITY_CODE, DOMAIN, NAME
+from .const import CONF_MAC_ETHERNET, CONF_SECURITY_CODE, DOMAIN, NAME
 from .coordinator import configured_mac
 from .lib import (
     DEFAULT_PORT,
@@ -46,6 +46,7 @@ STEP_USER_SCHEMA = probatio.Schema(
         probatio.Required(CONF_PORT, default=DEFAULT_PORT): probatio.Port(),
         probatio.Optional(probatio.Secret(CONF_SECURITY_CODE)): CODE_SELECTOR,
         probatio.Optional(CONF_MAC): str,
+        probatio.Optional(CONF_MAC_ETHERNET): str,
     }
 )
 
@@ -61,7 +62,9 @@ REAUTH_SCHEMA = probatio.Schema(
     {probatio.Optional(probatio.Secret(CONF_SECURITY_CODE)): CODE_SELECTOR}
 )
 
-OPTIONS_SCHEMA = probatio.Schema({probatio.Optional(CONF_MAC): str})
+OPTIONS_SCHEMA = probatio.Schema(
+    {probatio.Optional(CONF_MAC): str, probatio.Optional(CONF_MAC_ETHERNET): str}
+)
 
 
 class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -84,26 +87,19 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
             host: str = user_input[CONF_HOST].strip()
             port: int = user_input[CONF_PORT]
             code = _code(user_input)
-            mac_input: str = (user_input.get(CONF_MAC) or "").strip()
-            mac: str | None = None
+            macs = _macs(user_input, errors)
 
             if not is_host_valid(host):
                 errors[CONF_HOST] = "invalid_host"
-            if mac_input:
-                try:
-                    mac = format_mac(normalize_mac(mac_input))
-                except ValueError:
-                    errors[CONF_MAC] = "invalid_mac"
 
             if not errors and (title := await _async_try_connect(host, port, code, errors)):
-                if mac:
-                    await self.async_set_unique_id(mac)
+                if unique_id := macs[CONF_MAC] or macs[CONF_MAC_ETHERNET]:
+                    await self.async_set_unique_id(unique_id)
                     self._abort_if_unique_id_configured(updates={CONF_HOST: host, CONF_PORT: port})
                 # Also catches a projector first set up without a MAC.
                 self._async_abort_entries_match({CONF_HOST: host})
                 data = _connection_data(host, port, code)
-                if mac:
-                    data[CONF_MAC] = mac
+                data.update({key: mac for key, mac in macs.items() if mac})
                 return self.async_create_entry(title=title, data=data)
 
         return self.async_show_form(
@@ -143,7 +139,7 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
         """Change the IP address, port or security code of a projector already set up.
 
         The device, its entities and their history stay as they are. The MAC
-        address is changed with the settings (gear) button instead.
+        addresses are changed with the settings (gear) button instead.
         """
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
@@ -179,31 +175,41 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
 class ValerionOptionsFlow(OptionsFlowWithReload):
     """Settings that can change after setup; saving reloads the projector.
 
-    The MAC address lives here so it can be added later. It is only used for
-    Wake-on-LAN: the device and entity IDs never change with it.
+    The MAC addresses live here so they can be added later. They are only used
+    for Wake-on-LAN: the device and entity IDs never change with them.
     """
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Ask for the MAC address (empty removes it)."""
+        """Ask for the MAC addresses (empty removes one)."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            mac_input: str = (user_input.get(CONF_MAC) or "").strip()
-            mac = ""
-            if mac_input:
-                try:
-                    mac = format_mac(normalize_mac(mac_input))
-                except ValueError:
-                    errors[CONF_MAC] = "invalid_mac"
+            macs = _macs(user_input, errors)
             if not errors:
-                # Always store the key: an empty value overrides a MAC that
+                # Always store both keys: an empty value overrides a MAC that
                 # was entered during the first setup.
-                return self.async_create_entry(data={**self.config_entry.options, CONF_MAC: mac})
-        suggested = user_input or {CONF_MAC: configured_mac(self.config_entry) or ""}
+                return self.async_create_entry(data={**self.config_entry.options, **macs})
+        suggested = user_input or {
+            key: configured_mac(self.config_entry, key) or ""
+            for key in (CONF_MAC, CONF_MAC_ETHERNET)
+        }
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(OPTIONS_SCHEMA, suggested),
             errors=errors,
         )
+
+
+def _macs(user_input: Mapping[str, Any], errors: dict[str, str]) -> dict[str, str]:
+    """Return the Wi-Fi and Ethernet MAC addresses, empty when a field was left empty."""
+    macs: dict[str, str] = {}
+    for key in (CONF_MAC, CONF_MAC_ETHERNET):
+        macs[key] = (user_input.get(key) or "").strip()
+        if macs[key]:
+            try:
+                macs[key] = format_mac(normalize_mac(macs[key]))
+            except ValueError:
+                errors[key] = "invalid_mac"
+    return macs
 
 
 def _code(user_input: Mapping[str, Any]) -> str | None:

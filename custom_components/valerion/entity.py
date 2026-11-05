@@ -62,4 +62,4 @@ class ValerionEntity(CoordinatorEntity[ValerionCoordinator]):
         data = self.coordinator.data
         if data.connection == Connection.REFUSED:
             return False
-        return not (data.connection == Connection.UNREACHABLE and not self.coordinator.mac)
+        return not (data.connection == Connection.UNREACHABLE and not self.coordinator.macs)

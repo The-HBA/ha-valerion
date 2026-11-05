@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
+from homeassistant.const import CONF_MAC
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 import pytest
@@ -16,6 +17,7 @@ from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
 from syrupy.filters import props
 
+from custom_components.valerion.const import CONF_MAC_ETHERNET
 from custom_components.valerion.coordinator import ValerionCoordinator
 from custom_components.valerion.lib import protocol
 from tests.lib.fake_projector import FakeProjector
@@ -66,3 +68,21 @@ async def test_diagnostics_never_show_the_address(
 
     assert host not in json.dumps(diagnostics)
     assert diagnostics["state"]["last_error"] == "timeout connecting to **REDACTED**:4352"
+
+
+async def test_diagnostics_never_show_a_mac(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    coordinator: ValerionCoordinator,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    macs = {CONF_MAC: "f0:ed:51:c4:4c:a8", CONF_MAC_ETHERNET: "f0:ed:51:c4:4c:a9"}
+    hass.config_entries.async_update_entry(mock_config_entry, options=macs)
+    coordinator.macs = tuple(macs.values())
+    await hass.async_block_till_done()
+
+    diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, mock_config_entry)
+
+    text = json.dumps(diagnostics)
+    assert "f0:ed:51" not in text
+    assert diagnostics["wake_on_lan"]["mac_count"] == 2

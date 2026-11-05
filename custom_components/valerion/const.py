@@ -10,6 +10,8 @@ NAME: Final = "Valerion"
 MANUFACTURER: Final = "Valerion (AWOL Vision)"
 
 CONF_SECURITY_CODE: Final = "security_code"
+#: CONF_MAC holds the Wi-Fi address, this one the Ethernet address.
+CONF_MAC_ETHERNET: Final = "mac_ethernet"
 CONF_POWER_OFF_MODE: Final = "power_off_mode"
 CONF_BROADCAST_ADDRESS: Final = "broadcast_address"
 CONF_BROADCAST_PORT: Final = "broadcast_port"

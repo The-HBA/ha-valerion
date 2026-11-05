@@ -8,7 +8,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.helpers import config_validation as cv, entity_registry as er
 
 from .const import CONF_SECURITY_CODE, DOMAIN, NAVIGATION_KEYS
-from .coordinator import ValerionConfigEntry, ValerionCoordinator, configured_mac, lock_store
+from .coordinator import ValerionConfigEntry, ValerionCoordinator, configured_macs, lock_store
 from .lib import AwolLinkClient
 from .services import async_setup_services
 
@@ -74,7 +74,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> 
         entry.data[CONF_PORT],
         security_code=entry.data.get(CONF_SECURITY_CODE),
     )
-    coordinator = ValerionCoordinator(hass, entry, client, mac=configured_mac(entry))
+    coordinator = ValerionCoordinator(hass, entry, client, macs=configured_macs(entry))
     await coordinator.async_load_locks()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
