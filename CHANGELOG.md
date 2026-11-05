@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.0.22] - 2026-11-05
+
+### Fixed
+- Inputs without a name of their own, such as *Input 34* on the Aetherion Max, can now be selected. Before, choosing one gave an error.
+
+### Added
+- README: ideas and example automations.
+- README: install and removal steps for the Marketplace in Home Assistant 2026.11.
+
 ## [0.0.21] - 2026-11-05
 
 ### Added

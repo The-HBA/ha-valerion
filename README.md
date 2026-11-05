@@ -82,11 +82,21 @@ On the projector:
 
 ## Installation
 
-### HACS / Marketplace
+### Marketplace (Home Assistant 2026.11 and newer)
+
+HACS is now built into Home Assistant as the Marketplace.
 
 [![Open your Home Assistant instance and add this repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=The-HBA&repository=ha-valerion&category=integration)
 
-Or add it by hand: HACS (Settings > Marketplace from Home Assistant 2026.11) > *Custom repositories*, add `https://github.com/The-HBA/ha-valerion` as *Integration*, download **Valerion** and restart Home Assistant.
+Or add it by hand:
+
+1. Settings > Marketplace > **Add from link**. The Marketplace asks you to connect GitHub the first time. That connection only reads public information.
+2. Enter `The-HBA/ha-valerion` and select **Add**.
+3. Download **Valerion** and restart Home Assistant.
+
+### HACS (Home Assistant 2026.9 and 2026.10)
+
+Use the button above, or HACS > *Custom repositories*, add `https://github.com/The-HBA/ha-valerion` as *Integration*. Download **Valerion** and restart Home Assistant.
 
 ### Manual
 
@@ -122,7 +132,9 @@ Home Assistant then reads the projector as soon as the power or input changes, i
 ## Removal
 
 1. Settings > Devices & services > Valerion > three dots > **Delete**. This also deletes the learned locks.
-2. HACS > Valerion > three dots > **Remove**, then restart Home Assistant.
+2. Remove the files, then restart Home Assistant:
+   - Marketplace: open Valerion, three dots > **Uninstall**.
+   - HACS: Valerion > three dots > **Remove**.
 
 ## Remote keys
 
@@ -148,6 +160,102 @@ action: valerion.send_raw_command
 data:
   command: "%3ASPR ?"
 response_variable: reply
+```
+
+## What you can do with it
+
+| Idea | Uses |
+| --- | --- |
+| Lights go down when the projector switches on | Media player state |
+| Laser level or picture mode follows the film's format | HDR format sensor, laser level, picture mode |
+| Switch off when the source has gone quiet | HDR format sensor, media player |
+| A message when the projector reports a fault | Problem binary sensor |
+| One dashboard button for a whole setup: input, aspect ratio, laser | Media player, aspect ratio, laser level |
+
+## Examples
+
+Replace `visionmaster_pro2` with your projector's name, as shown on its device page.
+
+**Lights down when the projector switches on**
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: media_player.visionmaster_pro2
+    to: "on"
+actions:
+  - action: light.turn_off
+    target:
+      area_id: living_room
+```
+
+**Lower laser level for SDR**
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: sensor.visionmaster_pro2_hdr_format
+    to: sdr
+actions:
+  - action: number.set_value
+    target:
+      entity_id: number.visionmaster_pro2_laser_level
+    data:
+      value: 7
+```
+
+The other formats are `hdr10`, `hdr10_plus`, `hlg`, `dolby_vision` and `no_signal`.
+
+**Picture mode for HDR10**
+
+Mode names change with the format and the model. The *Picture mode* entity lists the ones you can use.
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: sensor.visionmaster_pro2_hdr_format
+    to: hdr10
+    for:
+      seconds: 15
+actions:
+  - action: select.select_option
+    target:
+      entity_id: select.visionmaster_pro2_picture_mode
+    data:
+      option: HDR Theater
+```
+
+**Switch off after 30 minutes without a signal**
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: sensor.visionmaster_pro2_hdr_format
+    to: no_signal
+    for:
+      minutes: 30
+conditions:
+  - condition: state
+    entity_id: media_player.visionmaster_pro2
+    state: "on"
+actions:
+  - action: media_player.turn_off
+    target:
+      entity_id: media_player.visionmaster_pro2
+```
+
+**Message on a fault**
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.visionmaster_pro2_problem
+    to: "on"
+actions:
+  - action: persistent_notification.create
+    data:
+      title: Projector
+      message: "The projector reports a fault: {{ states('sensor.visionmaster_pro2_led_status') }}"
 ```
 
 ## How it works

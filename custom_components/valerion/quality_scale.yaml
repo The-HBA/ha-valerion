@@ -54,16 +54,12 @@ rules:
     status: todo
     comment: Depends on discovery.
   docs-data-update: done
-  docs-examples:
-    status: todo
-    comment: Automation examples planned for v0.1.0.
+  docs-examples: done
   docs-known-limitations: done
   docs-supported-devices: done
   docs-supported-functions: done
   docs-troubleshooting: done
-  docs-use-cases:
-    status: todo
-    comment: Planned for v0.1.0.
+  docs-use-cases: done
   dynamic-devices:
     status: exempt
     comment: One config entry is one projector.

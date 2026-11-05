@@ -17,7 +17,7 @@ Open a [model test report](https://github.com/The-HBA/ha-valerion/issues/new?tem
 
 | Model | What we want to know most |
 | --- | --- |
-| VisionMaster Max | Do the lens shift, zoom and focus menu buttons work? Does Wake-on-LAN switch it on from standby? Is *Film* motion enhancement available? |
+| VisionMaster Max | Do the lens shift, zoom and focus menu buttons work? Does Wake-on-LAN switch it on from standby? |
 | VisionMaster Pro | Everything: nothing has been tested yet |
 | VisionMaster Plus2 | What does *AWOL Link status* show in standby? Does Wake-on-LAN switch it on from standby? Do aspect ratio, motion enhancement, zoom and focus work? |
 | VisionMaster Plus | Everything: nothing has been tested yet |

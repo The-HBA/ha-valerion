@@ -26,8 +26,9 @@ to be confirmed.
   the greeting, and power-on needs Wake-on-LAN. On a VisionMaster Pro2
   (firmware V02.01.00E.Q0718, 2026-10-29) both a power-off from the Android
   TV side and an IR remote power-off gave light standby; it was still
-  answering 70 minutes and 10 minutes later respectively (longer
-  measurements pending). In light standby `%1POWR 1` switches the
+  answering 70 minutes and 10 minutes later respectively. A Home Assistant
+  history from 2026-10-29 to 2026-11-03 shows it answering through every
+  standby, the longest 14 hours 51 minutes. Longer than a day is not measured. In light standby `%1POWR 1` switches the
   projector on without Wake-on-LAN (verified from Home Assistant without a
   MAC address, 2026-10-29). The integration's *AWOL Link status* sensor
   records which depth the projector is in over time.
@@ -288,6 +289,14 @@ in every field.
 Measured by Michael Konieczki on his VisionMaster Max (firmware not stated).
 Not yet confirmed on the Pro2.
 
+- **Film motion enhancement:** works. With Dolby Vision playing (Dolby Vision
+  Dark, 4K 25 Hz) `%3MOTN 2` returned `OK` and read back `2`. The Pro2 refuses
+  the same command with `ERR2`, so this depends on the model or firmware.
+- **Gamma:** the presets only work with SDR. With HDR10 (HDR Theater only)
+  gamma reads `4` (ST2084) and the projector's menu offers only gamma
+  calibration. With HLG, HDR10+ and Dolby Vision, setting gamma returns `ERR3`.
+  Queries still answer when a setting is locked: in Dolby Vision gamma reads
+  2.2, so the value does not show the lock.
 - **Standby:** after `%1POWR 0` the projector leaves the network within
   about 30 seconds (no greeting, no replies); light standby as on the Pro2
   was never seen. Wake-on-Wi-Fi shortly afterwards works every time, and the

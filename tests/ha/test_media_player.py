@@ -110,6 +110,31 @@ async def test_select_source(
         await _call(hass, SERVICE_SELECT_SOURCE, source="Netflix")
 
 
+async def test_select_unnamed_source(
+    hass: HomeAssistant, projector: FakeProjector, mock_config_entry: MockConfigEntry
+) -> None:
+    # The Aetherion Max lists inputs 34 and 35, which have no name of their own.
+    projector.values["%2INST"] = "30 31 32 33 34 35"
+    await setup_entry(hass, mock_config_entry)
+
+    assert _state(hass).attributes[ATTR_INPUT_SOURCE_LIST] == [
+        "Home",
+        "HDMI 1",
+        "HDMI 2",
+        "HDMI 3",
+        "Input 34",
+        "Input 35",
+    ]
+
+    await _call(hass, SERVICE_SELECT_SOURCE, source="Input 34")
+    assert "%2INPT 34" in projector.received
+    assert _state(hass).attributes[ATTR_INPUT_SOURCE] == "Input 34"
+
+    # A code the projector did not list is still refused.
+    with pytest.raises(ServiceValidationError):
+        await _call(hass, SERVICE_SELECT_SOURCE, source="Input 36")
+
+
 async def test_volume_and_mute(
     hass: HomeAssistant, projector: FakeProjector, coordinator: ValerionCoordinator
 ) -> None:

@@ -76,8 +76,12 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
     @property
     def source_list(self) -> list[str]:
         """Return the input names."""
-        inputs = self.coordinator.data.identity.inputs or tuple(SOURCE_NAMES)
-        return [SOURCE_NAMES.get(code, f"Input {code}") for code in inputs]
+        return [_source_name(code) for code in self._input_codes]
+
+    @property
+    def _input_codes(self) -> tuple[str, ...]:
+        """Return the input codes the projector lists, or the common ones until known."""
+        return self.coordinator.data.identity.inputs or tuple(SOURCE_NAMES)
 
     @property
     def source(self) -> str | None:
@@ -87,7 +91,7 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
         )
         if code is None:
             return None
-        return SOURCE_NAMES.get(code, f"Input {code}")
+        return _source_name(code)
 
     @property
     def volume_level(self) -> float | None:
@@ -116,7 +120,7 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
 
     async def async_select_source(self, source: str) -> None:
         """Switch to ``source`` by its display name."""
-        code = next((c for c, n in SOURCE_NAMES.items() if n == source), None)
+        code = next((c for c in self._input_codes if _source_name(c) == source), None)
         if code is None:
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
@@ -154,6 +158,11 @@ class ValerionMediaPlayer(ValerionEntity, MediaPlayerEntity):
             "connection": data.connection,
             "busy": data.busy,
         }
+
+
+def _source_name(code: str) -> str:
+    """Return the display name of an input code; not every model's inputs have a name."""
+    return SOURCE_NAMES.get(code, f"Input {code}")
 
 
 _POWER_TO_STATE: dict[PowerState, MediaPlayerState] = {
