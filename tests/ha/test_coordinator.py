@@ -499,7 +499,7 @@ async def test_power_on_wakes_both_macs(hass: HomeAssistant, projector: FakeProj
             CONF_HOST: "127.0.0.1",
             CONF_PORT: projector.port,
             CONF_MAC: PROJECTOR_MAC,
-            CONF_MAC_ETHERNET: "f0:ed:51:c4:4c:a9",
+            CONF_MAC_ETHERNET: "00:00:5e:00:53:02",
         },
         version=1,
         minor_version=2,
@@ -511,7 +511,7 @@ async def test_power_on_wakes_both_macs(hass: HomeAssistant, projector: FakeProj
         await coordinator.async_power_on()
     await hass.async_block_till_done(wait_background_tasks=True)
 
-    assert [call.args[0] for call in send.call_args_list] == [PROJECTOR_MAC, "f0:ed:51:c4:4c:a9"]
+    assert [call.args[0] for call in send.call_args_list] == [PROJECTOR_MAC, "00:00:5e:00:53:02"]
 
 
 async def test_wake_on_lan_failure_is_recorded(

@@ -20,7 +20,7 @@ from custom_components.valerion.const import DOMAIN
 from custom_components.valerion.coordinator import ValerionCoordinator
 from tests.lib.fake_projector import DEFAULT_VALUES, FakeProjector
 
-PROJECTOR_MAC = "f0:ed:51:c4:4c:a8"
+PROJECTOR_MAC = "00:00:5e:00:53:01"
 #: Fixed so that snapshots do not change from run to run.
 ENTRY_ID = "01K8VALERI0NTESTENTRY00000"
 

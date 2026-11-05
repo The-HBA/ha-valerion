@@ -32,7 +32,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'remote',
-    'unique_id': 'f0:ed:51:c4:4c:a8_remote',
+    'unique_id': '00:00:5e:00:53:01_remote',
     'unit_of_measurement': None,
   })
 # ---

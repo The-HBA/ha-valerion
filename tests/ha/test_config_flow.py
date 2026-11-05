@@ -36,7 +36,7 @@ from tests.lib.fake_projector import DEFAULT_VALUES, FakeProjector
 
 from .conftest import PROJECTOR_MAC, poll, setup_entry
 
-ETHERNET_MAC = "f0:ed:51:c4:4c:a9"
+ETHERNET_MAC = "00:00:5e:00:53:02"
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ async def test_user_flow_creates_entry(
     flow_id = await _start(hass)
     result = await hass.config_entries.flow.async_configure(
         flow_id,
-        {CONF_HOST: " 127.0.0.1 ", CONF_PORT: projector.port, CONF_MAC: "F0-ED-51-C4-4C-A8"},
+        {CONF_HOST: " 127.0.0.1 ", CONF_PORT: projector.port, CONF_MAC: "00-00-5E-00-53-01"},
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Living room"
@@ -197,7 +197,7 @@ async def test_user_flow_known_mac_updates_host(
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id=PROJECTOR_MAC,
-        data={CONF_HOST: "10.10.30.50", CONF_PORT: 4352, CONF_MAC: PROJECTOR_MAC},
+        data={CONF_HOST: "192.0.2.50", CONF_PORT: 4352, CONF_MAC: PROJECTOR_MAC},
         version=1,
         minor_version=2,
     )
@@ -215,7 +215,7 @@ async def test_user_flow_known_mac_updates_host(
 @pytest.mark.parametrize(
     ("mac_input", "stored"),
     [
-        ("F0ED51C44CA8", PROJECTOR_MAC),
+        ("00005E005301", PROJECTOR_MAC),
         ("", ""),  # empty removes a MAC entered during the first setup
     ],
 )
@@ -265,7 +265,7 @@ async def test_options_flow_keeps_both_macs(
     assert result["errors"] == {CONF_MAC_ETHERNET: "invalid_mac"}
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: "F0-ED-51-C4-4C-A9"}
+        result["flow_id"], {CONF_MAC: PROJECTOR_MAC, CONF_MAC_ETHERNET: "00-00-5E-00-53-02"}
     )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -469,11 +469,11 @@ async def test_reconfigure_to_another_projectors_address(
 ) -> None:
     mock_config_entry.add_to_hass(hass)
     MockConfigEntry(
-        domain=DOMAIN, data={CONF_HOST: "10.10.30.51", CONF_PORT: 4352}, version=1, minor_version=2
+        domain=DOMAIN, data={CONF_HOST: "192.0.2.51", CONF_PORT: 4352}, version=1, minor_version=2
     ).add_to_hass(hass)
     result = await mock_config_entry.start_reconfigure_flow(hass)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_HOST: "10.10.30.51", CONF_PORT: 4352}
+        result["flow_id"], {CONF_HOST: "192.0.2.51", CONF_PORT: 4352}
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"

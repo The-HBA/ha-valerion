@@ -45,7 +45,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'aspect_ratio',
-    'unique_id': 'f0:ed:51:c4:4c:a8_aspect_ratio',
+    'unique_id': '00:00:5e:00:53:01_aspect_ratio',
     'unit_of_measurement': None,
   })
 # ---
@@ -114,7 +114,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'color_temperature',
-    'unique_id': 'f0:ed:51:c4:4c:a8_color_temperature',
+    'unique_id': '00:00:5e:00:53:01_color_temperature',
     'unit_of_measurement': None,
   })
 # ---
@@ -176,7 +176,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'dynamic_tone_mapping',
-    'unique_id': 'f0:ed:51:c4:4c:a8_dynamic_tone_mapping',
+    'unique_id': '00:00:5e:00:53:01_dynamic_tone_mapping',
     'unit_of_measurement': None,
   })
 # ---
@@ -238,7 +238,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'enhanced_black_level',
-    'unique_id': 'f0:ed:51:c4:4c:a8_enhanced_black_level',
+    'unique_id': '00:00:5e:00:53:01_enhanced_black_level',
     'unit_of_measurement': None,
   })
 # ---
@@ -302,7 +302,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'gamma',
-    'unique_id': 'f0:ed:51:c4:4c:a8_gamma',
+    'unique_id': '00:00:5e:00:53:01_gamma',
     'unit_of_measurement': None,
   })
 # ---
@@ -368,7 +368,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'motion_enhancement',
-    'unique_id': 'f0:ed:51:c4:4c:a8_motion_enhancement',
+    'unique_id': '00:00:5e:00:53:01_motion_enhancement',
     'unit_of_measurement': None,
   })
 # ---
@@ -432,7 +432,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'picture_mode',
-    'unique_id': 'f0:ed:51:c4:4c:a8_picture_mode',
+    'unique_id': '00:00:5e:00:53:01_picture_mode',
     'unit_of_measurement': None,
   })
 # ---

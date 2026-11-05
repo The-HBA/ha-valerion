@@ -76,7 +76,7 @@ async def test_diagnostics_never_show_a_mac(
     coordinator: ValerionCoordinator,
     mock_config_entry: MockConfigEntry,
 ) -> None:
-    macs = {CONF_MAC: "f0:ed:51:c4:4c:a8", CONF_MAC_ETHERNET: "f0:ed:51:c4:4c:a9"}
+    macs = {CONF_MAC: "00:00:5e:00:53:01", CONF_MAC_ETHERNET: "00:00:5e:00:53:02"}
     hass.config_entries.async_update_entry(mock_config_entry, options=macs)
     coordinator.macs = tuple(macs.values())
     await hass.async_block_till_done()
@@ -84,5 +84,5 @@ async def test_diagnostics_never_show_a_mac(
     diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, mock_config_entry)
 
     text = json.dumps(diagnostics)
-    assert "f0:ed:51" not in text
+    assert "00:00:5e" not in text
     assert diagnostics["wake_on_lan"]["mac_count"] == 2

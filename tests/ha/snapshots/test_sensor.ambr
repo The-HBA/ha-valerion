@@ -49,7 +49,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'audio_format',
-    'unique_id': 'f0:ed:51:c4:4c:a8_audio_format',
+    'unique_id': '00:00:5e:00:53:01_audio_format',
     'unit_of_measurement': None,
   })
 # ---
@@ -123,7 +123,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'link_status',
-    'unique_id': 'f0:ed:51:c4:4c:a8_link_status',
+    'unique_id': '00:00:5e:00:53:01_link_status',
     'unit_of_measurement': None,
   })
 # ---
@@ -188,7 +188,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'color_depth',
-    'unique_id': 'f0:ed:51:c4:4c:a8_color_depth',
+    'unique_id': '00:00:5e:00:53:01_color_depth',
     'unit_of_measurement': None,
   })
 # ---
@@ -253,7 +253,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'color_format',
-    'unique_id': 'f0:ed:51:c4:4c:a8_color_format',
+    'unique_id': '00:00:5e:00:53:01_color_format',
     'unit_of_measurement': None,
   })
 # ---
@@ -316,7 +316,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'color_primaries',
-    'unique_id': 'f0:ed:51:c4:4c:a8_color_primaries',
+    'unique_id': '00:00:5e:00:53:01_color_primaries',
     'unit_of_measurement': None,
   })
 # ---
@@ -374,7 +374,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'fan_speed',
-    'unique_id': 'f0:ed:51:c4:4c:a8_fan_1',
+    'unique_id': '00:00:5e:00:53:01_fan_1',
     'unit_of_measurement': 'rpm',
   })
 # ---
@@ -428,7 +428,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'fan_speed',
-    'unique_id': 'f0:ed:51:c4:4c:a8_fan_2',
+    'unique_id': '00:00:5e:00:53:01_fan_2',
     'unit_of_measurement': 'rpm',
   })
 # ---
@@ -489,7 +489,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'hdr_format',
-    'unique_id': 'f0:ed:51:c4:4c:a8_hdr_format',
+    'unique_id': '00:00:5e:00:53:01_hdr_format',
     'unit_of_measurement': None,
   })
 # ---
@@ -557,7 +557,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'led_status',
-    'unique_id': 'f0:ed:51:c4:4c:a8_led_status',
+    'unique_id': '00:00:5e:00:53:01_led_status',
     'unit_of_measurement': None,
   })
 # ---
@@ -621,7 +621,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'temperature',
-    'unique_id': 'f0:ed:51:c4:4c:a8_temperature_1',
+    'unique_id': '00:00:5e:00:53:01_temperature_1',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -679,7 +679,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'temperature',
-    'unique_id': 'f0:ed:51:c4:4c:a8_temperature_2',
+    'unique_id': '00:00:5e:00:53:01_temperature_2',
     'unit_of_measurement': <UnitOfTemperature.CELSIUS: '°C'>,
   })
 # ---
@@ -732,7 +732,7 @@
     'suggested_object_id': None,
     'supported_features': 0,
     'translation_key': 'video_signal',
-    'unique_id': 'f0:ed:51:c4:4c:a8_video_signal',
+    'unique_id': '00:00:5e:00:53:01_video_signal',
     'unit_of_measurement': None,
   })
 # ---
