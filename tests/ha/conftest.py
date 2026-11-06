@@ -8,6 +8,7 @@ So setup runs through the real client and coordinator, not a mock.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 from homeassistant.const import CONF_HOST, CONF_PORT
@@ -58,6 +59,18 @@ def mock_search() -> Iterator[AsyncMock]:
     """
     with patch("custom_components.valerion.config_flow.discover", return_value=[]) as mock:
         yield mock
+
+
+@pytest.fixture(autouse=True)
+def frontend_without_files(tmp_path: Path) -> Iterator[None]:
+    """Let the frontend integration set up without its files.
+
+    The integration depends on ``frontend`` to serve its card. The frontend
+    files come from the ``home-assistant-frontend`` package, which the test
+    requirements do not install; an empty folder is enough for these tests.
+    """
+    with patch("homeassistant.components.frontend._frontend_root", return_value=tmp_path):
+        yield
 
 
 @pytest.fixture

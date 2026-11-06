@@ -33,3 +33,19 @@ jobs:
       # Coverage of the Home Assistant code; the library job covers lib/.
       - run: pytest tests/ha --cov=custom_components/valerion --cov-report=
       - run: coverage report --show-missing --omit="custom_components/valerion/lib/*" --fail-under=95
+
+  card:
+    name: Card in a browser
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm ci
+      # Chromium for Playwright, with the system libraries it needs.
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
