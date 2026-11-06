@@ -25,6 +25,8 @@ function registry() {
     entry("media_player.visionmaster_max", OTHER_DEVICE_ID, "valerion"),
     ...STATUS_ENTITIES.map(([id, key]) => entry(id, DEVICE_ID, "valerion", key)),
     ...REMOTE_KEYS.map((key) => entry(`button.visionmaster_pro2_${key}`, DEVICE_ID, "valerion", `key_${key}`)),
+    ...SETTING_ENTITIES.map(([id, key]) => entry(id, DEVICE_ID, "valerion", key)),
+    ...LENS_MENUS.map((name) => entry(`button.visionmaster_pro2_${name}_menu`, DEVICE_ID, "valerion", `${name}_menu`)),
   ];
   return Object.fromEntries(list.map((item) => [item.entity_id, item]));
 }
@@ -50,10 +52,21 @@ export function makeHass({ power = "on", source = "HDMI 1", name = "VisionMaster
         ...(power === "on" ? { source, friendly_name: name } : { friendly_name: name }),
       }),
       "remote.visionmaster_pro2_remote": state("remote.visionmaster_pro2_remote", power === "on" ? "on" : "off"),
-      "select.visionmaster_pro2_picture_mode": state("select.visionmaster_pro2_picture_mode", "HDR Theater"),
+      "select.visionmaster_pro2_picture_mode": state(
+        "select.visionmaster_pro2_picture_mode",
+        power === "on" ? "HDR Theater" : "unavailable",
+        { options: HDR_PICTURE_MODES },
+      ),
       "sensor.visionmaster_pro2_hdr_format": state("sensor.visionmaster_pro2_hdr_format", "HDR10"),
       "media_player.visionmaster_max": state("media_player.visionmaster_max", "off"),
       ...statusStates(power),
+      ...settingStates(power),
+      ...Object.fromEntries(
+        LENS_MENUS.map((name) => [
+          `button.visionmaster_pro2_${name}_menu`,
+          state(`button.visionmaster_pro2_${name}_menu`, power === "on" && name !== "lens_shift" ? "unknown" : "unavailable"),
+        ]),
+      ),
       ...Object.fromEntries(
         REMOTE_KEYS.map((key) => [
           `button.visionmaster_pro2_${key}`,
@@ -61,7 +74,10 @@ export function makeHass({ power = "on", source = "HDMI 1", name = "VisionMaster
         ]),
       ),
     },
-    formatEntityState: (stateObj) => LABELS[stateObj.state] ?? formatStatus(stateObj),
+    formatEntityState: (stateObj, value) =>
+      value !== undefined
+        ? (OPTION_LABELS[value] ?? value)
+        : (LABELS[stateObj.state] ?? formatStatus(stateObj)),
     callService(domain, service, data) {
       calls.push({ domain, service, data });
       return Promise.resolve();
@@ -200,3 +216,91 @@ function playerAttributes(power) {
   // Home Assistant leaves out the volume while a media player is off.
   return power === "off" ? attributes : { ...attributes, volume_level: 0.35, is_volume_muted: false };
 }
+
+/* ---------- Picture and Advanced tabs ---------- */
+
+/** Picture modes the Pro2 offers for HDR10 (select.picture_mode options). */
+export const HDR_PICTURE_MODES = [
+  "HDR Vivid",
+  "HDR Standard",
+  "HDR Sports",
+  "HDR Energy Saving",
+  "HDR Game",
+  "HDR Theater",
+  "FILMMAKER MODE",
+  "IMAX Mode",
+];
+
+/** The lens menus: buttons "button.<device>_<name>_menu". The Pro2 has no lens shift (unavailable). */
+export const LENS_MENUS = ["lens_shift", "zoom", "focus"];
+
+// Setting selects: [entity_id, translation_key, option when on, options].
+// Options are the option keys Home Assistant sends. In this HDR10 example
+// gamma is locked (a built-in lock), so it is unavailable while on.
+export const SETTING_ENTITIES = [
+  [
+    "select.visionmaster_pro2_aspect_ratio",
+    "aspect_ratio",
+    "ratio_16_9",
+    [
+      "auto",
+      "ratio_4_3",
+      "zoom",
+      "ratio_16_9",
+      "ratio_21_9",
+      "ratio_32_9",
+      "anamorphic_16_9",
+      "anamorphic_2_39_1",
+      "anamorphic_1_85_1",
+      "anamorphic_2_0_1",
+    ],
+  ],
+  ["select.visionmaster_pro2_gamma", "gamma", "unavailable", ["gamma_2_0", "gamma_2_2", "gamma_2_4", "bt1886"]],
+  ["select.visionmaster_pro2_dynamic_tone_mapping", "dynamic_tone_mapping", "low", ["off", "low", "high"]],
+  ["select.visionmaster_pro2_color_temperature", "color_temperature", "standard", ["warm1", "warm2", "standard", "cool"]],
+  ["select.visionmaster_pro2_enhanced_black_level", "enhanced_black_level", "medium", ["off", "low", "medium", "high"]],
+  [
+    "select.visionmaster_pro2_motion_enhancement",
+    "motion_enhancement",
+    "off",
+    ["off", "custom", "film", "clear", "standard", "smooth"],
+  ],
+];
+
+function settingStates(power) {
+  return Object.fromEntries(
+    SETTING_ENTITIES.map(([id, , on, options]) => [id, state(id, power === "on" ? on : "unavailable", { options })]),
+  );
+}
+
+/** Translated option keys, as formatEntityState(stateObj, option) shows them. */
+const OPTION_LABELS = {
+  auto: "Auto",
+  ratio_4_3: "4:3",
+  zoom: "Zoom",
+  ratio_16_9: "16:9",
+  ratio_21_9: "21:9",
+  ratio_32_9: "32:9",
+  anamorphic_16_9: "Anamorphic 16:9",
+  anamorphic_2_39_1: "Anamorphic 2.39:1",
+  anamorphic_1_85_1: "Anamorphic 1.85:1",
+  anamorphic_2_0_1: "Anamorphic 2.0:1",
+  gamma_2_0: "2.0",
+  gamma_2_2: "2.2",
+  gamma_2_4: "2.4",
+  bt1886: "BT.1886",
+  smpte2084: "SMPTE 2084 (HDR)",
+  hlg: "HLG",
+  off: "Off",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  warm1: "Warm 1",
+  warm2: "Warm 2",
+  standard: "Standard",
+  cool: "Cool",
+  custom: "Custom",
+  film: "Film",
+  clear: "Clear",
+  smooth: "Smooth",
+};

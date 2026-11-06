@@ -100,8 +100,8 @@ const TABS = [
     render: renderRemote,
     setup: remoteSetup,
   },
-  { id: "picture", label: "Picture", icon: "picture", usableWhenOff: false, render: renderPicture },
-  { id: "advanced", label: "Advanced", icon: "tune", usableWhenOff: false, render: renderAdvanced },
+  { id: "picture", label: "Picture", icon: "picture", usableWhenOff: false, render: renderPicture, setup: pictureSetup },
+  { id: "advanced", label: "Advanced", icon: "tune", usableWhenOff: false, render: renderAdvanced, setup: advancedSetup },
   { id: "status", label: "Status", icon: "info", usableWhenOff: true, render: renderStatus },
   { id: "settings", label: "Settings", icon: "cog", usableWhenOff: true, render: renderSettings },
 ];
@@ -109,14 +109,6 @@ const TABS = [
 function renderRemote(ctx) {
   const groups = [remoteInputs(ctx), remotePad(ctx), remoteVolume(ctx)].join("");
   return `<div class="tab tab-remote">${groups || `<p class="rm-none">This projector has no remote keys in Home Assistant.</p>`}</div>`;
-}
-
-function renderPicture(ctx) {
-  return comingLater(ctx, "picture", "Picture settings", "Picture mode, laser level, gamma, color temperature and scenes.");
-}
-
-function renderAdvanced(ctx) {
-  return comingLater(ctx, "advanced", "Advanced settings", "Aspect ratio, motion, tone mapping, black level and the lens menus.");
 }
 
 /** Placeholder for a tab that comes in a later version: what it will hold, and where to find it now. */
@@ -146,6 +138,144 @@ function renderSettings(ctx) {
  * ACTIONS[name](card, element, ctx). Tabs add their own entries.
  */
 const ACTIONS = {};
+
+/* ---------- shared controls (Picture and Advanced tabs, sheets) ---------- */
+
+Object.assign(ICONS, {
+  lock: "M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z",
+  close:
+    "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z",
+});
+
+/** Short names of the settings, for the locked line and the scene editor. */
+const SETTING_NAMES = {
+  "select.picture_mode": "Picture mode",
+  "number.laser_level": "Laser level",
+  "select.aspect_ratio": "Aspect ratio",
+  "select.gamma": "Gamma",
+  "select.dynamic_tone_mapping": "Tone mapping",
+  "select.color_temperature": "Color temperature",
+  "select.enhanced_black_level": "Enhanced black level",
+  "select.motion_enhancement": "Motion enhancement",
+};
+
+/** Options a select reports but cannot be set to: gamma follows the signal in HDR. */
+const READ_ONLY_OPTIONS = { "select.gamma": new Set(["smpte2084", "hlg"]) };
+
+/** The text Home Assistant shows for an option of a select (translated). */
+function optionLabel(ctx, stateObj, option) {
+  try {
+    if (ctx.hass.formatEntityState) return ctx.hass.formatEntityState(stateObj, option);
+  } catch (_err) {
+    // An older frontend without the second argument: fall back to the key.
+  }
+  return option;
+}
+
+/**
+ * True when the projector is on but refuses this setting now: the entity is
+ * unavailable because the setting is locked for the current signal and
+ * picture mode (or the projector said it is not available).
+ */
+function settingLocked(ctx, key) {
+  const stateObj = ctx.state(key);
+  return !!stateObj && ctx.isOn && stateObj.state === "unavailable";
+}
+
+/**
+ * A select entity as a group with one segmented row of options.
+ *   key       "select.<translation_key>"
+ *   title     group title (default: SETTING_NAMES)
+ *   cols      columns on a phone (default: all options in one row)
+ *   colsWide  columns from 600 px wide (default: cols)
+ *   only      option keys to show, in this order (default: all, read-only ones left out)
+ *   right     extra HTML for the right side of the header
+ *   cls       extra class names for the group
+ * Returns "" when the entity is missing or locked; lockedLine() names it.
+ * While the projector is off the group is drawn without a selection and
+ * its buttons are disabled (the pane is dimmed too).
+ */
+function settingGroup(ctx, key, opts = {}) {
+  const stateObj = ctx.state(key);
+  if (!stateObj || settingLocked(ctx, key)) return "";
+  const readOnly = READ_ONLY_OPTIONS[key] || new Set();
+  const all = Array.isArray(stateObj.attributes.options) ? stateObj.attributes.options : [];
+  const options = opts.only ? opts.only.filter((o) => all.includes(o)) : all.filter((o) => !readOnly.has(o));
+  if (!options.length) return "";
+  const current = ctx.isOn ? stateObj.state : undefined;
+  const id = `vc-${key.replace(".", "-")}`;
+  const usable = ctx.isOn && stateObj.state !== "unavailable";
+  const buttons = options
+    .map((option) => {
+      const selected = option === current;
+      return `<button class="pr vc-opt${selected ? " sel" : ""}" data-action="setting-select" data-entity="${esc(stateObj.entity_id)}" data-option="${esc(option)}" aria-pressed="${selected}"${usable ? "" : " disabled"}>${esc(optionLabel(ctx, stateObj, option))}</button>`;
+    })
+    .join("");
+  const cols = opts.cols || options.length;
+  const wide = opts.colsWide || cols;
+  const title = opts.title || SETTING_NAMES[key] || key;
+  return `<section class="vc-grp${opts.cls ? ` ${opts.cls}` : ""}" aria-labelledby="${id}"><div class="vc-h"><span class="vc-t" id="${id}">${esc(title)}</span>${opts.right || ""}</div>
+<div class="vc-seg" role="group" aria-labelledby="${id}" style="--n:${cols};--nw:${wide}">${buttons}</div></section>`;
+}
+
+/** The current signal for headers and the locked line: "HDR10", or "" when unknown. */
+function signalLabel(ctx) {
+  const stateObj = ctx.state("sensor.hdr_format");
+  if (!ctx.isOn || !ssKnown(stateObj)) return "";
+  return ssText(ctx, stateObj);
+}
+
+/**
+ * One grey line naming the settings of `keys` that are locked now, for
+ * example "Locked for HDR10 in HDR Theater: Gamma, Tone mapping".
+ * Returns "" when none is locked.
+ */
+function lockedLine(ctx, keys) {
+  const names = keys.filter((key) => settingLocked(ctx, key)).map((key) => SETTING_NAMES[key] || key);
+  if (!names.length) return "";
+  const signal = signalLabel(ctx);
+  const mode = ctx.state("select.picture_mode");
+  const inMode = ssKnown(mode) ? ` in ${mode.state}` : "";
+  const where = signal ? ` for ${signal}${inMode}` : inMode;
+  return `<div class="vc-lock" role="note">${icon("lock", 18)}<span>Locked${esc(where)}: ${esc(names.join(", "))}</span></div>`;
+}
+
+ACTIONS["setting-select"] = (card, el, ctx) => {
+  if (!ctx.isOn || el.disabled || el.getAttribute("aria-pressed") === "true") return;
+  fire(card, "haptic", "selection");
+  for (const option of el.parentElement.children) {
+    option.classList.toggle("sel", option === el);
+    option.setAttribute("aria-pressed", String(option === el));
+  }
+  remoteCall(card, "select", "select_option", {
+    entity_id: el.dataset.entity,
+    option: el.dataset.option,
+  }).then((ok) => ok || card._renderAll());
+};
+
+/*
+ * Sheets: a panel that slides up from the bottom on a phone and is a
+ * centred dialog on a wider screen. It is a native <dialog> opened with
+ * showModal(), so it sits above the dashboard whatever the card is inside.
+ *   card.openSheet({ id, title, render(ctx) -> HTML, onClose(card) })
+ *   card.closeSheet()        closes it and calls onClose
+ * The body is rendered again whenever the projector's entities change.
+ * Elements with data-action use ACTIONS, as in the pane; data-hold keys
+ * repeat while held, as on the Remote tab. data-action="sheet-close"
+ * closes the sheet (also Escape, the close button and a tap outside).
+ */
+ACTIONS["sheet-close"] = (card) => card.closeSheet();
+
+/* ---------- Picture tab ---------- */
+
+function renderPicture(ctx) {
+  return comingLater(ctx, "picture", "Picture settings", "Picture mode, color temperature, aspect ratio and scenes.");
+}
+
+/** Runs once when the card builds its DOM (see TABS). */
+function pictureSetup(_card, _pane) {}
+
+/* ---------- end of Picture tab ---------- */
 
 /* ---------- Status and Settings tabs ---------- */
 
@@ -792,6 +922,17 @@ function remoteSetup(card, pane) {
   }).observe(pane, { childList: true });
 }
 
+/* ---------- Advanced tab ---------- */
+
+function renderAdvanced(ctx) {
+  return comingLater(ctx, "advanced", "Advanced settings", "Laser level, black level, motion, gamma, tone mapping and the lens menus.");
+}
+
+/** Runs once when the card builds its DOM (see TABS). */
+function advancedSetup(_card, _pane) {}
+
+/* ---------- end of Advanced tab ---------- */
+
 /* ---------- styles ---------- */
 
 const STYLES = `
@@ -894,6 +1035,52 @@ ha-card{display:block;overflow:hidden;position:relative}
   .ss-lay > .ss-wide{grid-column:1 / -1;align-self:end}
 }
 
+/* ---------- shared controls ---------- */
+.vc-grp{border:1px solid var(--divider-color,rgba(0,0,0,.12));border-radius:var(--vc-radius);padding:12px;
+  display:flex;flex-direction:column;gap:10px;min-width:0}
+.vc-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:22px}
+.vc-t{font-weight:500}
+.vc-v{font-weight:500;font-variant-numeric:tabular-nums;color:var(--secondary-text-color,#727272)}
+.vc-seg{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:4px;padding:4px;
+  border-radius:var(--vc-radius);background:var(--vc-ctl)}
+.vc-opt{min-height:var(--vc-opt-h,44px);border-radius:var(--vc-in-radius);background-color:transparent;padding:4px 2px;line-height:1.2;
+  text-align:center;overflow-wrap:anywhere;display:flex;align-items:center;justify-content:center}
+.vc-opt.sel{background-color:var(--vc-sel);box-shadow:inset 0 0 0 2px var(--primary-color,#03a9f4);font-weight:500}
+.vc-opt:disabled{cursor:default;background-image:none}
+.is-on .vc-opt:disabled{opacity:.35}
+.vc-lock{display:flex;align-items:center;gap:8px;min-height:24px;font-size:13px;color:var(--secondary-text-color,#727272)}
+.vc-lock svg{color:var(--secondary-text-color,#727272)}
+@container (min-width:600px){
+  .vc-seg{grid-template-columns:repeat(var(--nw,var(--n,4)),minmax(0,1fr))}
+}
+
+/* ---------- Picture tab (classes pc-) ---------- */
+/* ---------- end of Picture tab styles ---------- */
+
+/* ---------- sheet ---------- */
+.sheet{border:0;padding:0;margin:auto auto 0;width:100%;max-width:560px;max-height:min(85vh,720px);box-sizing:border-box;
+  border-radius:var(--ha-dialog-border-radius,28px) var(--ha-dialog-border-radius,28px) 0 0;
+  background:var(--ha-card-background,var(--card-background-color,#fff));color:var(--primary-text-color,#212121);
+  font-family:var(--ha-font-family-body,Roboto,system-ui,sans-serif);font-size:14px;line-height:1.4;
+  --vc-radius:var(--ha-card-border-radius,12px);--vc-in-radius:calc(var(--vc-radius) - 3px);
+  --vc-ctl:color-mix(in srgb,var(--disabled-color,#bdbdbd) 22%,transparent);
+  --vc-hover:color-mix(in srgb,var(--primary-text-color,#212121) 10%,transparent);
+  --vc-press:color-mix(in srgb,var(--primary-text-color,#212121) 18%,transparent);
+  --vc-sel:color-mix(in srgb,var(--primary-color,#03a9f4) 20%,transparent);
+  container-type:inline-size}
+.sheet::backdrop{background:rgba(0,0,0,.45)}
+.sheet svg{display:block;flex:none}
+.sheet-in{display:flex;flex-direction:column;max-height:inherit}
+.sheet-handle{width:32px;height:4px;border-radius:2px;margin:10px auto 0;background:var(--divider-color,rgba(0,0,0,.2))}
+.sheet-head{display:flex;align-items:center;gap:8px;padding:4px 12px 0}
+.sheet-x{width:44px;height:44px;border-radius:50%;background-color:transparent;display:grid;place-items:center;padding:0}
+.sheet-t{margin:0;flex:1;font-size:20px;font-weight:400;line-height:1.3}
+.sheet-body{padding:8px 16px 16px;overflow:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
+@media (min-width:600px){
+  .sheet{margin:auto;border-radius:var(--ha-dialog-border-radius,28px);width:calc(100% - 32px);max-width:480px}
+  .sheet-handle{display:none}
+}
+
 /* ---------- Remote tab ---------- */
 .tab-remote{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;
   grid-template-areas:"in" "pad" "vol";gap:12px}
@@ -950,6 +1137,9 @@ ha-card{display:block;overflow:hidden;position:relative}
   .rm-dpad{--d:256px}
 }
 
+/* ---------- Advanced tab (classes ad-) ---------- */
+/* ---------- end of Advanced tab styles ---------- */
+
 @media (prefers-reduced-motion:reduce){
   .vc *{animation:none !important;transition:none !important}
 }
@@ -966,6 +1156,7 @@ class ValerionCard extends HTMLElement {
     this._entities = null;
     this._entitiesSource = null;
     this._watched = [];
+    this._sheet = null;
   }
 
   static async getConfigElement() {
@@ -1057,8 +1248,14 @@ class ValerionCard extends HTMLElement {
     if (!this.shadowRoot.firstChild) this._build();
     if (!changed) return;
     this._watched = watched;
+    this._renderAll();
+  }
+
+  /** Render the header, the pane and an open sheet. */
+  _renderAll() {
     this._renderShell();
     this._renderPane();
+    this._renderSheet();
   }
 
   _build() {
@@ -1081,6 +1278,16 @@ class ValerionCard extends HTMLElement {
       <div class="pane" id="pane" role="tabpanel"></div>
     </div>
   </div>
+  <dialog class="sheet" aria-labelledby="sheet-t">
+    <div class="sheet-in">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <button class="pr sheet-x" data-action="sheet-close" aria-label="Close">${icon("close")}</button>
+        <h2 class="sheet-t" id="sheet-t"></h2>
+      </div>
+      <div class="sheet-body"></div>
+    </div>
+  </dialog>
 </ha-card>`;
     const root = this.shadowRoot;
     this._el = {
@@ -1093,6 +1300,9 @@ class ValerionCard extends HTMLElement {
       noticeText: root.querySelector(".notice-text"),
       tabs: root.querySelector(".tabs"),
       pane: root.querySelector(".pane"),
+      sheet: root.querySelector(".sheet"),
+      sheetTitle: root.querySelector(".sheet-t"),
+      sheetBody: root.querySelector(".sheet-body"),
     };
     this._el.power.addEventListener("click", () => this._togglePower());
     this._el.tabs.addEventListener("click", (ev) => {
@@ -1106,6 +1316,67 @@ class ValerionCard extends HTMLElement {
       if (action) action(this, el, this._context());
     });
     for (const tab of TABS) tab.setup?.(this, this._el.pane);
+    this._buildSheet();
+  }
+
+  /* ----- sheet ----- */
+
+  _buildSheet() {
+    const { sheet, sheetBody } = this._el;
+    sheet.addEventListener("click", (ev) => {
+      // A tap on the backdrop lands on the dialog itself, outside its content.
+      if (ev.target === sheet) {
+        this.closeSheet();
+        return;
+      }
+      const el = ev.target.closest("[data-action]");
+      const action = el && ACTIONS[el.dataset.action];
+      if (action) action(this, el, this._context());
+    });
+    sheet.addEventListener("cancel", (ev) => {
+      ev.preventDefault();
+      this.closeSheet();
+    });
+    // Held keys in a sheet repeat as on the Remote tab.
+    remoteSetup(this, sheetBody);
+  }
+
+  /** Open a sheet; see the comment above ACTIONS["sheet-close"]. */
+  openSheet(spec) {
+    if (this._sheet) this.closeSheet(false);
+    this._sheet = spec;
+    this._renderSheet();
+    const { sheet } = this._el;
+    if (!sheet.open) sheet.showModal();
+    sheet.querySelector(".sheet-body [autofocus]")?.focus();
+  }
+
+  /** Close the open sheet; `notify` false skips its onClose. */
+  closeSheet(notify = true) {
+    const spec = this._sheet;
+    if (!spec) return;
+    this._sheet = null;
+    if (this._el.sheet.open) this._el.sheet.close();
+    this._el.sheetBody.innerHTML = "";
+    if (notify) spec.onClose?.(this);
+  }
+
+  /** The id of the open sheet, or null. */
+  get sheetId() {
+    return this._sheet ? (this._sheet.id ?? "") : null;
+  }
+
+  _renderSheet() {
+    const spec = this._sheet;
+    if (!spec || !this._el) return;
+    const ctx = this._context();
+    const title = typeof spec.title === "function" ? spec.title(ctx) : spec.title;
+    this._el.sheetTitle.textContent = title || "";
+    this._el.sheetBody.innerHTML = spec.render(ctx);
+  }
+
+  disconnectedCallback() {
+    this.closeSheet(false);
   }
 
   _renderShell() {
