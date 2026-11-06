@@ -112,11 +112,22 @@ function renderRemote(ctx) {
 }
 
 function renderPicture(ctx) {
-  return `<div class="tab tab-picture"></div>`;
+  return comingLater(ctx, "picture", "Picture settings", "Picture mode, laser level, gamma, color temperature and scenes.");
 }
 
 function renderAdvanced(ctx) {
-  return `<div class="tab tab-advanced"></div>`;
+  return comingLater(ctx, "advanced", "Advanced settings", "Aspect ratio, motion, tone mapping, black level and the lens menus.");
+}
+
+/** Placeholder for a tab that comes in a later version: what it will hold, and where to find it now. */
+function comingLater(ctx, id, title, holds) {
+  const link = ctx.hass.user?.is_admin
+    ? `<div class="ss-links"><button class="ss-btn pr" data-action="valerion-device-page">${icon("open", 18)}<span>Open the device page</span></button></div>`
+    : "";
+  return `<div class="tab tab-${id}">${ssGroup(
+    title,
+    `<p class="ss-quiet cl-p">${esc(holds)} This tab comes in a later version. Until then, these settings are on the projector's device page, under Configuration.</p>${link}`,
+  )}</div>`;
 }
 
 function renderStatus(ctx) {
@@ -877,6 +888,7 @@ ha-card{display:block;overflow:hidden;position:relative}
   font-weight:500;font-size:14px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
 .ss-h .ss-btn{margin:-10px -8px -10px 0}
 .ss-links{display:flex;flex-wrap:wrap;gap:4px;margin:0 -8px -4px}
+.cl-p{margin:0}
 @container (min-width:600px){
   .ss-lay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start}
   .ss-lay > .ss-wide{grid-column:1 / -1;align-self:end}

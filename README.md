@@ -9,7 +9,7 @@ Thanks also to [tinogo's Unfolded Circle driver](https://github.com/tinogo/uc-in
 
 This is an independent community project, not affiliated with or supported by Valerion or AWOL Vision. The Valerion and AWOL names and logos belong to their owners. AI-assisted tooling was used during development; every change is reviewed by the maintainer and tested on a real projector.
 
-**Status:** early development. v0.1.0 will be the first complete version.
+**Status:** v0.1.0 is the first complete version. The remote card and the sidebar page are new. Please [report](https://github.com/The-HBA/ha-valerion/issues) anything that looks wrong.
 
 **Most testing so far was done on a VisionMaster Pro2, plus user reports from a VisionMaster Plus2 and an Aetherion Max.** If you own another model, please [help test it](docs/help-test.md). Everything is done in Home Assistant and most tests take a few minutes.
 
@@ -19,6 +19,13 @@ VisionMaster Pro2 with a 4K SDR signal:
 
 <p align="center">
   <img src="docs/images/device-page.png" alt="Projector device page in Home Assistant: power, volume, navigation buttons, laser level, signal sensors, picture settings under Configuration, diagnostic sensors" width="100%">
+</p>
+
+The remote card (Remote and Status tabs), on a phone:
+
+<p align="center">
+  <img src="docs/images/card-remote.png" alt="Valerion remote card, Remote tab: inputs, arrow keys with OK, back, home, menu and settings keys, volume" width="45%">
+  <img src="docs/images/card-status.png" alt="Valerion remote card, Status tab: signal format, picture mode, audio, power, AWOL Link, LED status, laser level, fans, temperatures" width="45%">
 </p>
 
 ## Features
@@ -32,6 +39,8 @@ VisionMaster Pro2 with a 4K SDR signal:
 | Number | Laser level (0 to 10) |
 | Sensors | Video signal and HDR format. Diagnostic: audio format, color depth, color format, color primaries, LED status, fans, temperatures, AWOL Link status. With [instant updates](#instant-updates-optional) on: last status notification |
 | Binary sensor | Problem: on when the projector reports a fault (overheating, fan error) |
+| Remote card | A dashboard card with tabs. See [Remote card](#remote-card) |
+| Sidebar page | *Projector* in the sidebar shows the card full screen. See [Remote card](#remote-card) |
 
 ## What works with which signal
 
@@ -104,7 +113,11 @@ Copy `custom_components/valerion` into the `custom_components` folder of your Ho
 
 ## Setup
 
-Settings > Devices & services > Add integration > **Valerion**. Enter the IP address, port 4352, the security code if you set one, and the Wi-Fi MAC address, the Ethernet MAC address or both. The projector must be on or in standby.
+Home Assistant finds the projector by itself and shows it under *Discovered* on Settings > Devices & services. Press **Add** and enter the security code if you set one. If AWOL Link is switched off, Home Assistant says so. Switch it on and press **Submit**.
+
+**Add integration > Valerion** first searches the network and lists the projectors it finds. Choose yours, or *Enter the IP address manually*. The search only finds projectors with AWOL Link on, and only on the same network as Home Assistant.
+
+To enter it by hand: enter the IP address, port 4352, the security code if you set one, and the Wi-Fi MAC address, the Ethernet MAC address or both. The projector must be on or in standby.
 
 To add or change a MAC address later, open Settings > Devices & services > Valerion and press the gear button next to the projector.
 
@@ -128,6 +141,22 @@ Home Assistant then reads the projector as soon as the power or input changes, i
 | Not covered | Volume sent nothing in our test, and signal changes are not tested. Those still show at the next poll. |
 | Docker | The container needs host networking, or UDP 4352 published. |
 | Tested on | VisionMaster Pro2. Other models may send different messages. |
+
+## Remote card
+
+The card is installed with the integration. Edit a dashboard, add a card and choose **Valerion projector**, then pick the projector.
+
+| Tab | What it shows |
+| --- | --- |
+| Remote | Inputs, arrow keys and OK, back, home, menu, settings, volume and mute. Hold an arrow or volume key to repeat it |
+| Picture | Comes in a later version. Until then, use the device page |
+| Advanced | Comes in a later version. Until then, use the device page |
+| Status | The signal now playing, picture mode, power, AWOL Link, LED status, laser level, fans and temperatures |
+| Settings | Setup tips, such as a missing MAC address, model, firmware and version |
+
+While the projector is off, only power, Status and Settings can be used.
+
+**Sidebar page:** *Projector* in the sidebar shows the same card full screen, with a choice of projector if you have more than one. To hide it, press the gear button next to the projector and switch off **Show in sidebar**.
 
 ## Removal
 
@@ -295,6 +324,7 @@ If a setting stays unavailable or a menu button stays hidden when it should not,
 
 | Problem | What to check |
 | --- | --- |
+| The card is not in the list of cards, or shows *Custom element doesn't exist* | Restart Home Assistant after installing, then reload the browser page. In the Companion app, use *Reset frontend cache* in the app settings. |
 | Setup says *could not reach the projector* | The IP address is right and the projector is on. Between networks (VLANs), the router allows TCP 4352 from Home Assistant to the projector. See [Requirements](#requirements). |
 | Setup says *the projector refused the connection* | AWOL Link is switched off on the projector. See [Requirements](#requirements), step 1. |
 | Setup says *accepted the connection but did not answer* | The projector is in deep standby, or another app that uses AWOL Link is connected. Switch the projector on and close that app. See [How it works](#how-it-works). |
