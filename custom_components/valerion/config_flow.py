@@ -62,10 +62,17 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-#: Name patterns (lower case, ``fnmatch`` style) of the Android TV Remote
-#: announcement that can be a Valerion projector, for example
-#: ``("visionmaster*", "aetherion*")``. Empty: every name is checked on AWOL Link.
-ZEROCONF_NAME_PATTERNS: Final[tuple[str, ...]] = ()
+#: Name patterns (lower case, ``fnmatch`` style) of Android TV Remote
+#: announcements that look like a Valerion projector. A VisionMaster Pro2
+#: announces ``VisionMaster``. Every announcement is still checked on AWOL Link,
+#: so a renamed projector is found; the name only decides whether a device that
+#: refuses AWOL Link is suggested anyway, with the hint to switch AWOL Link on.
+ZEROCONF_NAME_PATTERNS: Final[tuple[str, ...]] = (
+    "visionmaster*",
+    "streammaster*",
+    "aetherion*",
+    "*valerion*",
+)
 #: Discovered projectors are reached on the default AWOL Link port.
 DISCOVERY_PORT: Final = DEFAULT_PORT
 #: The AWOL Link check runs for every Android TV device on the network, so it is short.
@@ -216,10 +223,6 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
         if not addresses:
             return self.async_abort(reason="not_ipv4_address")
         name = discovery_info.name.removesuffix(f".{discovery_info.type}")
-        if ZEROCONF_NAME_PATTERNS and not any(
-            fnmatch(name.lower(), pattern) for pattern in ZEROCONF_NAME_PATTERNS
-        ):
-            return self.async_abort(reason="not_valerion")
         if not (device_id := discovery_info.properties.get("bt")):
             return self.async_abort(reason="no_device_id")
         zeroconf_id = format_mac(str(device_id))
@@ -230,7 +233,17 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         host = addresses[0]
-        if (needs_code := await _async_probe(host)) is None:
+        try:
+            needs_code = await _async_check(host)
+        except AwolLinkRefusedError:
+            if not _looks_like_valerion(name):
+                _LOGGER.debug("%s at %s refuses AWOL Link", name, host)
+                return self.async_abort(reason="not_valerion")
+            # Refusing the connection is what a Valerion does with AWOL Link off.
+            self._projector = _Projector(host, name, zeroconf_id)
+            self.context["title_placeholders"] = {"name": name}
+            return await self.async_step_zeroconf_awol_link_off()
+        except AwolLinkError, AwolLinkProtocolError:
             _LOGGER.debug("%s at %s does not answer on AWOL Link", name, host)
             return self.async_abort(reason="not_valerion")
         self._projector = _Projector(host, name, zeroconf_id, needs_code)
@@ -238,6 +251,34 @@ class ValerionConfigFlow(ConfigFlow, domain=DOMAIN):
         if not needs_code:
             self._set_confirm_only()
         return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_awol_link_off(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask to switch AWOL Link on for a projector found by its name, then check again."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            found = self._projector
+            try:
+                found.needs_code = await _async_check(found.host)
+            except AwolLinkRefusedError:
+                errors["base"] = "awol_link_off"
+            except AwolLinkUnresponsiveError:
+                errors["base"] = "projector_asleep"
+            except AwolLinkError, AwolLinkProtocolError:
+                errors["base"] = "cannot_connect"
+            else:
+                if found.needs_code:
+                    return await self.async_step_security_code()
+                if result := await self._async_connect_found(None, errors):
+                    return result
+                if errors == {"base": "invalid_auth"}:
+                    return await self.async_step_security_code()
+        return self.async_show_form(
+            step_id="zeroconf_awol_link_off",
+            description_placeholders=self._placeholders(),
+            errors=errors,
+        )
 
     async def async_step_zeroconf_confirm(
         self, user_input: dict[str, Any] | None = None
@@ -557,14 +598,30 @@ async def _async_validate(
 async def _async_probe(host: str) -> bool | None:
     """Check that AWOL Link answers; return whether a security code is needed.
 
-    Opens one short session without a code and closes it at once. Returns
-    None when nothing answers like AWOL Link on the default port.
+    Returns None when nothing answers like AWOL Link on the default port.
+    """
+    try:
+        return await _async_check(host)
+    except AwolLinkError, AwolLinkProtocolError:
+        return None
+
+
+async def _async_check(host: str) -> bool:
+    """Open one short session without a code; return whether a security code is needed.
+
+    Raises :class:`AwolLinkRefusedError` when the device refuses the
+    connection (a Valerion does that with AWOL Link off), another
+    :class:`AwolLinkError` or :class:`AwolLinkProtocolError` when nothing
+    answers like AWOL Link.
     """
     client = AwolLinkClient(host, DISCOVERY_PORT, timeout=PROBE_TIMEOUT)
     try:
         await client.probe()
     except AwolLinkAuthError:
         return True
-    except AwolLinkError, AwolLinkProtocolError:
-        return None
     return False
+
+
+def _looks_like_valerion(name: str) -> bool:
+    """Whether an announced name matches one of :data:`ZEROCONF_NAME_PATTERNS`."""
+    return any(fnmatch(name.lower(), pattern) for pattern in ZEROCONF_NAME_PATTERNS)

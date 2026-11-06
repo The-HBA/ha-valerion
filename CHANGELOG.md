@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- Home Assistant can find the projector by itself and suggest it under *Discovered*. It checks that AWOL Link answers first, so other Android TV devices are not offered.
+- Home Assistant can find the projector by itself and suggest it under *Discovered*. It checks that AWOL Link answers first, so other Android TV devices are not offered. A projector with AWOL Link switched off is suggested too when its name looks like a Valerion (for example *VisionMaster*). Home Assistant then asks you to switch AWOL Link on.
 - *Add integration* searches the network and lists the projectors it finds. Entering the IP address by hand still works.
 - Scenes stored in the integration. Each scene is a scene entity, so automations, voice and any dashboard can use it. A scene sets the picture mode first, then the other picture settings. Settings that are locked for the current signal are skipped.
 - First part of the remote card: it is registered automatically, with a projector picker in the card editor. The tabs are still empty and are filled in the next versions.

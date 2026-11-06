@@ -25,6 +25,7 @@ from custom_components.valerion.config_flow import CONF_PROJECTOR, MANUAL_ENTRY
 from custom_components.valerion.const import CONF_SECURITY_CODE, CONF_ZEROCONF_ID, DOMAIN
 from custom_components.valerion.lib import (
     AwolLinkAuthError,
+    AwolLinkConnectionError,
     AwolLinkUnresponsiveError,
     DiscoveredDevice,
 )
@@ -126,14 +127,10 @@ async def test_zeroconf_without_device_id_aborts(hass: HomeAssistant) -> None:
 
 
 async def test_zeroconf_other_android_tv_aborts_quietly(
-    hass: HomeAssistant, socket_enabled: None
+    hass: HomeAssistant, closed_port: int
 ) -> None:
-    # Nothing listens on this port: an Android TV without AWOL Link refuses it.
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        closed_port = sock.getsockname()[1]
-    with patch("custom_components.valerion.config_flow.DISCOVERY_PORT", closed_port):
-        result = await _discover(hass, _announcement(name="Living room TV"))
+    # An Android TV without AWOL Link refuses the port, and its name does not match.
+    result = await _discover(hass, _announcement(name="Living room TV"))
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "not_valerion"
 
@@ -158,26 +155,102 @@ async def test_zeroconf_device_with_other_greeting_aborts(
     assert result["reason"] == "not_valerion"
 
 
-@pytest.mark.parametrize(
-    ("patterns", "step"),
-    [(("aetherion*",), None), (("aetherion*", "visionmaster*"), "zeroconf_confirm")],
-)
-async def test_zeroconf_name_filter(
-    hass: HomeAssistant,
-    projector: FakeProjector,
-    at_port: None,
-    patterns: tuple[str, ...],
-    step: str | None,
+@pytest.fixture
+def closed_port(socket_enabled: None) -> Iterator[int]:
+    """A port nothing listens on: the device refuses it, as with AWOL Link off."""
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    with patch("custom_components.valerion.config_flow.DISCOVERY_PORT", port):
+        yield port
+
+
+async def test_zeroconf_renamed_projector_is_found(
+    hass: HomeAssistant, projector: FakeProjector, at_port: None
 ) -> None:
-    with patch("custom_components.valerion.config_flow.ZEROCONF_NAME_PATTERNS", patterns):
-        result = await _discover(hass, _announcement())
-    if step is None:
-        assert result["type"] is FlowResultType.ABORT
-        assert result["reason"] == "not_valerion"
-        # A name that does not match is never checked on AWOL Link.
-        assert projector.connections == 0
-    else:
-        assert result["step_id"] == step
+    # The name matches no pattern, but AWOL Link answers.
+    result = await _discover(hass, _announcement(name="Cinema room"))
+    assert result["step_id"] == "zeroconf_confirm"
+
+
+@pytest.mark.parametrize("name", ["VisionMaster", "VisionMaster Pro2 x GoogleTV2891"])
+async def test_zeroconf_awol_link_off_is_suggested_by_name(
+    hass: HomeAssistant, closed_port: int, mock_setup_entry: AsyncMock, name: str
+) -> None:
+    result = await _discover(hass, _announcement(name=name))
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "zeroconf_awol_link_off"
+    assert result["description_placeholders"] == {"name": name, "host": "127.0.0.1"}
+    flow_id = result["flow_id"]
+
+    # Submit while AWOL Link is still off.
+    result = await hass.config_entries.flow.async_configure(flow_id, {})
+    assert result["step_id"] == "zeroconf_awol_link_off"
+    assert result["errors"] == {"base": "awol_link_off"}
+
+    # AWOL Link switched on.
+    fake = FakeProjector(values=dict(DEFAULT_VALUES))
+    await fake.start()
+    try:
+        with patch("custom_components.valerion.config_flow.DISCOVERY_PORT", fake.port):
+            result = await hass.config_entries.flow.async_configure(flow_id, {})
+    finally:
+        await fake.stop()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_ZEROCONF_ID] == ZEROCONF_ID
+    assert result["result"].unique_id == ZEROCONF_ID
+
+
+async def test_zeroconf_awol_link_off_then_security_code(
+    hass: HomeAssistant, closed_port: int
+) -> None:
+    result = await _discover(hass, _announcement(name="VisionMaster"))
+    fake = FakeProjector(security_code="1234", values=dict(DEFAULT_VALUES))
+    await fake.start()
+    try:
+        with patch("custom_components.valerion.config_flow.DISCOVERY_PORT", fake.port):
+            result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    finally:
+        await fake.stop()
+    assert result["step_id"] == "security_code"
+
+
+@pytest.mark.parametrize(
+    ("error", "reason"),
+    [
+        (AwolLinkUnresponsiveError("silent"), "projector_asleep"),
+        (AwolLinkConnectionError("gone"), "cannot_connect"),
+    ],
+)
+async def test_zeroconf_awol_link_off_check_errors(
+    hass: HomeAssistant, closed_port: int, error: Exception, reason: str
+) -> None:
+    result = await _discover(hass, _announcement(name="VisionMaster"))
+    with patch("custom_components.valerion.config_flow._async_check", side_effect=error):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["step_id"] == "zeroconf_awol_link_off"
+    assert result["errors"] == {"base": reason}
+
+
+@pytest.mark.parametrize(
+    ("error", "step"),
+    [
+        # A security code was set while switching AWOL Link on.
+        (AwolLinkAuthError("code"), "security_code"),
+        # The projector went quiet between the check and the setup.
+        (AwolLinkUnresponsiveError("silent"), "zeroconf_awol_link_off"),
+    ],
+)
+async def test_zeroconf_awol_link_off_setup_errors(
+    hass: HomeAssistant, closed_port: int, error: Exception, step: str
+) -> None:
+    result = await _discover(hass, _announcement(name="VisionMaster"))
+    with (
+        patch("custom_components.valerion.config_flow._async_check", return_value=False),
+        patch("custom_components.valerion.config_flow._async_validate", side_effect=error),
+    ):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["step_id"] == step
 
 
 async def test_zeroconf_known_projector_follows_new_address(hass: HomeAssistant) -> None:

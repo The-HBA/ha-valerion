@@ -34,6 +34,10 @@
         "title": "Set up {name}?",
         "description": "Home Assistant found {name} at {host}. It answers on AWOL Link. If the projector has a security code, you are asked for it next."
       },
+      "zeroconf_awol_link_off": {
+        "title": "Set up {name}?",
+        "description": "Home Assistant found {name} at {host}, but AWOL Link is switched off. Switch it on under All Settings > Inputs > External Inputs > AWOL Link on the projector, then select Submit."
+      },
       "security_code": {
         "title": "Security code for {name}",
         "description": "The projector at {host} has an AWOL Link security code. Enter the code set under All Settings > Inputs > External Inputs > AWOL Link.",
