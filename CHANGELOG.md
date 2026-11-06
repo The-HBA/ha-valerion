@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Inputs 34 and 35 on the Aetherion Max are now called *DisplayPort* and *AV* instead of *Input 34* and *Input 35*. Automations that select them by the old name need the new one.
+
 ## [0.1.0] - 2026-11-06
 
 The first complete version.

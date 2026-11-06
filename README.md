@@ -66,7 +66,7 @@ AWOL documents AWOL Link for the VisionMaster Pro2, Pro, Max, Plus2 and Plus. On
 | | VisionMaster Pro2 | VisionMaster Max | VisionMaster Plus2 | Aetherion Max | Other models |
 | --- | --- | --- | --- | --- | --- |
 | Tested with this integration | Yes | Not yet | One user report | One user report | Not yet |
-| Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Under investigation | Leaves the network; switching on timed out (under investigation) | Unknown |
+| Standby | Keeps answering; switches on without Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Leaves the network after about 30 s; needs Wake-on-LAN | Leaves the network; switching on timed out (under investigation) | Unknown |
 | Security code | Yes | Not tested yet | Not tested yet | Reported as rejected (under investigation) | Unknown |
 | Aspect ratio | Yes | Yes | Unknown | Unknown | Unknown |
 | Motion enhancement | Yes, all except Film | Film works; others not reported | Unknown | Unknown | Unknown |

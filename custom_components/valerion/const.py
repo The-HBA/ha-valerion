@@ -51,4 +51,7 @@ SOURCE_NAMES: Final[dict[str, str]] = {
     "31": "HDMI 1",
     "32": "HDMI 2",
     "33": "HDMI 3",
+    # Aetherion Max (GitHub issue #3, confirmed by the owner on 2026-11-05).
+    "34": "DisplayPort",
+    "35": "AV",
 }
