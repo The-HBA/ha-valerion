@@ -11,7 +11,9 @@ from .const import CONF_SECURITY_CODE, CONF_STATUS_NOTIFICATIONS, DOMAIN, NAVIGA
 from .coordinator import ValerionConfigEntry, ValerionCoordinator, configured_macs, lock_store
 from .lib import AwolLinkClient
 from .notifications import async_start_notifications
+from .scenes import ValerionScenes, scene_store
 from .services import async_setup_services
+from .websocket import async_register_commands
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -23,6 +25,7 @@ PLATFORMS: list[Platform] = [
     Platform.MEDIA_PLAYER,
     Platform.NUMBER,
     Platform.REMOTE,
+    Platform.SCENE,
     Platform.SELECT,
     Platform.SENSOR,
 ]
@@ -33,6 +36,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the actions once, independent of any projector being set up."""
     async_setup_services(hass)
+    async_register_commands(hass)
     return True
 
 
@@ -77,6 +81,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> 
     )
     coordinator = ValerionCoordinator(hass, entry, client, macs=configured_macs(entry))
     await coordinator.async_load_locks()
+    coordinator.scenes = ValerionScenes(hass, coordinator)
+    await coordinator.scenes.async_load()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
@@ -94,3 +100,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ValerionConfigEntry) ->
 async def async_remove_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> None:
     """Delete the learned locks when the projector is removed."""
     await lock_store(hass, entry.entry_id).async_remove()
+    await scene_store(hass, entry.entry_id).async_remove()

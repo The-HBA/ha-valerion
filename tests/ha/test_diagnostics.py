@@ -42,6 +42,7 @@ async def test_diagnostics(
         return_value=["255.255.255.255", "127.0.0.1"],
     ):
         await coordinator._async_wake(PROJECTOR_MAC)
+    await coordinator.scenes.async_save("Movie night", settings={"laser_level": 4})
 
     diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, mock_config_entry)
     # The fake projector listens on a random port, and the wake time changes.
@@ -49,6 +50,9 @@ async def test_diagnostics(
     assert diagnostics["entry"]["data"]["host"] == "**REDACTED**"
     assert diagnostics["state"]["identity"]["name"] == "**REDACTED**"
     assert diagnostics["state"]["values"]["NAME"] == "**REDACTED**"
+    # Scene names are the user's own words: only the number is shown.
+    assert diagnostics["scenes"] == {"count": 1}
+    assert "Movie night" not in json.dumps(diagnostics)
 
 
 async def test_diagnostics_never_show_the_address(

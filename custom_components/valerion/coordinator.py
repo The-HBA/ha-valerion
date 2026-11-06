@@ -68,6 +68,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
     from .lib import Response
+    from .scenes import ValerionScenes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -208,6 +209,8 @@ class ValerionCoordinator(DataUpdateCoordinator[ProjectorData]):
     """Polls one projector and executes commands against it."""
 
     config_entry: ValerionConfigEntry
+    #: The stored picture scenes, set up in ``async_setup_entry``.
+    scenes: ValerionScenes
 
     def __init__(
         self,
