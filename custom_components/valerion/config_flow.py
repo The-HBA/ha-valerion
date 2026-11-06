@@ -33,6 +33,7 @@ import probatio
 from .const import (
     CONF_MAC_ETHERNET,
     CONF_SECURITY_CODE,
+    CONF_SHOW_PANEL,
     CONF_STATUS_NOTIFICATIONS,
     CONF_ZEROCONF_ID,
     DOMAIN,
@@ -119,6 +120,7 @@ OPTIONS_SCHEMA = probatio.Schema(
         probatio.Optional(CONF_MAC): str,
         probatio.Optional(CONF_MAC_ETHERNET): str,
         probatio.Optional(CONF_STATUS_NOTIFICATIONS, default=False): bool,
+        probatio.Optional(CONF_SHOW_PANEL, default=True): bool,
     }
 )
 
@@ -475,10 +477,11 @@ class ValerionOptionsFlow(OptionsFlowWithReload):
     The MAC addresses live here so they can be added later. They are only used
     for Wake-on-LAN: the device and entity IDs never change with them. Instant
     updates are off by default, because they also need a setting on the projector.
+    The sidebar page is on by default; the reload adds or removes it.
     """
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Ask for the MAC addresses (empty removes one) and instant updates."""
+        """Ask for the MAC addresses (empty removes one), instant updates and the sidebar page."""
         errors: dict[str, str] = {}
         if user_input is not None:
             macs = _macs(user_input, errors)
@@ -490,6 +493,7 @@ class ValerionOptionsFlow(OptionsFlowWithReload):
                         **self.config_entry.options,
                         **macs,
                         CONF_STATUS_NOTIFICATIONS: user_input[CONF_STATUS_NOTIFICATIONS],
+                        CONF_SHOW_PANEL: user_input[CONF_SHOW_PANEL],
                     }
                 )
         suggested = user_input or {
@@ -498,7 +502,8 @@ class ValerionOptionsFlow(OptionsFlowWithReload):
         } | {
             CONF_STATUS_NOTIFICATIONS: self.config_entry.options.get(
                 CONF_STATUS_NOTIFICATIONS, False
-            )
+            ),
+            CONF_SHOW_PANEL: self.config_entry.options.get(CONF_SHOW_PANEL, True),
         }
         address = await self.hass.async_add_executor_job(
             local_address_towards, self.config_entry.data[CONF_HOST]

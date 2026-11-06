@@ -13,6 +13,8 @@ const FILES = {
   "/fake-hass.js": path.join(HERE, "fake-hass.js"),
   "/valerion_static/valerion-card.js": path.join(WWW, "valerion-card.js"),
   "/valerion_static/valerion-card-editor.js": path.join(WWW, "valerion-card-editor.js"),
+  "/panel.html": path.join(HERE, "panel.html"),
+  "/valerion_static/valerion-panel.js": path.join(WWW, "valerion-panel.js"),
 };
 
 export const PHONE = { width: 390, height: 844 };
@@ -56,5 +58,44 @@ export async function openCard(browser, baseUrl, options = {}) {
   await page.waitForFunction(() => window.cardReady);
   await page.evaluate((state) => window.mountCard({ power: state }), power);
   await page.locator("valerion-card .vc-name").waitFor();
+  return { page, errors };
+}
+
+export const DESKTOP = { width: 1280, height: 800 };
+
+/**
+ * Open a page with the sidebar panel mounted, as Home Assistant shows it.
+ * Options: theme, power, projectors ("two", "one" or "none"), narrow,
+ * viewport, deviceScaleFactor, stored (a device ID already in localStorage).
+ * Script errors on the page are collected in `errors`.
+ */
+export async function openPanel(browser, baseUrl, options = {}) {
+  const {
+    theme = "light",
+    power = "on",
+    projectors = "two",
+    viewport = PHONE,
+    narrow = viewport.width < 870,
+    deviceScaleFactor = 1,
+    stored = null,
+  } = options;
+  const page = await browser.newPage({
+    viewport,
+    deviceScaleFactor,
+    colorScheme: theme,
+    reducedMotion: "reduce",
+  });
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error));
+  if (stored) {
+    await page.addInitScript((id) => localStorage.setItem("valerion-panel-device", id), stored);
+  }
+  await page.goto(`${baseUrl}/panel.html?theme=${theme}`);
+  await page.waitForFunction(() => window.panelReady);
+  await page.evaluate((args) => window.mountPanel(args), { power, projectors, narrow });
+  await page.waitForFunction(() => window.panel.shadowRoot?.querySelector(".toolbar"));
+  if (projectors !== "none") {
+    await page.locator("valerion-panel valerion-card .vc-name").waitFor();
+  }
   return { page, errors };
 }

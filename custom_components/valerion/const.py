@@ -14,6 +14,8 @@ CONF_SECURITY_CODE: Final = "security_code"
 CONF_MAC_ETHERNET: Final = "mac_ethernet"
 #: Option: poll as soon as the projector sends a Status Notification message.
 CONF_STATUS_NOTIFICATIONS: Final = "status_notifications"
+#: Option: show the "Projector" page in the sidebar (on by default).
+CONF_SHOW_PANEL: Final = "show_panel"
 #: Device ID from the Android TV Remote announcement (its ``bt`` property).
 #: Lets discovery recognise a projector set up by hand after its IP address changes.
 CONF_ZEROCONF_ID: Final = "zeroconf_id"

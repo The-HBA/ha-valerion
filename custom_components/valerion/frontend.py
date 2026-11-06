@@ -11,6 +11,10 @@ many projectors are set up:
   module instead, because the resources in YAML cannot be changed from here.
 
 The resource is removed again when the last projector is removed.
+
+The same card is also offered full screen as a sidebar page ("Projector"),
+one for the whole Home Assistant. It shows while at least one loaded
+projector has the option "Show in sidebar" on (the default).
 """
 
 from __future__ import annotations
@@ -22,7 +26,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
-from homeassistant.components.frontend import add_extra_js_url, remove_extra_js_url
+from homeassistant.components import panel_custom
+from homeassistant.components.frontend import (
+    add_extra_js_url,
+    async_remove_panel,
+    remove_extra_js_url,
+)
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.lovelace.const import LOVELACE_DATA, MODE_STORAGE
 from homeassistant.loader import async_get_integration
@@ -41,6 +50,13 @@ URL_BASE = "/valerion_static"
 WWW_DIR = Path(__file__).parent / "www"
 CARD_FILE = "valerion-card.js"
 CARD_PATH = f"{URL_BASE}/{CARD_FILE}"
+PANEL_FILE = "valerion-panel.js"
+PANEL_PATH = f"{URL_BASE}/{PANEL_FILE}"
+#: The sidebar page: /valerion in the browser.
+PANEL_URL_PATH = "valerion"
+PANEL_ELEMENT = "valerion-panel"
+PANEL_TITLE = "Projector"
+PANEL_ICON = "mdi:projector"
 
 
 @dataclass
@@ -53,6 +69,10 @@ class FrontendData:
     card_url: str | None = None
     #: Set when the card was added as an extra module (YAML resources).
     extra_module_url: str | None = None
+    #: Loaded projectors that want the sidebar page.
+    panel_entries: set[str] = field(default_factory=set)
+    #: The panel module URL while the sidebar page is registered, ``None`` before.
+    panel_url: str | None = None
 
 
 DATA_FRONTEND: HassKey[FrontendData] = HassKey(f"{DOMAIN}_frontend")
@@ -83,6 +103,38 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
             url = f"{CARD_PATH}?v={integration.version}"
             await _async_register_card(hass, data, url)
             data.card_url = url
+
+
+async def async_update_panel(hass: HomeAssistant, entry_id: str, *, show: bool) -> None:
+    """Note whether a projector wants the sidebar page, then add or remove the page.
+
+    Called with the option's value when a projector is set up, and with
+    ``show=False`` when it is unloaded (also before a reload and a removal).
+    """
+    data = _data(hass)
+    async with data.lock:
+        if show:
+            data.panel_entries.add(entry_id)
+        else:
+            data.panel_entries.discard(entry_id)
+        if data.panel_entries and data.panel_url is None:
+            integration = await async_get_integration(hass, DOMAIN)
+            url = f"{PANEL_PATH}?v={integration.version}"
+            await panel_custom.async_register_panel(
+                hass,
+                frontend_url_path=PANEL_URL_PATH,
+                webcomponent_name=PANEL_ELEMENT,
+                sidebar_title=PANEL_TITLE,
+                sidebar_icon=PANEL_ICON,
+                module_url=url,
+                require_admin=False,
+            )
+            data.panel_url = url
+            _LOGGER.debug("Added the sidebar page %s", url)
+        elif not data.panel_entries and data.panel_url is not None:
+            async_remove_panel(hass, PANEL_URL_PATH, warn_if_unknown=False)
+            data.panel_url = None
+            _LOGGER.debug("Removed the sidebar page")
 
 
 async def _async_register_card(hass: HomeAssistant, data: FrontendData, url: str) -> None:
