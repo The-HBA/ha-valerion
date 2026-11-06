@@ -4,6 +4,9 @@ Every command names the projector by its config entry ID (``entry_id``) or
 its device ID (``device_id``). Errors carry a ``code`` the card can act on:
 ``projector_not_found``, ``scene_not_found``, ``invalid_settings``,
 ``invalid_name`` and ``projector_off``. Writes need an administrator.
+
+``valerion/card_info`` gives the card what it shows on its Settings tab:
+versions and setup hints. It holds no secrets and no network address.
 """
 
 from __future__ import annotations
@@ -16,9 +19,11 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.loader import async_get_integration
 import probatio
 
-from .const import DOMAIN
+from .const import CONF_SECURITY_CODE, CONF_STATUS_NOTIFICATIONS, DOMAIN, NAME
+from .lib import protocol
 from .scenes import SceneError
 
 if TYPE_CHECKING:
@@ -63,6 +68,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_scene)
     websocket_api.async_register_command(hass, ws_delete_scene)
     websocket_api.async_register_command(hass, ws_apply_scene)
+    websocket_api.async_register_command(hass, ws_card_info)
 
 
 class ProjectorNotFoundError(SceneError):
@@ -192,3 +198,52 @@ async def ws_apply_scene(
     """Apply a scene; the result lists the settings applied and skipped."""
     result = await _scenes(hass, msg).async_apply(msg[ATTR_SCENE_ID])
     connection.send_result(msg["id"], result.as_dict())
+
+
+#: Names of the lens menus the card shows, by command code.
+_MENU_NAMES: Final = {
+    protocol.LENS_SHIFT_MENU.code: "lens_shift",
+    protocol.ZOOM_MENU.code: "zoom",
+    protocol.FOCUS_MENU.code: "focus",
+}
+
+
+@websocket_api.websocket_command(_command("valerion/card_info"))
+@websocket_api.async_response
+@_scene_errors
+async def ws_card_info(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Return versions and setup hints for the card's Settings tab.
+
+    Only yes or no for the MAC addresses and the security code, never the
+    values, and no host: any logged-in user may ask.
+    """
+    entry = _entry(hass, msg)
+    coordinator = entry.runtime_data
+    identity = coordinator.data.identity
+    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, coordinator.device_id)})
+    # The device registry keeps the last model and firmware across restarts,
+    # for a projector that has not answered since.
+    registry_model = device.model if device and device.model != NAME else None
+    integration = await async_get_integration(hass, DOMAIN)
+    connection.send_result(
+        msg["id"],
+        {
+            "entry_id": entry.entry_id,
+            "version": str(integration.version) if integration.version else None,
+            "model": identity.model or registry_model,
+            "firmware": identity.firmware or (device.sw_version if device else None),
+            "setup": {
+                "wake_on_lan": bool(coordinator.macs),
+                "security_code": bool(entry.data.get(CONF_SECURITY_CODE)),
+                "status_notifications": bool(entry.options.get(CONF_STATUS_NOTIFICATIONS)),
+                "notifications_listening": coordinator.notifications_listening,
+                "unsupported_menus": sorted(
+                    _MENU_NAMES[code]
+                    for code in coordinator.data.unsupported
+                    if code in _MENU_NAMES
+                ),
+            },
+        },
+    )
