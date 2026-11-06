@@ -15,10 +15,10 @@ This is an independent community project, not affiliated with or supported by Va
 
 ## Screenshots
 
-VisionMaster Pro2 with a 4K SDR signal:
+VisionMaster Pro2 with a 1080p SDR signal:
 
 <p align="center">
-  <img src="docs/images/device-page.png" alt="Projector device page in Home Assistant: power, volume, navigation buttons, laser level, signal sensors, picture settings under Configuration, diagnostic sensors" width="100%">
+  <img src="docs/images/device-page.png" alt="Projector device page in Home Assistant: power, volume, navigation buttons and laser level under Controls, HDR format and video signal under Sensors, picture settings and lens menus under Configuration, diagnostic sensors" width="100%">
 </p>
 
 The remote card (Remote and Status tabs), on a phone:
@@ -119,7 +119,11 @@ Home Assistant finds the projector by itself and shows it under *Discovered* on 
 
 To enter it by hand: enter the IP address, port 4352, the security code if you set one, and the Wi-Fi MAC address, the Ethernet MAC address or both. The projector must be on or in standby.
 
-To add or change a MAC address later, open Settings > Devices & services > Valerion and press the gear button next to the projector.
+To add or change a MAC address later, open Settings > Devices & services > Valerion and press the gear button next to the projector. The same window switches [instant updates](#instant-updates-optional) and the sidebar page on and off.
+
+<p align="center">
+  <img src="docs/images/settings-dialog.png" alt="Projector settings window: Wi-Fi MAC address, Ethernet MAC address, Instant updates (Status Notification) and Show in sidebar" width="60%">
+</p>
 
 To change the IP address, port or security code, use **Reconfigure** in the three-dot menu of the same entry. Entities and history stay.
 
