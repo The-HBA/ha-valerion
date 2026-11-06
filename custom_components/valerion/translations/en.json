@@ -343,6 +343,30 @@
     },
     "value_not_settable": {
       "message": "{value} is reported by the projector but cannot be set."
+    },
+    "scene_projector_off": {
+      "message": "The projector is not on, so its picture settings cannot be read or changed. Switch it on first."
+    },
+    "scene_not_found": {
+      "message": "This projector has no scene with ID {scene_id}."
+    },
+    "scene_empty": {
+      "message": "A scene needs at least one picture setting. Without settings, the current ones are taken, but none of them could be read."
+    },
+    "unknown_scene_setting": {
+      "message": "{setting} is not a picture setting a scene can hold."
+    },
+    "invalid_scene_setting": {
+      "message": "{value} is not a value that can be set for {setting}."
+    },
+    "scene_name_invalid": {
+      "message": "Enter a scene name of 1 to {max} characters."
+    },
+    "scene_name_taken": {
+      "message": "Another scene of this projector is already called {name}."
+    },
+    "projector_not_found": {
+      "message": "No Valerion projector that is set up and running matches this config entry or device."
     }
   },
   "issues": {

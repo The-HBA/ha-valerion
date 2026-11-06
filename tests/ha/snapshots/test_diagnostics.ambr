@@ -27,6 +27,9 @@
       'unsupported': list([
       ]),
     }),
+    'scenes': dict({
+      'count': 1,
+    }),
     'state': dict({
       'busy': False,
       'connection': 'answering',

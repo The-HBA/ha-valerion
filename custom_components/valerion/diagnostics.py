@@ -59,6 +59,8 @@ async def async_get_config_entry_diagnostics(
             "last_error": data.last_error,
         },
         "learned_locks": coordinator.locks_as_dict(),
+        # Only the number: scene names are chosen by the user.
+        "scenes": {"count": len(coordinator.scenes.scenes)},
         "status_notification": {
             "listening": coordinator.notifications_listening,
             "received": coordinator.notifications_received,
