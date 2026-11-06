@@ -99,12 +99,14 @@
         "data": {
           "mac": "Wi-Fi MAC address",
           "mac_ethernet": "Ethernet MAC address",
-          "status_notifications": "Instant updates (Status Notification)"
+          "status_notifications": "Instant updates (Status Notification)",
+          "show_panel": "Show in sidebar"
         },
         "data_description": {
           "mac": "Used to switch the projector on from standby with Wake-on-LAN when it uses Wi-Fi. Find it under All Settings > System > About > Status. Recommended for every model: switching on then also works when the projector has left the network in standby. Leave empty to remove it.",
           "mac_ethernet": "The same for a projector on Ethernet. The Status page may only show the Wi-Fi address. Your router's list of connected devices shows the address in use. Leave empty to remove it.",
-          "status_notifications": "Home Assistant reads the projector as soon as the power or input changes, instead of at the next poll. Also needed on the projector: under All Settings > Inputs > External Inputs > AWOL Link > Status Notification, enter {address}. Across networks (VLANs), the router must allow UDP port 4352 from the projector to Home Assistant."
+          "status_notifications": "Home Assistant reads the projector as soon as the power or input changes, instead of at the next poll. Also needed on the projector: under All Settings > Inputs > External Inputs > AWOL Link > Status Notification, enter {address}. Across networks (VLANs), the router must allow UDP port 4352 from the projector to Home Assistant.",
+          "show_panel": "Adds a Projector page with the remote to the sidebar. The page is shared by all projectors and stays while one of them has this on."
         }
       }
     },

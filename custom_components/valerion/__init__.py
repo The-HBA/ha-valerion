@@ -7,9 +7,15 @@ from typing import TYPE_CHECKING
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.helpers import config_validation as cv, entity_registry as er
 
-from .const import CONF_SECURITY_CODE, CONF_STATUS_NOTIFICATIONS, DOMAIN, NAVIGATION_KEYS
+from .const import (
+    CONF_SECURITY_CODE,
+    CONF_SHOW_PANEL,
+    CONF_STATUS_NOTIFICATIONS,
+    DOMAIN,
+    NAVIGATION_KEYS,
+)
 from .coordinator import ValerionConfigEntry, ValerionCoordinator, configured_macs, lock_store
-from .frontend import async_remove_frontend, async_setup_frontend
+from .frontend import async_remove_frontend, async_setup_frontend, async_update_panel
 from .lib import AwolLinkClient
 from .notifications import async_start_notifications
 from .scenes import ValerionScenes, scene_store
@@ -91,12 +97,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     if entry.options.get(CONF_STATUS_NOTIFICATIONS):
         await async_start_notifications(hass, entry)
+    await async_update_panel(hass, entry.entry_id, show=entry.options.get(CONF_SHOW_PANEL, True))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> bool:
-    """Unload a config entry. Sessions are never held open, so nothing to close."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    """Unload a config entry. Sessions are never held open, so nothing to close.
+
+    The sidebar page goes with the last loaded projector that shows it.
+    """
+    if unloaded := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        await async_update_panel(hass, entry.entry_id, show=False)
+    return unloaded
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> None:

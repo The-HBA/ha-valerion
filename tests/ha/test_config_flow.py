@@ -21,6 +21,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.valerion.const import (
     CONF_MAC_ETHERNET,
     CONF_SECURITY_CODE,
+    CONF_SHOW_PANEL,
     CONF_STATUS_NOTIFICATIONS,
     DOMAIN,
 )
@@ -248,6 +249,7 @@ async def test_options_flow_sets_and_removes_mac(
         CONF_MAC: stored,
         CONF_MAC_ETHERNET: "",
         CONF_STATUS_NOTIFICATIONS: False,
+        CONF_SHOW_PANEL: True,
     }
     coordinator = mock_config_entry.runtime_data
     assert coordinator.macs == ((stored,) if stored else ())
@@ -273,6 +275,7 @@ async def test_options_flow_keeps_both_macs(
         CONF_MAC: PROJECTOR_MAC,
         CONF_MAC_ETHERNET: ETHERNET_MAC,
         CONF_STATUS_NOTIFICATIONS: False,
+        CONF_SHOW_PANEL: True,
     }
     assert mock_config_entry.runtime_data.macs == (PROJECTOR_MAC, ETHERNET_MAC)
 

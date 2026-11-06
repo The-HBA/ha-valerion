@@ -64,3 +64,19 @@ export function withState(hass, entityId, value, attributes) {
     states: { ...hass.states, [entityId]: state(entityId, value, attributes ?? old.attributes) },
   };
 }
+
+/**
+ * A copy of `hass` that keeps only the Valerion projectors in `deviceIds`
+ * (other integrations stay), for pages that list projectors.
+ */
+export function withProjectors(hass, deviceIds) {
+  const keep = (entry) => entry.platform !== "valerion" || deviceIds.includes(entry.device_id);
+  const entities = Object.fromEntries(Object.entries(hass.entities).filter(([, entry]) => keep(entry)));
+  const devices = Object.fromEntries(
+    Object.entries(hass.devices).filter(([id]) => deviceIds.includes(id)),
+  );
+  const states = Object.fromEntries(
+    Object.entries(hass.states).filter(([id]) => !hass.entities[id] || id in entities),
+  );
+  return { ...hass, entities, devices, states };
+}

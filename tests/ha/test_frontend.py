@@ -6,21 +6,22 @@ import json
 from pathlib import Path
 from typing import Any
 
-from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
+from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL, DATA_PANELS
 from homeassistant.components.lovelace.const import LOVELACE_DATA
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 
-from custom_components.valerion.const import DOMAIN
-from custom_components.valerion.frontend import CARD_PATH, DATA_FRONTEND
+from custom_components.valerion.const import CONF_SHOW_PANEL, DOMAIN
+from custom_components.valerion.frontend import CARD_PATH, DATA_FRONTEND, PANEL_PATH
 
 from .conftest import setup_entry
 
 MANIFEST = Path(__file__).parents[2] / "custom_components" / "valerion" / "manifest.json"
 VERSION = json.loads(MANIFEST.read_text(encoding="utf-8"))["version"]
 CARD_URL = f"{CARD_PATH}?v={VERSION}"
+PANEL_URL = f"{PANEL_PATH}?v={VERSION}"
 
 
 def _resources(hass: HomeAssistant) -> list[dict[str, Any]]:
@@ -44,16 +45,28 @@ def _stored_resources(*urls: str) -> dict[str, Any]:
     }
 
 
-def _other_entry(entry: MockConfigEntry) -> MockConfigEntry:
+def _other_entry(entry: MockConfigEntry, options: dict[str, Any] | None = None) -> MockConfigEntry:
     """A second projector (same fake projector, different unique ID)."""
     return MockConfigEntry(
         domain=DOMAIN,
         title="Other room",
         unique_id="00:00:5e:00:53:02",
         data=dict(entry.data),
+        options=options or {},
         version=1,
         minor_version=2,
     )
+
+
+def _has_panel(hass: HomeAssistant) -> bool:
+    return "valerion" in hass.data.get(DATA_PANELS, {})
+
+
+async def _set_show_panel(hass: HomeAssistant, entry: MockConfigEntry, *, show: bool) -> None:
+    """Switch "Show in sidebar" in the settings dialog, as a user does."""
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(result["flow_id"], {CONF_SHOW_PANEL: show})
+    await hass.async_block_till_done()
 
 
 async def test_card_files_are_served(
@@ -67,6 +80,7 @@ async def test_card_files_are_served(
     for name, element in (
         ("valerion-card.js", "valerion-card"),
         ("valerion-card-editor.js", "valerion-card-editor"),
+        ("valerion-panel.js", "valerion-panel"),
     ):
         response = await client.get(f"/valerion_static/{name}?v={VERSION}")
         assert response.status == 200
@@ -165,3 +179,98 @@ async def test_remove_without_dashboards_loaded(
     await hass.config_entries.async_remove(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     assert LOVELACE_DATA not in hass.data
+
+
+async def test_sidebar_page_registered_on_setup(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    await setup_entry(hass, mock_config_entry)
+
+    panel = hass.data[DATA_PANELS]["valerion"].to_response()
+    assert panel["component_name"] == "custom"
+    assert panel["title"] == "Projector"
+    assert panel["icon"] == "mdi:projector"
+    assert panel["url_path"] == "valerion"
+    assert panel["require_admin"] is False
+    assert panel["show_in_sidebar"] is True
+    custom = panel["config"]["_panel_custom"]
+    assert custom["name"] == "valerion-panel"
+    assert custom["module_url"] == PANEL_URL
+    assert custom["embed_iframe"] is False
+    assert hass.data[DATA_FRONTEND].panel_url == PANEL_URL
+
+
+async def test_sidebar_page_not_registered_with_the_option_off(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(mock_config_entry, options={CONF_SHOW_PANEL: False})
+    await setup_entry(hass, mock_config_entry)
+    assert not _has_panel(hass)
+
+
+async def test_sidebar_page_follows_the_option(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    await setup_entry(hass, mock_config_entry)
+    assert _has_panel(hass)
+
+    await _set_show_panel(hass, mock_config_entry, show=False)
+    assert mock_config_entry.options[CONF_SHOW_PANEL] is False
+    assert not _has_panel(hass)
+
+    await _set_show_panel(hass, mock_config_entry, show=True)
+    assert _has_panel(hass)
+    assert hass.data[DATA_PANELS]["valerion"].config["_panel_custom"]["module_url"] == PANEL_URL
+
+
+async def test_sidebar_page_stays_while_one_projector_shows_it(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    other = _other_entry(mock_config_entry, {CONF_SHOW_PANEL: False})
+    await setup_entry(hass, mock_config_entry)
+    await setup_entry(hass, other)
+    assert _has_panel(hass)
+    assert hass.data[DATA_FRONTEND].panel_entries == {mock_config_entry.entry_id}
+
+    # Switching it on for the second projector, then off for the first: still there.
+    await _set_show_panel(hass, other, show=True)
+    await _set_show_panel(hass, mock_config_entry, show=False)
+    assert _has_panel(hass)
+
+    await _set_show_panel(hass, other, show=False)
+    assert not _has_panel(hass)
+
+
+async def test_sidebar_page_removed_with_the_last_projector(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    other = _other_entry(mock_config_entry)
+    await setup_entry(hass, mock_config_entry)
+    await setup_entry(hass, other)
+
+    await hass.config_entries.async_remove(other.entry_id)
+    await hass.async_block_till_done()
+    assert _has_panel(hass)
+
+    await hass.config_entries.async_remove(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert not _has_panel(hass)
+    assert hass.data[DATA_FRONTEND].panel_url is None
+
+
+async def test_sidebar_page_goes_when_the_projector_is_unloaded(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    await setup_entry(hass, mock_config_entry)
+
+    assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert not _has_panel(hass)
+
+    # A reload brings it back, without an error about a panel already registered.
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert await hass.config_entries.async_reload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert _has_panel(hass)
