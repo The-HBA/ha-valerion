@@ -9,6 +9,7 @@ from homeassistant.helpers import config_validation as cv, entity_registry as er
 
 from .const import CONF_SECURITY_CODE, CONF_STATUS_NOTIFICATIONS, DOMAIN, NAVIGATION_KEYS
 from .coordinator import ValerionConfigEntry, ValerionCoordinator, configured_macs, lock_store
+from .frontend import async_remove_frontend, async_setup_frontend
 from .lib import AwolLinkClient
 from .notifications import async_start_notifications
 from .services import async_setup_services
@@ -70,6 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> 
     Setup never blocks on the projector being awake: a projector in standby
     is a normal state, so the coordinator reports it instead of failing.
     """
+    await async_setup_frontend(hass)
     client = AwolLinkClient(
         entry.data[CONF_HOST],
         entry.data[CONF_PORT],
@@ -94,3 +96,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ValerionConfigEntry) ->
 async def async_remove_entry(hass: HomeAssistant, entry: ValerionConfigEntry) -> None:
     """Delete the learned locks when the projector is removed."""
     await lock_store(hass, entry.entry_id).async_remove()
+    await async_remove_frontend(hass, entry)

@@ -28,3 +28,6 @@ Thumbs.db
 .env
 *.secret
 survey-*.json
+
+# Browser tests of the card
+node_modules/

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valerion card test</title>
+<style>
+/* Default Home Assistant theme colours, light and dark. */
+:root.light {
+  --primary-color: #009ac7;
+  --text-primary-color: #ffffff;
+  --primary-background-color: #fafafa;
+  --card-background-color: #ffffff;
+  --primary-text-color: #212121;
+  --secondary-text-color: #727272;
+  --disabled-color: #bdbdbd;
+  --divider-color: rgba(0, 0, 0, 0.12);
+  color-scheme: light;
+}
+:root.dark {
+  --primary-color: #009ac7;
+  --text-primary-color: #ffffff;
+  --primary-background-color: #111111;
+  --card-background-color: #1c1c1c;
+  --primary-text-color: #e1e1e1;
+  --secondary-text-color: #9b9b9b;
+  --disabled-color: #6f6f6f;
+  --divider-color: rgba(225, 225, 225, 0.12);
+  color-scheme: dark;
+}
+html, body { margin: 0; }
+body {
+  background: var(--primary-background-color);
+  color: var(--primary-text-color);
+  font-family: Roboto, system-ui, sans-serif;
+}
+/* The dashboard's top bar and a masonry column, as on a phone. */
+.toolbar { height: 56px; display: flex; align-items: center; padding: 0 16px; font-size: 20px; }
+.view { padding: 4px 8px; max-width: 500px; margin: 0 auto; }
+</style>
+<script>
+  // Stand-in for Home Assistant's ha-card.
+  customElements.define("ha-card", class extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" }).innerHTML = `<style>:host{display:block;
+        background:var(--ha-card-background,var(--card-background-color,#fff));
+        border:1px solid var(--ha-card-border-color,var(--divider-color,#e0e0e0));
+        border-radius:var(--ha-card-border-radius,12px);color:var(--primary-text-color)}</style><slot></slot>`;
+    }
+  });
+</script>
+</head>
+<body>
+<div class="toolbar">Cinema</div>
+<div class="view" id="view"></div>
+<script type="module">
+  import { DEVICE_ID, makeHass, withState } from "/fake-hass.js";
+  import "/valerion_static/valerion-card.js?v=test";
+
+  const params = new URLSearchParams(location.search);
+  document.documentElement.className = params.get("theme") || "light";
+
+  window.fake = { DEVICE_ID, makeHass, withState };
+  window.mountCard = (options = {}) => {
+    const card = document.createElement("valerion-card");
+    card.setConfig({ type: "custom:valerion-card", device_id: DEVICE_ID });
+    card.hass = makeHass(options);
+    document.getElementById("view").replaceChildren(card);
+    window.card = card;
+  };
+  window.cardReady = true;
+</script>
+</body>
+</html>
