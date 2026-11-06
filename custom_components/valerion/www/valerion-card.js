@@ -86,6 +86,7 @@ function firstDevice(hass) {
  *   ctx.state(k)  state object of entity "<domain>.<translation_key>" (or undefined)
  *   ctx.player    state object of the media player
  *   ctx.isOn      true while the projector is on
+ *   ctx.card      the card element, for tabs that load data and render again
  * usableWhenOff: false dims the pane while the projector is off or in standby.
  */
 const TABS = [
@@ -109,11 +110,14 @@ function renderAdvanced(ctx) {
 }
 
 function renderStatus(ctx) {
-  return `<div class="tab tab-status"></div>`;
+  // What the projector reports now: the signal on top, the projector below.
+  return `<div class="tab tab-status ss-lay">${statusHero(ctx)}${statusRows(ctx)}<div class="ss-foot ss-wide">Updates automatically every few seconds</div></div>`;
 }
 
 function renderSettings(ctx) {
-  return `<div class="tab tab-settings"></div>`;
+  // Setup help from valerion/card_info, then versions and links.
+  const info = cardInfo(ctx);
+  return `<div class="tab tab-settings ss-lay">${settingsSetup(ctx, info)}${settingsAbout(ctx, info)}</div>`;
 }
 
 /*
@@ -121,6 +125,244 @@ function renderSettings(ctx) {
  * ACTIONS[name](card, element, ctx). Tabs add their own entries.
  */
 const ACTIONS = {};
+
+/* ---------- Status and Settings tabs ---------- */
+
+Object.assign(ICONS, {
+  link: "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z",
+  check:
+    "M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M16.59 7.58L10 14.17L7.41 11.59L6 13L10 17L18 9L16.59 7.58Z",
+  laser:
+    "M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31Z",
+  fan: "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z",
+  thermo: "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z",
+  history:
+    "M13,3A9,9 0 0,0 4,12H1L4.89,15.89L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z",
+  open: "M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z",
+  help: "M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,15H13C13,12.75 16,12.5 16,10A4,4 0 0,0 12,6Z",
+});
+
+const DOCS_URL = "https://github.com/The-HBA/ha-valerion";
+const ISSUES_URL = "https://github.com/The-HBA/ha-valerion/issues";
+/** Where the MAC addresses and instant updates are set. */
+const OPTIONS_HINT = "the gear button on the integration's entry";
+
+const ssKnown = (stateObj) => !!stateObj && !["unknown", "unavailable"].includes(stateObj.state);
+const ssText = (ctx, stateObj) =>
+  ctx.hass.formatEntityState ? ctx.hass.formatEntityState(stateObj) : stateObj.state;
+const ssRow = (iconName, label, value, warn = false) =>
+  `<div class="ss-row">${icon(iconName, 22)}<span class="ss-n">${esc(label)}</span><span class="ss-v${warn ? " ss-bad" : ""}">${esc(value)}</span></div>`;
+const ssGroup = (title, body, right = "") =>
+  `<section class="ss-grp"><div class="ss-h"><span>${esc(title)}</span>${right}</div>${body}</section>`;
+
+/** Fan and temperature sensors share one translation key, one sensor per slot. */
+function ssSlots(ctx, translationKey) {
+  const { hass, entities } = ctx;
+  return entities.ids
+    .filter((id) => id.startsWith("sensor.") && hass.entities[id]?.translation_key === translationKey)
+    .map((id) => hass.states[id])
+    .filter(Boolean);
+}
+
+/** "1770, 1710 rpm" for the slots that report a value. */
+function ssSlotValue(ctx, slots) {
+  const known = slots.filter(ssKnown);
+  if (!known.length) return ssText(ctx, slots[0]);
+  const unit = known[0].attributes.unit_of_measurement;
+  const numbers = known.map((s) => s.state);
+  return unit ? `${numbers.join(", ")} ${unit}` : numbers.join(", ");
+}
+
+/** "3840×2160p 24 Hz 3D" as the video signal sensor reports it, split up. */
+function ssTiming(text) {
+  const match = /^(\d+)×(\d+)([pi])\s+([\d.]+)\s*Hz(\s+3D)?/.exec(text || "");
+  if (!match) return null;
+  const [, width, height, scan] = match;
+  let size = `${height}${scan}`;
+  if (Number(width) >= 3800) size = "4K";
+  return { size: match[5] ? `${size} 3D` : size };
+}
+
+function statusHero(ctx) {
+  const { player, isOn } = ctx;
+  const hero = (kicker, big, sub, chips = []) =>
+    `<section class="ss-grp ss-hero"><span class="ss-kick">${esc(kicker)}</span><span class="ss-big">${esc(big)}</span><span class="ss-sub">${esc(sub)}</span>${
+      chips.length ? `<div class="ss-chips">${chips.map((c) => `<span class="ss-chip">${esc(c)}</span>`).join("")}</div>` : ""
+    }</section>`;
+  if (!isOn) {
+    const why = { off: "The projector is off.", standby: "The projector is in standby." };
+    return hero("Now playing", "Nothing", why[player?.state] || "The projector is not reachable.");
+  }
+  const source = player.attributes.source;
+  const kicker = source ? `Now playing on ${source}` : "Now playing";
+  const video = ctx.state("sensor.video_signal");
+  const hdr = ctx.state("sensor.hdr_format");
+  const hasSignal = ssKnown(video) || (ssKnown(hdr) && hdr.state !== "no_signal");
+  if (!hasSignal) {
+    return hero(kicker, "No signal", source ? `Nothing comes in on ${source}.` : "Nothing comes in.");
+  }
+  const timing = ssKnown(video) ? ssTiming(video.state) : null;
+  const big = [timing ? timing.size : ssKnown(video) ? video.state : "", ssKnown(hdr) ? ssText(ctx, hdr) : ""]
+    .filter(Boolean)
+    .join(" ");
+  const mode = ctx.state("select.picture_mode");
+  const sub = [timing && video.state, ssKnown(mode) && mode.state].filter(Boolean).join(" · ");
+  const chips = ["audio_format", "color_depth", "color_format", "color_primaries"]
+    .map((key) => ctx.state(`sensor.${key}`))
+    .filter(ssKnown)
+    .map((s) => ssText(ctx, s));
+  return hero(kicker, big, sub || " ", chips);
+}
+
+function statusRows(ctx) {
+  const { player } = ctx;
+  const rows = [];
+  if (player) rows.push(ssRow("power", "Power", ssText(ctx, player)));
+  const link = ctx.state("sensor.link_status");
+  if (link) rows.push(ssRow("link", "AWOL Link", ssText(ctx, link)));
+  const led = ctx.state("sensor.led_status");
+  if (led) {
+    const problem = ssKnown(led) && led.state !== "normal";
+    rows.push(ssRow(problem ? "alert" : "check", "LED status", ssText(ctx, led), problem));
+  }
+  const laser = ctx.state("number.laser_level");
+  if (laser) {
+    const max = laser.attributes.max;
+    rows.push(ssRow("laser", "Laser level", ssKnown(laser) && max ? `${Number(laser.state)} of ${max}` : ssText(ctx, laser)));
+  }
+  const fans = ssSlots(ctx, "fan_speed");
+  if (fans.length) rows.push(ssRow("fan", fans.length > 1 ? "Fans" : "Fan", ssSlotValue(ctx, fans)));
+  const temps = ssSlots(ctx, "temperature");
+  if (temps.length) rows.push(ssRow("thermo", temps.length > 1 ? "Temperatures" : "Temperature", ssSlotValue(ctx, temps)));
+  // Only exists with instant updates (Status Notification) switched on.
+  const last = ctx.state("sensor.last_status_notification");
+  if (last) rows.push(ssRow("history", "Last instant update", ssKnown(last) ? ssTime(ctx, last.state) : "None yet"));
+  return ssGroup("Projector", `<div class="ss-rows">${rows.join("")}</div>`);
+}
+
+/** A time as "21:03" today, else with the date; it never goes stale like "2 min ago". */
+function ssTime(ctx, iso) {
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return iso;
+  const lang = ctx.hass.locale?.language || undefined;
+  const time = when.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+  if (when.toDateString() === new Date().toDateString()) return time;
+  return `${when.toLocaleDateString(lang, { day: "numeric", month: "short" })}, ${time}`;
+}
+
+/**
+ * The card_info reply of this projector, cached on the card. It is asked
+ * for once when the Settings tab opens (again on every later opening, to
+ * catch an entry reload) and the pane renders again when it arrives.
+ * A failure only shows a quiet note.
+ */
+function cardInfo(ctx) {
+  const { card, hass } = ctx;
+  const deviceId = card._config.device_id;
+  let info = card._cardInfo;
+  const fresh = !info || info.deviceId !== deviceId;
+  if (fresh) info = card._cardInfo = { deviceId, data: null, failed: false, pending: false };
+  // The pane still shows the previous tab while this one renders.
+  const opening = !card._el?.pane.querySelector(".tab-settings");
+  if ((fresh || opening) && !info.pending) {
+    info.pending = true;
+    Promise.resolve()
+      .then(() => hass.callWS({ type: `${DOMAIN}/card_info`, device_id: deviceId }))
+      .then(
+        (data) => {
+          info.data = data;
+          info.failed = false;
+        },
+        () => {
+          info.failed = true;
+        },
+      )
+      .then(() => {
+        info.pending = false;
+        if (card._cardInfo === info && card._tab === "settings") card._renderPane();
+      });
+  }
+  return info;
+}
+
+const MENU_LABELS = { lens_shift: "lens shift", zoom: "zoom", focus: "focus" };
+
+/** One line per setup hint: [kind, text, what to do]; kind is ok, warn or info. */
+function setupHints(setup) {
+  const hints = [];
+  hints.push(
+    setup.wake_on_lan
+      ? ["ok", "Wake-on-LAN is set up.", ""]
+      : ["warn", "No MAC address set.", `It cannot wake from deep standby. Add it with ${OPTIONS_HINT}.`],
+  );
+  if (!setup.status_notifications) {
+    hints.push(["info", "Instant updates are off.", `Turn them on with ${OPTIONS_HINT}.`]);
+  } else if (!setup.notifications_listening) {
+    hints.push(["warn", "Instant updates cannot start.", "Port 4352 is in use. See Settings, Repairs."]);
+  } else {
+    hints.push(["ok", "Instant updates are on.", ""]);
+  }
+  hints.push(
+    setup.security_code
+      ? ["ok", "Security code is set.", ""]
+      : ["info", "No security code set.", "Only needed when AWOL Link asks for one."],
+  );
+  const menus = (setup.unsupported_menus || []).map((m) => MENU_LABELS[m] || m);
+  if (menus.length) {
+    const names = menus.length > 1 ? `${menus.slice(0, -1).join(", ")} or ${menus.at(-1)}` : menus[0];
+    hints.push(["info", `No ${names} menu on this model.`, "Wrong? Use Forget learned locks on the device page."]);
+  }
+  return hints;
+}
+
+function settingsSetup(ctx, info) {
+  const right = ctx.hass.user?.is_admin
+    ? `<button class="ss-btn pr" data-action="valerion-device-page">${icon("open", 18)}<span>Device page</span></button>`
+    : "";
+  let body;
+  if (info.data?.setup) {
+    const iconFor = { ok: "check", warn: "alert", info: "info" };
+    body = setupHints(info.data.setup)
+      .map(
+        ([kind, text, todo]) =>
+          `<div class="ss-hint ss-${kind}">${icon(iconFor[kind], 22)}<div class="ss-n"><div>${esc(text)}</div>${todo ? `<small>${esc(todo)}</small>` : ""}</div></div>`,
+      )
+      .join("");
+  } else {
+    const note = info.failed ? "Setup details are not available right now." : "Checking the setup.";
+    body = `<div class="ss-hint ss-info ss-quiet">${icon("info", 22)}<div class="ss-n">${note}</div></div>`;
+  }
+  return ssGroup("Setup", `<div class="ss-rows">${body}</div>`, right);
+}
+
+function settingsAbout(ctx, info) {
+  // Without card_info, the device registry still knows model and firmware.
+  const device = ctx.hass.devices?.[ctx.card._config.device_id];
+  const model = info.data?.model || (device?.model !== "Valerion" && device?.model);
+  const firmware = info.data?.firmware || device?.sw_version;
+  const rows = [
+    ["projector", "Model", model],
+    ["cog", "Firmware", firmware],
+    ["info", "Integration", info.data?.version],
+  ]
+    .filter(([, , value]) => value)
+    .map(([name, label, value]) => ssRow(name, label, value))
+    .join("");
+  const link = (url, name, label) =>
+    `<a class="ss-btn pr" href="${url}" target="_blank" rel="noreferrer">${icon(name, 18)}<span>${label}</span></a>`;
+  return ssGroup(
+    "About",
+    `${rows ? `<div class="ss-rows">${rows}</div>` : ""}<div class="ss-links">${link(DOCS_URL, "help", "Documentation")}${link(ISSUES_URL, "alert", "Report a problem")}</div>`,
+  );
+}
+
+Object.assign(ACTIONS, {
+  // Home Assistant's own navigation: no page reload.
+  "valerion-device-page": (card) => {
+    history.pushState(null, "", `/config/devices/device/${encodeURIComponent(card._config.device_id)}`);
+    fire(window, "location-changed", { replace: false });
+  },
+});
 
 /* ---------- styles ---------- */
 
@@ -187,6 +429,41 @@ ha-card{display:block;overflow:hidden;position:relative}
 .pane{height:var(--valerion-pane-height,520px);overflow:hidden;min-width:0;transition:opacity .2s}
 .pane.dim{opacity:.35;pointer-events:none}
 .tab{height:100%;display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* ---------- Status and Settings tabs ---------- */
+.ss-grp{border:1px solid var(--divider-color,#e0e0e0);border-radius:var(--vc-radius);padding:12px;
+  display:flex;flex-direction:column;gap:6px;min-width:0}
+.ss-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:24px;font-weight:500}
+.ss-hero{gap:2px}
+.ss-kick{font-size:13px;color:var(--secondary-text-color,#727272)}
+.ss-big{font-size:28px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-sub{color:var(--secondary-text-color,#727272);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ss-chip{height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--divider-color,#e0e0e0);
+  font-size:13px;display:inline-flex;align-items:center;white-space:nowrap}
+.ss-rows{display:flex;flex-direction:column}
+.ss-row{display:flex;align-items:center;gap:16px;min-height:34px}
+.ss-row svg,.ss-hint svg{color:var(--secondary-text-color,#727272)}
+.ss-n{flex:1;min-width:0}
+.ss-row .ss-n{white-space:nowrap}
+.ss-v{color:var(--secondary-text-color,#727272);text-align:right;font-variant-numeric:tabular-nums;
+  min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-v.ss-bad{color:var(--error-color,#db4437);font-weight:500}
+.ss-foot{margin-top:auto;font-size:12px;color:var(--secondary-text-color,#727272);text-align:center}
+.ss-hint{display:flex;align-items:flex-start;gap:16px;padding:6px 0}
+.ss-hint .ss-n{padding-top:1px}
+.ss-hint small{display:block;font-size:12px;line-height:1.35;color:var(--secondary-text-color,#727272)}
+.ss-hint.ss-ok svg{color:var(--success-color,#43a047)}
+.ss-hint.ss-warn svg{color:var(--warning-color,#ffa600)}
+.ss-quiet{color:var(--secondary-text-color,#727272)}
+.ss-btn{min-height:40px;padding:0 12px;border-radius:20px;background-color:transparent;color:var(--primary-color,#03a9f4);
+  font-weight:500;font-size:14px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.ss-h .ss-btn{margin:-10px -8px -10px 0}
+.ss-links{display:flex;flex-wrap:wrap;gap:4px;margin:0 -8px -4px}
+@container (min-width:600px){
+  .ss-lay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start}
+  .ss-lay > .ss-wide{grid-column:1 / -1;align-self:end}
+}
 
 @media (prefers-reduced-motion:reduce){
   .vc *{animation:none !important;transition:none !important}
@@ -274,6 +551,7 @@ class ValerionCard extends HTMLElement {
     const entities = this._resolveEntities();
     const player = entities.mediaPlayer ? hass.states[entities.mediaPlayer] : undefined;
     return {
+      card: this,
       hass,
       entities,
       player,

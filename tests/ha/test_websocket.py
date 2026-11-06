@@ -2,19 +2,31 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+import json
+from pathlib import Path
 from typing import Any
 
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
+from homeassistant.const import ATTR_ENTITY_ID, CONF_MAC
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
-from custom_components.valerion.const import DOMAIN
+from custom_components.valerion.const import (
+    CONF_SECURITY_CODE,
+    CONF_STATUS_NOTIFICATIONS,
+    DOMAIN,
+    NAME,
+)
 from custom_components.valerion.coordinator import ValerionCoordinator
+from custom_components.valerion.lib import DeviceIdentity
 from tests.lib.fake_projector import FakeProjector
 
-from .conftest import ENTRY_ID, PROJECTOR_MAC, poll
+from .conftest import ENTRY_ID, PROJECTOR_MAC, entity_id, poll, setup_entry
 
 
 async def _send(
@@ -246,3 +258,108 @@ async def test_non_admin_can_list_and_apply_but_not_edit(
         reply = await client.receive_json()
         assert reply["success"]
     assert "%3LASL 5" in projector.received
+
+
+# ---------- valerion/card_info ----------
+
+MANIFEST_VERSION = json.loads(
+    (Path(__file__).parents[2] / "custom_components" / DOMAIN / "manifest.json").read_text()
+)["version"]
+
+
+async def test_card_info(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, coordinator: ValerionCoordinator
+) -> None:
+    for target in ({"entry_id": ENTRY_ID}, {"device_id": _device_id(hass)}):
+        reply = await _send(hass, hass_ws_client, {"type": "valerion/card_info", **target})
+        assert reply["success"]
+        assert reply["result"] == {
+            "entry_id": ENTRY_ID,
+            "version": MANIFEST_VERSION,
+            "model": "VisionMaster Pro2",
+            "firmware": "V02.01.00E.Q0718",
+            "setup": {
+                "wake_on_lan": False,
+                "security_code": False,
+                "status_notifications": False,
+                "notifications_listening": False,
+                "unsupported_menus": [],
+            },
+        }
+
+
+async def test_card_info_setup_hints(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    hass_read_only_access_token: str,
+    projector: FakeProjector,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry, data={**mock_config_entry.data, CONF_MAC: PROJECTOR_MAC}
+    )
+    await setup_entry(hass, mock_config_entry)
+    coordinator: ValerionCoordinator = mock_config_entry.runtime_data
+    # Changed without a reload: the hints read the entry as it is now.
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        data={**mock_config_entry.data, CONF_SECURITY_CODE: "1234"},
+        options={CONF_STATUS_NOTIFICATIONS: True},
+    )
+    coordinator.notifications_listening = True
+    # A Pro2 has no motorised lens shift; the refusal is remembered.
+    projector.unavailable.add("%3LSMN")
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            BUTTON_DOMAIN,
+            SERVICE_PRESS,
+            {ATTR_ENTITY_ID: entity_id(hass, BUTTON_DOMAIN, "button_lens_shift")},
+            blocking=True,
+        )
+
+    # Read-only users see the hints too; nothing in them is secret.
+    reply = await _send(
+        hass,
+        hass_ws_client,
+        {"type": "valerion/card_info", "entry_id": ENTRY_ID},
+        access_token=hass_read_only_access_token,
+    )
+    assert reply["success"]
+    assert reply["result"]["setup"] == {
+        "wake_on_lan": True,
+        "security_code": True,
+        "status_notifications": True,
+        "notifications_listening": True,
+        "unsupported_menus": ["lens_shift"],
+    }
+    text = json.dumps(reply["result"])
+    for secret in ("1234", PROJECTOR_MAC, "127.0.0.1"):
+        assert secret not in text
+
+
+async def test_card_info_model_from_device_registry(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    device_registry: dr.DeviceRegistry,
+    coordinator: ValerionCoordinator,
+) -> None:
+    # Not answered since the restart: the device registry still knows the model.
+    coordinator.data = replace(coordinator.data, identity=DeviceIdentity())
+    message = {"type": "valerion/card_info", "entry_id": ENTRY_ID}
+    reply = await _send(hass, hass_ws_client, message)
+    assert reply["result"]["model"] == "VisionMaster Pro2"
+    assert reply["result"]["firmware"] == "V02.01.00E.Q0718"
+
+    # Never answered: only the placeholder model, which is not shown.
+    device_registry.async_update_device(_device_id(hass), model=NAME, sw_version=None)
+    reply = await _send(hass, hass_ws_client, message)
+    assert reply["result"]["model"] is None
+    assert reply["result"]["firmware"] is None
+
+
+async def test_card_info_not_found(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, coordinator: ValerionCoordinator
+) -> None:
+    reply = await _send(hass, hass_ws_client, {"type": "valerion/card_info", "entry_id": "nope"})
+    assert reply["error"]["code"] == "projector_not_found"
