@@ -48,11 +48,11 @@ rules:
   devices: done
   diagnostics: done
   discovery:
-    status: todo
-    comment: The UDP search reply carries no MAC or serial; zeroconf from the Google TV side still to be checked.
+    status: done
+    comment: Zeroconf on the Android TV Remote announcement, checked on AWOL Link before it is offered. The setup dialog also searches the network with the AWOL Link UDP search.
   discovery-update-info:
-    status: todo
-    comment: Depends on discovery.
+    status: done
+    comment: A new address from the announcement updates the projector. Projectors set up by hand are recognised by their address first, then by the announced device ID.
   docs-data-update: done
   docs-examples: done
   docs-known-limitations: done

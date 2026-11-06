@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.const import CONF_HOST, CONF_MAC
 
-from .const import CONF_MAC_ETHERNET, CONF_SECURITY_CODE
+from .const import CONF_MAC_ETHERNET, CONF_SECURITY_CODE, CONF_ZEROCONF_ID
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -21,6 +21,7 @@ TO_REDACT = {
     CONF_MAC,
     CONF_MAC_ETHERNET,
     CONF_SECURITY_CODE,
+    CONF_ZEROCONF_ID,
     "unique_id",
     "title",
     "NAME",
