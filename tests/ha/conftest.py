@@ -8,7 +8,7 @@ So setup runs through the real client and coordinator, not a mock.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
-from unittest.mock import PropertyMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
@@ -48,6 +48,16 @@ PROJECTOR_VALUES = {
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Let Home Assistant load the integration from custom_components."""
+
+
+@pytest.fixture(autouse=True)
+def mock_search() -> Iterator[AsyncMock]:
+    """The setup dialog's network search finds nothing, unless a test says otherwise.
+
+    The test harness cannot send UDP broadcasts, and a real search waits seconds.
+    """
+    with patch("custom_components.valerion.config_flow.discover", return_value=[]) as mock:
+        yield mock
 
 
 @pytest.fixture

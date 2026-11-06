@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Connect to your Valerion projector",
@@ -17,6 +18,27 @@
           "security_code": "Only if you set a security code in the AWOL Link menu. Leave empty otherwise.",
           "mac": "Needed to switch the projector on from standby (Wake-on-LAN) when it uses Wi-Fi. Find it under All Settings > System > About > Status. Optional: it can be added later with the settings (gear) button of the projector's entry.",
           "mac_ethernet": "Needed to switch the projector on from standby when it uses Ethernet. The Status page may only show the Wi-Fi address. Your router's list of connected devices shows the address in use. Optional, like the Wi-Fi address."
+        }
+      },
+      "pick_projector": {
+        "title": "Projectors found",
+        "description": "Choose your projector, or enter its IP address by hand. The search only finds projectors with AWOL Link switched on.",
+        "data": {
+          "projector": "Projector"
+        },
+        "data_description": {
+          "projector": "Projectors already set up are not listed."
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Set up {name}?",
+        "description": "Home Assistant found {name} at {host}. It answers on AWOL Link. If the projector has a security code, you are asked for it next."
+      },
+      "security_code": {
+        "title": "Security code for {name}",
+        "description": "The projector at {host} has an AWOL Link security code. Enter the code set under All Settings > Inputs > External Inputs > AWOL Link.",
+        "data": {
+          "security_code": "AWOL Link security code"
         }
       },
       "reauth_confirm": {
@@ -56,7 +78,17 @@
     "abort": {
       "already_configured": "This projector is already configured.",
       "reauth_successful": "The security code was saved. The projector is connected again.",
-      "reconfigure_successful": "The new connection details were saved."
+      "reconfigure_successful": "The new connection details were saved.",
+      "not_valerion": "This device does not answer on AWOL Link. It is not a Valerion projector, or AWOL Link is switched off.",
+      "not_ipv4_address": "The device announced no IPv4 address.",
+      "no_device_id": "The device announced no device ID."
+    }
+  },
+  "selector": {
+    "projector": {
+      "options": {
+        "manual": "Enter the IP address manually"
+      }
     }
   },
   "options": {

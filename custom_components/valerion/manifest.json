@@ -9,5 +9,6 @@
   "issue_tracker": "https://github.com/The-HBA/ha-valerion/issues",
   "loggers": ["custom_components.valerion"],
   "requirements": [],
-  "version": "0.0.22"
+  "version": "0.0.22",
+  "zeroconf": ["_androidtvremote2._tcp.local."]
 }
