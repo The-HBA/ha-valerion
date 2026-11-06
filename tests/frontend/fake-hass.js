@@ -22,6 +22,7 @@ function registry() {
     entry("select.visionmaster_pro2_picture_mode", DEVICE_ID, "valerion", "picture_mode"),
     entry("sensor.visionmaster_pro2_hdr_format", DEVICE_ID, "valerion", "hdr_format"),
     entry("media_player.visionmaster_max", OTHER_DEVICE_ID, "valerion"),
+    ...REMOTE_KEYS.map((key) => entry(`button.visionmaster_pro2_${key}`, DEVICE_ID, "valerion", `key_${key}`)),
   ];
   return Object.fromEntries(list.map((item) => [item.entity_id, item]));
 }
@@ -42,11 +43,20 @@ export function makeHass({ power = "on", source = "HDMI 1", name = "VisionMaster
     },
     states: {
       "light.ceiling": state("light.ceiling", "on"),
-      [PLAYER]: state(PLAYER, power, power === "on" ? { source, friendly_name: name } : { friendly_name: name }),
+      [PLAYER]: state(PLAYER, power, {
+        ...playerAttributes(power),
+        ...(power === "on" ? { source, friendly_name: name } : { friendly_name: name }),
+      }),
       "remote.visionmaster_pro2_remote": state("remote.visionmaster_pro2_remote", power === "on" ? "on" : "off"),
       "select.visionmaster_pro2_picture_mode": state("select.visionmaster_pro2_picture_mode", "HDR Theater"),
       "sensor.visionmaster_pro2_hdr_format": state("sensor.visionmaster_pro2_hdr_format", "HDR10"),
       "media_player.visionmaster_max": state("media_player.visionmaster_max", "off"),
+      ...Object.fromEntries(
+        REMOTE_KEYS.map((key) => [
+          `button.visionmaster_pro2_${key}`,
+          state(`button.visionmaster_pro2_${key}`, power === "unavailable" ? "unavailable" : "unknown"),
+        ]),
+      ),
     },
     formatEntityState: (stateObj) => LABELS[stateObj.state] ?? stateObj.state,
     callService(domain, service, data) {
@@ -63,4 +73,23 @@ export function withState(hass, entityId, value, attributes) {
     ...hass,
     states: { ...hass.states, [entityId]: state(entityId, value, attributes ?? old.attributes) },
   };
+}
+
+/* ---------- Remote tab ---------- */
+
+/** The navigation keys; each is a button entity "button.<device>_<key>". */
+export const REMOTE_KEYS = ["up", "down", "left", "right", "ok", "return", "menu", "settings", "home"];
+
+/** Media player features: turn on/off, select source, volume set, mute and step. */
+export const PLAYER_FEATURES = 128 | 256 | 2048 | 4 | 8 | 1024;
+
+/** Media player attributes besides source and name, as Home Assistant sends them. */
+function playerAttributes(power) {
+  if (power === "unavailable") return { supported_features: PLAYER_FEATURES };
+  const attributes = {
+    supported_features: PLAYER_FEATURES,
+    source_list: ["Home", "HDMI 1", "HDMI 2", "HDMI 3"],
+  };
+  // Home Assistant leaves out the volume while a media player is off.
+  return power === "off" ? attributes : { ...attributes, volume_level: 0.35, is_volume_muted: false };
 }

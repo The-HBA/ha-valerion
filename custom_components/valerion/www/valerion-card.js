@@ -87,9 +87,18 @@ function firstDevice(hass) {
  *   ctx.player    state object of the media player
  *   ctx.isOn      true while the projector is on
  * usableWhenOff: false dims the pane while the projector is off or in standby.
+ * setup (optional): setup(card, pane) runs once when the card builds its DOM,
+ * for listeners that must outlive a render of the pane (held keys, sliders).
  */
 const TABS = [
-  { id: "remote", label: "Remote", icon: "remote", usableWhenOff: false, render: renderRemote },
+  {
+    id: "remote",
+    label: "Remote",
+    icon: "remote",
+    usableWhenOff: false,
+    render: renderRemote,
+    setup: remoteSetup,
+  },
   { id: "picture", label: "Picture", icon: "picture", usableWhenOff: false, render: renderPicture },
   { id: "advanced", label: "Advanced", icon: "tune", usableWhenOff: false, render: renderAdvanced },
   { id: "status", label: "Status", icon: "info", usableWhenOff: true, render: renderStatus },
@@ -97,7 +106,8 @@ const TABS = [
 ];
 
 function renderRemote(ctx) {
-  return `<div class="tab tab-remote"></div>`;
+  const groups = [remoteInputs(ctx), remotePad(ctx), remoteVolume(ctx)].join("");
+  return `<div class="tab tab-remote">${groups || `<p class="rm-none">This projector has no remote keys in Home Assistant.</p>`}</div>`;
 }
 
 function renderPicture(ctx) {
@@ -121,6 +131,413 @@ function renderSettings(ctx) {
  * ACTIONS[name](card, element, ctx). Tabs add their own entries.
  */
 const ACTIONS = {};
+
+/* ---------- Remote tab ---------- */
+
+Object.assign(ICONS, {
+  up: "M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z",
+  down: "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z",
+  left: "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z",
+  right: "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z",
+  back: "M20 13.5C20 17.09 17.09 20 13.5 20H6V18H13.5C16 18 18 16 18 13.5S16 9 13.5 9H7.83L10.91 12.09L9.5 13.5L4 8L9.5 2.5L10.92 3.91L7.83 7H13.5C17.09 7 20 9.91 20 13.5Z",
+  home: "M12 5.69L17 10.19V18H15V12H9V18H7V10.19L12 5.69M12 3L2 12H5V20H11V14H13V20H19V12H22",
+  menu: "M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z",
+  keySettings:
+    "M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z",
+  volume:
+    "M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z",
+  volumeOff:
+    "M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z",
+  plus: "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z",
+  minus: "M19,13H5V11H19V13Z",
+});
+
+/** A held key waits this long before it repeats, then repeats at most this often (ms). */
+const REMOTE_REPEAT_DELAY = 400;
+const REMOTE_REPEAT_EVERY = 180;
+/** A key held longer than this stops on its own, in case a release got lost (ms). */
+const REMOTE_HOLD_MAX = 30000;
+/** Keys that repeat while held, as on the projector's own remote. */
+const REMOTE_REPEATS = new Set(["up", "down", "left", "right", "volume_up", "volume_down"]);
+/** Home Assistant's volume 0..1 is 0..100 on the projector. */
+const REMOTE_VOLUME_MAX = 100;
+/** Media player features (MediaPlayerEntityFeature). */
+const MP_VOLUME_SET = 4;
+const MP_VOLUME_MUTE = 8;
+const MP_VOLUME_STEP = 1024;
+const MP_SELECT_SOURCE = 2048;
+
+const remoteSupports = (player, feature) => {
+  const features = player?.attributes.supported_features;
+  return typeof features !== "number" || (features & feature) !== 0;
+};
+
+/**
+ * The service call of a key: its button entity (button.key_<name>), or the
+ * remote entity when that button is missing or disabled. Volume steps are the
+ * media player's. Returns null when nothing in Home Assistant sends the key.
+ */
+function remoteKeyCall(ctx, name) {
+  if (name === "volume_up" || name === "volume_down") {
+    const { player } = ctx;
+    if (!player || !remoteSupports(player, MP_VOLUME_STEP)) return null;
+    return { domain: "media_player", service: name, data: { entity_id: player.entity_id } };
+  }
+  const button = ctx.entities.byKey[`button.key_${name}`];
+  if (button) return { domain: "button", service: "press", data: { entity_id: button } };
+  const remote = ctx.entities.byKey["remote.remote"];
+  if (remote) {
+    return { domain: "remote", service: "send_command", data: { entity_id: remote, command: name } };
+  }
+  return null;
+}
+
+/** Attributes of a key button, or null when the key does not exist. */
+function remoteKeyAttrs(ctx, name, label) {
+  const call = remoteKeyCall(ctx, name);
+  if (!call) return null;
+  const usable = ctx.isOn && ctx.hass.states[call.data.entity_id]?.state !== "unavailable";
+  return `data-hold="${name}" aria-label="${esc(label)}"${usable ? "" : " disabled"}`;
+}
+
+function remoteInputs(ctx) {
+  const { player } = ctx;
+  const sources = player?.attributes.source_list;
+  if (!Array.isArray(sources) || !sources.length || !remoteSupports(player, MP_SELECT_SOURCE)) return "";
+  const current = ctx.isOn ? player.attributes.source : undefined;
+  const options = sources
+    .map((source) => {
+      const selected = source === current;
+      return `<button class="pr rm-opt${selected ? " sel" : ""}" data-action="remote-input" data-source="${esc(source)}" aria-pressed="${selected}"${ctx.isOn ? "" : " disabled"}>${esc(source)}</button>`;
+    })
+    .join("");
+  return `<section class="rm-grp rm-in" aria-labelledby="rm-in-t"><div class="rm-h"><span class="rm-t" id="rm-in-t">Input</span></div>
+<div class="rm-seg" role="group" aria-labelledby="rm-in-t" style="--n:${sources.length}">${options}</div></section>`;
+}
+
+function remotePad(ctx) {
+  const arrow = (name, label) => {
+    const attrs = remoteKeyAttrs(ctx, name, label);
+    return attrs ? `<button class="pr rm-dk rm-${name}" ${attrs}>${icon(name, 30)}</button>` : "";
+  };
+  const ok = remoteKeyAttrs(ctx, "ok", "OK");
+  const arrows = [arrow("up", "Up"), arrow("left", "Left"), arrow("right", "Right"), arrow("down", "Down")].join("");
+  const keys = [
+    ["return", "back", "Back"],
+    ["home", "home", "Home"],
+    ["menu", "menu", "Menu"],
+    ["settings", "keySettings", "Settings"],
+  ]
+    .map(([name, glyph, label]) => {
+      const attrs = remoteKeyAttrs(ctx, name, label);
+      return attrs ? `<button class="pr rm-key" ${attrs}>${icon(glyph)}<span>${esc(label)}</span></button>` : "";
+    })
+    .filter(Boolean);
+  if (!arrows && !ok && !keys.length) return "";
+  const okKey = ok ? `<button class="pr rm-dk rm-ok" ${ok}>OK</button>` : "";
+  const pad = arrows || ok ? `<div class="rm-dpad" role="group" aria-label="Navigation">${arrows}${okKey}</div>` : "";
+  const row = keys.length ? `<div class="rm-keys" style="--n:${keys.length}">${keys.join("")}</div>` : "";
+  return `<section class="rm-grp rm-pad" aria-label="Keys">${pad}${row}</section>`;
+}
+
+function remoteVolume(ctx) {
+  const { player } = ctx;
+  if (!player) return "";
+  const canSet = remoteSupports(player, MP_VOLUME_SET);
+  const canMute = remoteSupports(player, MP_VOLUME_MUTE);
+  const minus = remoteKeyAttrs(ctx, "volume_down", "Volume down");
+  const plus = remoteKeyAttrs(ctx, "volume_up", "Volume up");
+  if (!canSet && !canMute && !minus && !plus) return "";
+  const level = player.attributes.volume_level;
+  const value = typeof level === "number" ? Math.round(level * REMOTE_VOLUME_MAX) : null;
+  const muted = player.attributes.is_volume_muted === true;
+  const off = ctx.isOn ? "" : " disabled";
+  const shown = muted ? "Muted" : (value ?? "");
+  const mute = canMute
+    ? `<button class="pr rm-ib${muted ? " sel" : ""}" data-action="remote-mute" aria-pressed="${muted}" aria-label="Mute"${off}>${icon(muted ? "volumeOff" : "volume")}</button>`
+    : "";
+  const step = (attrs, glyph) => (attrs ? `<button class="pr rm-ib" ${attrs}>${icon(glyph)}</button>` : "");
+  const now = value ?? 0;
+  const focus = ctx.isOn ? `tabindex="0"` : `tabindex="-1" aria-disabled="true"`;
+  const slider = canSet
+    ? `<div class="rm-slider${muted ? " dim" : ""}" data-slider="volume" role="slider" aria-label="Volume" aria-valuemin="0" aria-valuemax="${REMOTE_VOLUME_MAX}" aria-valuenow="${now}"${muted ? ` aria-valuetext="Muted, ${now}"` : ""} ${focus} style="--f:${now / REMOTE_VOLUME_MAX}"><div class="rm-fill"></div><div class="rm-hdl"></div></div>`
+    : `<span class="rm-gap"></span>`;
+  return `<section class="rm-grp rm-vol" aria-labelledby="rm-vol-t"><div class="rm-h"><span class="rm-t" id="rm-vol-t">Volume</span><span class="rm-v">${shown}</span></div>
+<div class="rm-row">${mute}${step(minus, "minus")}${slider}${step(plus, "plus")}</div></section>`;
+}
+
+/** Call a service; a failure is shown as a toast. Resolves to true on success. */
+async function remoteCall(card, domain, service, data) {
+  try {
+    await card.hass.callService(domain, service, data);
+    return true;
+  } catch (err) {
+    fire(card, "hass-notification", { message: err?.message || String(err) });
+    return false;
+  }
+}
+
+/** Send one key press, if the projector is on and the key exists. */
+function remoteSendKey(card, name) {
+  const ctx = card._context();
+  const call = ctx.isOn && remoteKeyCall(ctx, name);
+  if (!call) return Promise.resolve(false);
+  return remoteCall(card, call.domain, call.service, call.data);
+}
+
+ACTIONS["remote-input"] = (card, el, ctx) => {
+  if (!ctx.player || el.getAttribute("aria-pressed") === "true") return;
+  fire(card, "haptic", "selection");
+  for (const option of el.parentElement.children) {
+    option.classList.toggle("sel", option === el);
+    option.setAttribute("aria-pressed", String(option === el));
+  }
+  remoteCall(card, "media_player", "select_source", {
+    entity_id: ctx.player.entity_id,
+    source: el.dataset.source,
+  }).then((ok) => ok || card._renderPane());
+};
+
+ACTIONS["remote-mute"] = (card, el, ctx) => {
+  if (!ctx.player) return;
+  fire(card, "haptic", "light");
+  remoteCall(card, "media_player", "volume_mute", {
+    entity_id: ctx.player.entity_id,
+    is_volume_muted: ctx.player.attributes.is_volume_muted !== true,
+  });
+};
+
+/*
+ * Held keys and the volume slider. The pane is rendered again whenever an
+ * entity changes (often during a hold: the volume moves), so the listeners
+ * sit on the pane and the window, a key is known by its name and not by its
+ * element, and a MutationObserver puts the pressed look, the dragged value
+ * and the focus back after each render.
+ *
+ * A tap is sent on release, so scrolling the dashboard across the card sends
+ * nothing (the browser cancels the pointer). A key held for
+ * REMOTE_REPEAT_DELAY is sent at once and, if it repeats, again until it is
+ * released; each send waits for the previous service call to return, so
+ * nothing queues up. Enter and Space send on keydown and repeat the same way.
+ */
+function remoteSetup(card, pane) {
+  const st = { hold: null, drag: null, pending: null, focus: null };
+  const root = pane.getRootNode();
+  const holdKey = (node) => (node instanceof Element ? node.closest("[data-hold]") : null);
+  const pathKey = (ev) => ev.composedPath().find((node) => node instanceof Element && node.dataset.hold);
+
+  function stop(send) {
+    const hold = st.hold;
+    if (!hold) return;
+    st.hold = null;
+    hold.active = false;
+    clearTimeout(hold.timer);
+    clearTimeout(hold.limit);
+    window.removeEventListener("pointerup", onPointerUp, true);
+    window.removeEventListener("pointercancel", onPointerCancel, true);
+    window.removeEventListener("keyup", onKeyUp, true);
+    pane.querySelector(`[data-hold="${hold.name}"]`)?.classList.remove("held");
+    if (send && !hold.sent) hold.send();
+  }
+
+  function start(el, how, pointerId) {
+    stop(false);
+    st.pending = null;
+    const hold = { name: el.dataset.hold, how, pointerId, active: true, sent: false, inflight: null };
+    hold.send = () => {
+      if (!hold.sent) fire(card, "haptic", "light");
+      hold.sent = true;
+      hold.inflight = remoteSendKey(card, hold.name);
+      return hold.inflight;
+    };
+    const repeat = async () => {
+      if (hold.inflight) await hold.inflight;
+      while (hold.active) {
+        const began = performance.now();
+        if (!(await hold.send())) break;
+        const wait = REMOTE_REPEAT_EVERY - (performance.now() - began);
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+      }
+    };
+    st.hold = hold;
+    el.classList.add("held");
+    if (how === "key") hold.send();
+    hold.timer = setTimeout(() => {
+      if (!hold.active) return;
+      if (REMOTE_REPEATS.has(hold.name)) repeat();
+      else if (!hold.sent) hold.send();
+    }, REMOTE_REPEAT_DELAY);
+    hold.limit = setTimeout(() => hold.active && stop(false), REMOTE_HOLD_MAX);
+    if (how === "pointer") {
+      window.addEventListener("pointerup", onPointerUp, true);
+      window.addEventListener("pointercancel", onPointerCancel, true);
+    } else {
+      window.addEventListener("keyup", onKeyUp, true);
+    }
+  }
+
+  function onPointerUp(ev) {
+    const hold = st.hold;
+    if (hold?.how !== "pointer" || ev.pointerId !== hold.pointerId) return;
+    stop(pathKey(ev)?.dataset.hold === hold.name);
+  }
+  function onPointerCancel(ev) {
+    if (st.hold?.how === "pointer" && ev.pointerId === st.hold.pointerId) stop(false);
+  }
+  function onKeyUp(ev) {
+    if (st.hold?.how === "key" && (ev.key === "Enter" || ev.key === " ")) {
+      ev.preventDefault();
+      stop(false);
+    }
+  }
+
+  pane.addEventListener("pointerdown", (ev) => {
+    if (!ev.isPrimary || ev.button !== 0) return;
+    const el = holdKey(ev.target);
+    if (el) {
+      if (el.disabled) return;
+      // Touch captures the pointer to the key; release it so leaving the key cancels.
+      if (el.hasPointerCapture(ev.pointerId)) el.releasePointerCapture(ev.pointerId);
+      start(el, "pointer", ev.pointerId);
+      return;
+    }
+    const slider = ev.target instanceof Element ? ev.target.closest("[data-slider]") : null;
+    if (slider && slider.getAttribute("aria-disabled") !== "true") dragStart(slider, ev);
+  });
+  pane.addEventListener("pointerout", (ev) => {
+    const hold = st.hold;
+    if (hold?.how !== "pointer" || ev.pointerId !== hold.pointerId) return;
+    if (holdKey(ev.relatedTarget)?.dataset.hold !== hold.name) stop(false);
+  });
+  pane.addEventListener("pointerover", (ev) => {
+    const hold = st.hold;
+    if (hold?.how !== "pointer" || ev.pointerId !== hold.pointerId) return;
+    if (holdKey(ev.target)?.dataset.hold !== hold.name) stop(false);
+  });
+  pane.addEventListener("contextmenu", (ev) => {
+    if (holdKey(ev.target)) ev.preventDefault();
+  });
+  pane.addEventListener("keydown", (ev) => {
+    const el = holdKey(ev.target);
+    if (el && (ev.key === "Enter" || ev.key === " ")) {
+      ev.preventDefault();
+      if (!ev.repeat && !el.disabled) start(el, "key");
+      return;
+    }
+    if (ev.target instanceof Element && ev.target.matches("[data-slider]")) sliderKey(ev);
+  });
+  pane.addEventListener("keyup", (ev) => {
+    if (holdKey(ev.target) && (ev.key === "Enter" || ev.key === " ")) ev.preventDefault();
+  });
+  // Assistive technology activates a button with a plain click (detail 0).
+  pane.addEventListener("click", (ev) => {
+    const el = holdKey(ev.target);
+    if (el && ev.detail === 0 && !st.hold && !el.disabled) {
+      fire(card, "haptic", "light");
+      remoteSendKey(card, el.dataset.hold);
+    }
+  });
+
+  /* ----- volume slider ----- */
+
+  const sliderEl = () => pane.querySelector("[data-slider]");
+  const showVolume = (value) => {
+    const el = sliderEl();
+    if (!el) return;
+    el.style.setProperty("--f", String(value / REMOTE_VOLUME_MAX));
+    el.setAttribute("aria-valuenow", String(value));
+    const out = pane.querySelector(".rm-vol .rm-v");
+    if (out) out.textContent = String(value);
+  };
+  const valueAt = (x) => {
+    const box = sliderEl()?.getBoundingClientRect();
+    if (!box?.width) return 0;
+    const f = Math.min(1, Math.max(0, (x - box.left - 9) / (box.width - 18)));
+    return Math.round(f * REMOTE_VOLUME_MAX);
+  };
+  const setVolume = (value) => {
+    const ctx = card._context();
+    if (!ctx.player || !ctx.isOn) return;
+    st.pending = { value, until: performance.now() + 2000 };
+    showVolume(value);
+    remoteCall(card, "media_player", "volume_set", {
+      entity_id: ctx.player.entity_id,
+      volume_level: value / REMOTE_VOLUME_MAX,
+    });
+  };
+  function dragStart(el, ev) {
+    el.setPointerCapture(ev.pointerId);
+    el.focus({ preventScroll: true });
+    st.drag = { pointerId: ev.pointerId, value: valueAt(ev.clientX) };
+    showVolume(st.drag.value);
+    const move = (e) => {
+      if (e.pointerId !== st.drag?.pointerId) return;
+      st.drag.value = valueAt(e.clientX);
+      showVolume(st.drag.value);
+    };
+    const end = (e) => {
+      if (e.pointerId !== st.drag?.pointerId) return;
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", end, true);
+      window.removeEventListener("pointercancel", end, true);
+      const { value } = st.drag;
+      st.drag = null;
+      if (e.type === "pointerup") {
+        fire(card, "haptic", "light");
+        setVolume(value);
+      } else {
+        card._renderPane();
+      }
+    };
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", end, true);
+    window.addEventListener("pointercancel", end, true);
+  }
+  function sliderKey(ev) {
+    const now = Number(ev.target.getAttribute("aria-valuenow")) || 0;
+    const moves = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
+    let value;
+    if (ev.key in moves) value = now + moves[ev.key];
+    else if (ev.key === "Home") value = 0;
+    else if (ev.key === "End") value = REMOTE_VOLUME_MAX;
+    else return;
+    ev.preventDefault();
+    setVolume(Math.min(REMOTE_VOLUME_MAX, Math.max(0, value)));
+  }
+
+  /* ----- after each render ----- */
+
+  const identity = (el) => {
+    if (el?.dataset?.hold) return `[data-hold="${el.dataset.hold}"]`;
+    return el?.dataset?.slider ? "[data-slider]" : null;
+  };
+  pane.addEventListener("focusin", (ev) => {
+    st.focus = identity(ev.target);
+  });
+  pane.addEventListener("focusout", (ev) => {
+    // A render removes the focused element and fires focusout too; tell the
+    // two apart once the render is done.
+    const { target } = ev;
+    setTimeout(() => {
+      if (!target.isConnected) return;
+      const now = identity(root.activeElement);
+      st.focus = pane.contains(root.activeElement) ? now : null;
+      if (st.hold?.how === "key" && now !== `[data-hold="${st.hold.name}"]`) stop(false);
+    });
+  });
+  new MutationObserver(() => {
+    const hold = st.hold;
+    if (hold) pane.querySelector(`[data-hold="${hold.name}"]`)?.classList.add("held");
+    const pending = st.pending && performance.now() < st.pending.until ? st.pending.value : null;
+    const value = st.drag ? st.drag.value : pending;
+    const rendered = sliderEl()?.getAttribute("aria-valuenow");
+    if (!st.drag && rendered === String(pending)) st.pending = null;
+    else if (value !== null && rendered !== String(value)) showVolume(value);
+    // A focused element that a render removed leaves the focus on the body.
+    const lost = !root.activeElement && (!document.activeElement || document.activeElement === document.body);
+    if (st.focus && lost) pane.querySelector(st.focus)?.focus({ preventScroll: true });
+  }).observe(pane, { childList: true });
+}
 
 /* ---------- styles ---------- */
 
@@ -184,9 +601,65 @@ ha-card{display:block;overflow:hidden;position:relative}
   .tabs button{flex-direction:row;gap:8px;min-height:44px;font-size:14px}
 }
 
-.pane{height:var(--valerion-pane-height,520px);overflow:hidden;min-width:0;transition:opacity .2s}
+.pane{height:var(--valerion-pane-height,540px);overflow:hidden;min-width:0;transition:opacity .2s}
 .pane.dim{opacity:.35;pointer-events:none}
 .tab{height:100%;display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* ---------- Remote tab ---------- */
+.tab-remote{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;
+  grid-template-areas:"in" "pad" "vol";gap:12px}
+.rm-in{grid-area:in}.rm-pad{grid-area:pad}.rm-vol{grid-area:vol}
+.rm-none{margin:0;color:var(--secondary-text-color,#727272)}
+.rm-grp{border:1px solid var(--divider-color,rgba(0,0,0,.12));border-radius:var(--vc-radius);padding:12px;
+  display:flex;flex-direction:column;gap:10px;min-width:0}
+.rm-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:22px}
+.rm-t{font-weight:500}
+.rm-v{font-weight:500;font-variant-numeric:tabular-nums}
+.rm-seg{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:4px;padding:4px;
+  border-radius:var(--vc-radius);background:var(--vc-ctl)}
+.rm-opt{min-height:44px;border-radius:var(--vc-in-radius);background-color:transparent;padding:4px 2px;line-height:1.2;
+  text-align:center;overflow-wrap:anywhere;display:flex;align-items:center;justify-content:center}
+.rm-opt.sel,.rm-ib.sel{background-color:var(--vc-sel);box-shadow:inset 0 0 0 2px var(--primary-color,#03a9f4);font-weight:500}
+.rm-pad{justify-content:center}
+.rm-dpad{--d:208px;position:relative;width:var(--d);height:var(--d);flex:none;margin:0 auto;border-radius:50%;
+  background:var(--vc-ctl)}
+.rm-dk{position:absolute;display:grid;place-items:center;padding:0;border-radius:var(--vc-radius);
+  background-color:transparent;color:var(--primary-color,#03a9f4)}
+.rm-up{left:31%;right:31%;top:3%;height:28%}
+.rm-down{left:31%;right:31%;bottom:3%;height:28%}
+.rm-left{top:31%;bottom:31%;left:3%;width:28%}
+.rm-right{top:31%;bottom:31%;right:3%;width:28%}
+.rm-ok{left:32%;top:32%;width:36%;height:36%;border-radius:50%;
+  background-color:var(--ha-card-background,var(--card-background-color,#fff));box-shadow:0 0 0 1px var(--divider-color,rgba(0,0,0,.12));
+  font-size:16px;font-weight:500;letter-spacing:.04em;color:var(--primary-text-color,#212121)}
+.rm-keys{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
+.rm-key{min-height:56px;min-width:44px;padding:6px 4px;border-radius:var(--vc-radius);background-color:var(--vc-ctl);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--primary-color,#03a9f4)}
+.rm-key span{font-size:12px;line-height:1.2;color:var(--secondary-text-color,#727272)}
+.rm-row{display:flex;align-items:center;gap:8px}
+.rm-gap{flex:1}
+.rm-ib{width:44px;height:44px;flex:none;padding:0;border-radius:var(--vc-radius);background-color:var(--vc-ctl);
+  display:grid;place-items:center;color:var(--primary-color,#03a9f4)}
+[data-hold]{touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pr.held{background-image:linear-gradient(var(--vc-press),var(--vc-press))}
+.is-on .tab-remote button:disabled{opacity:.35}
+.tab-remote button:disabled{cursor:default;background-image:none}
+.rm-slider{--f:0;position:relative;flex:1;min-width:0;height:44px;border-radius:var(--vc-radius);overflow:hidden;cursor:pointer;
+  touch-action:pan-y;user-select:none;-webkit-user-select:none;
+  background:color-mix(in srgb,var(--primary-color,#03a9f4) 20%,transparent)}
+.rm-slider:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+.rm-slider.dim{opacity:.5}
+.rm-fill{position:absolute;inset:0 auto 0 0;width:calc(18px + (100% - 18px) * var(--f));
+  border-radius:var(--vc-radius) 0 0 var(--vc-radius);background:var(--primary-color,#03a9f4)}
+.rm-hdl{position:absolute;top:50%;left:calc(18px + (100% - 18px) * var(--f) - 10px);width:4px;height:20px;margin-top:-10px;
+  border-radius:2px;background:var(--text-primary-color,#fff)}
+@container (min-width:600px){
+  .tab-remote{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;
+    grid-template-areas:"pad in" "pad vol";align-items:start}
+  .rm-pad{align-self:stretch}
+  .rm-vol{align-self:end}
+  .rm-dpad{--d:256px}
+}
 
 @media (prefers-reduced-motion:reduce){
   .vc *{animation:none !important;transition:none !important}
@@ -342,6 +815,7 @@ class ValerionCard extends HTMLElement {
       const action = el && ACTIONS[el.dataset.action];
       if (action) action(this, el, this._context());
     });
+    for (const tab of TABS) tab.setup?.(this, this._el.pane);
   }
 
   _renderShell() {
