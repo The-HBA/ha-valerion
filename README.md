@@ -21,11 +21,17 @@ VisionMaster Pro2 with a 1080p SDR signal:
   <img src="docs/images/device-page.png" alt="Projector device page in Home Assistant: power, volume, navigation buttons and laser level under Controls, HDR format and video signal under Sensors, picture settings and lens menus under Configuration, diagnostic sensors" width="100%">
 </p>
 
-The remote card (Remote and Status tabs), on a phone:
+The remote card on a phone: Remote, Picture and Advanced tabs, then Status, Settings and the zoom sheet:
 
 <p align="center">
-  <img src="docs/images/card-remote.png" alt="Valerion remote card, Remote tab: inputs, arrow keys with OK, back, home, menu and settings keys, volume" width="45%">
-  <img src="docs/images/card-status.png" alt="Valerion remote card, Status tab: signal format, picture mode, audio, power, AWOL Link, LED status, laser level, fans, temperatures" width="45%">
+  <img src="docs/images/card-remote.png" alt="Valerion remote card, Remote tab: inputs, arrow keys with OK, back, home, menu and settings keys, volume" width="30%">
+  <img src="docs/images/card-picture.png" alt="Valerion remote card, Picture tab: picture modes for HDR10, color temperature, scenes, aspect ratio with anamorphic lens ratios" width="30%">
+  <img src="docs/images/card-advanced.png" alt="Valerion remote card, Advanced tab: laser level, enhanced black level, dynamic tone mapping, motion enhancement, a line naming the locked gamma, zoom and focus buttons" width="30%">
+</p>
+<p align="center">
+  <img src="docs/images/card-status.png" alt="Valerion remote card, Status tab: signal format, picture mode, audio, power, AWOL Link, LED status, laser level, fans, temperatures" width="30%">
+  <img src="docs/images/card-settings.png" alt="Valerion remote card, Settings tab: setup tips, model, firmware, integration version, links" width="30%">
+  <img src="docs/images/card-lens.png" alt="Valerion remote card, zoom sheet: switch between zoom and focus, one line of instructions, arrow keys with OK, back, menu and Done" width="30%">
 </p>
 
 ## Features
@@ -39,6 +45,7 @@ The remote card (Remote and Status tabs), on a phone:
 | Number | Laser level (0 to 10) |
 | Sensors | Video signal and HDR format. Diagnostic: audio format, color depth, color format, color primaries, LED status, fans, temperatures, AWOL Link status. With [instant updates](#instant-updates-optional) on: last status notification |
 | Binary sensor | Problem: on when the projector reports a fault (overheating, fan error) |
+| Scenes | One scene entity per saved scene (picture settings applied together). Created on the card's Picture tab, see [Remote card](#remote-card) |
 | Remote card | A dashboard card with tabs. See [Remote card](#remote-card) |
 | Sidebar page | *Projector* in the sidebar shows the card full screen. See [Remote card](#remote-card) |
 
@@ -153,12 +160,18 @@ The card is installed with the integration. Edit a dashboard, add a card and cho
 | Tab | What it shows |
 | --- | --- |
 | Remote | Inputs, arrow keys and OK, back, home, menu, settings, volume and mute. Hold an arrow or volume key to repeat it |
-| Picture | Comes in a later version. Until then, use the device page |
-| Advanced | Comes in a later version. Until then, use the device page |
+| Picture | Picture mode for what is playing, color temperature, aspect ratio (also for anamorphic lenses) and scenes |
+| Advanced | Laser level, enhanced black level, dynamic tone mapping, gamma, motion enhancement, and the lens shift, zoom and focus menus |
 | Status | The signal now playing, picture mode, power, AWOL Link, LED status, laser level, fans and temperatures |
 | Settings | Setup tips, such as a missing MAC address, model, firmware and version |
 
 While the projector is off, only power, Status and Settings can be used.
+
+Settings the projector locks for the current format, such as gamma in HDR10, are hidden. One grey line names them.
+
+**Lens menus:** Zoom, Focus or Lens shift opens the projector's menu and a sheet with only the keys that menu uses. Done closes the menu again. Only the menus your model has are shown.
+
+**Scenes:** a scene saves picture settings to apply in one tap, for example *Movie night*. Admins create and edit them with *New* and *Edit* on the Picture tab. Each scene is also a scene entity, so automations and voice assistants can use it. If the scene's picture mode is not offered for what is playing, the scene is not applied and the card says why.
 
 **Sidebar page:** *Projector* in the sidebar shows the same card full screen, with a choice of projector if you have more than one. To hide it, press the gear button next to the projector and switch off **Show in sidebar**.
 

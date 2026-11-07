@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Remote card, Picture tab: picture mode for what is playing, color temperature, aspect ratio with the anamorphic lens ratios, and scenes.
+- Remote card, Advanced tab: laser level, enhanced black level, dynamic tone mapping, gamma, motion enhancement and the lens menus.
+- Zoom, focus and lens shift open a sheet with only the keys that menu uses. Done closes the projector's menu.
+- Scenes can now be created, edited and deleted on the Picture tab (admins). Tap a scene to apply it. Each scene is also a scene entity.
+- Settings the projector locks for the current format are hidden on the card, with one line that names them.
+- README: screenshots of every card tab, the settings window and a new device page.
+
 ### Changed
 - Inputs 34 and 35 on the Aetherion Max are now called *DisplayPort* and *AV* instead of *Input 34* and *Input 35*. Automations that select them by the old name need the new one.
 

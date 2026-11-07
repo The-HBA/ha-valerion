@@ -163,7 +163,7 @@ function formatStatus(stateObj) {
 /** The reply of valerion/card_info for this projector. */
 export const CARD_INFO = {
   entry_id: "entry_pro2",
-  version: "0.0.22",
+  version: "0.1.1",
   model: "VisionMaster Pro2",
   firmware: "V02.01.00E.Q0718",
   setup: {

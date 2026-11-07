@@ -187,7 +187,7 @@ describe("settings tab", () => {
       assert.deepEqual(await rows(page), [
         ["Model", "VisionMaster Pro2"],
         ["Firmware", "V02.01.00E.Q0718"],
-        ["Integration", "0.0.22"],
+        ["Integration", "0.1.1"],
       ]);
       const links = await page.evaluate(() =>
         [...window.card.shadowRoot.querySelectorAll(".pane a")].map((a) => [a.textContent, a.href, a.target]),
@@ -238,7 +238,7 @@ describe("settings tab", () => {
       await page.evaluate(() => {
         window.card.hass.ws.handlers["valerion/card_info"] = () => ({
           entry_id: "entry_pro2",
-          version: "0.0.22",
+          version: "0.1.1",
           model: "VisionMaster Max",
           firmware: null,
           setup: {
@@ -263,7 +263,7 @@ describe("settings tab", () => {
       // No firmware known: its row is left out.
       assert.deepEqual(await rows(page), [
         ["Model", "VisionMaster Max"],
-        ["Integration", "0.0.22"],
+        ["Integration", "0.1.1"],
       ]);
     } finally {
       await page.close();
