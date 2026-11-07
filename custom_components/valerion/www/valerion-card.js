@@ -259,7 +259,8 @@ ACTIONS["setting-select"] = (card, el, ctx) => {
  * showModal(), so it sits above the dashboard whatever the card is inside.
  *   card.openSheet({ id, title, render(ctx) -> HTML, onClose(card) })
  *   card.closeSheet()        closes it and calls onClose
- * The body is rendered again whenever the projector's entities change.
+ * The body is rendered again whenever the projector's entities change;
+ * render may return null to keep the body as it is (fields being edited).
  * Elements with data-action use ACTIONS, as in the pane; data-hold keys
  * repeat while held, as on the Remote tab. data-action="sheet-close"
  * closes the sheet (also Escape, the close button and a tap outside).
@@ -268,12 +269,470 @@ ACTIONS["sheet-close"] = (card) => card.closeSheet();
 
 /* ---------- Picture tab ---------- */
 
+Object.assign(ICONS, {
+  pencil:
+    "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z",
+  "pc-plus": "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z",
+});
+
+/** The settings a scene can hold, in the order the backend sends them (scenes.py). */
+const PC_SCENE_KEYS = [
+  "picture_mode",
+  "laser_level",
+  "aspect_ratio",
+  "gamma",
+  "dynamic_tone_mapping",
+  "color_temperature",
+  "enhanced_black_level",
+  "motion_enhancement",
+];
+/** Settings of this tab, for the locked line. */
+const PC_LOCKABLE = ["select.picture_mode", "select.color_temperature", "select.aspect_ratio"];
+/** Why applying a scene skipped a setting (scenes.py SKIP_*), in plain words. */
+const PC_SKIP_REASONS = {
+  locked: "locked for this signal",
+  not_settable: "cannot be set",
+  not_offered: "not available for this signal",
+  refused: "refused by the projector",
+  picture_mode_not_set: "picture mode not set",
+};
+const PC_LASER_MAX = 10;
+
+const pcEntityKey = (key) => `${key === "laser_level" ? "number" : "select"}.${key}`;
+const pcSettingName = (key) => SETTING_NAMES[pcEntityKey(key)] || key;
+/** "HDR Theater" shows as "Theater": the badge already names the format. */
+const pcShortMode = (mode) => mode.replace(/^(HDR10\+|HDR|Dolby Vision)\s+/, "") || mode;
+const pcOptions = (stateObj) => (Array.isArray(stateObj?.attributes.options) ? stateObj.attributes.options : []);
+
 function renderPicture(ctx) {
-  return comingLater(ctx, "picture", "Picture settings", "Picture mode, color temperature, aspect ratio and scenes.");
+  const parts = [
+    pcMode(ctx),
+    settingGroup(ctx, "select.color_temperature", { cols: 4, cls: "pc-ct" }),
+    pcScenesGroup(ctx),
+    pcAspect(ctx),
+    lockedLine(ctx, PC_LOCKABLE),
+  ];
+  return `<div class="tab tab-picture">${parts.join("")}</div>`;
 }
 
-/** Runs once when the card builds its DOM (see TABS). */
-function pictureSetup(_card, _pane) {}
+/** True while the projector is on and nothing comes in on the input. */
+function pcNoSignal(ctx) {
+  if (!ctx.isOn) return false;
+  const hdr = ctx.state("sensor.hdr_format");
+  if (hdr?.state === "no_signal") return true;
+  const video = ctx.state("sensor.video_signal");
+  return !!video && !ssKnown(video) && !ssKnown(hdr);
+}
+
+/**
+ * A segmented row of options of one select, as settingGroup draws it.
+ * `label(option)` is the text shown; the full option is sent.
+ */
+function pcSeg(ctx, stateObj, options, { labelledBy, label, cols, colsWide, action = "setting-select" }) {
+  const current = ctx.isOn ? stateObj.state : undefined;
+  const usable = ctx.isOn && stateObj.state !== "unavailable";
+  const buttons = options
+    .map((option) => {
+      const selected = option === current;
+      const full = optionLabel(ctx, stateObj, option);
+      const shown = label ? label(full) : full;
+      const named = shown !== full ? ` aria-label="${esc(full)}" title="${esc(full)}"` : "";
+      return `<button class="pr vc-opt${selected ? " sel" : ""}" data-action="${action}" data-entity="${esc(stateObj.entity_id)}" data-option="${esc(option)}" aria-pressed="${selected}"${named}${usable ? "" : " disabled"}>${esc(shown)}</button>`;
+    })
+    .join("");
+  return `<div class="vc-seg" role="group" aria-labelledby="${labelledBy}" style="--n:${cols};--nw:${colsWide || cols}">${buttons}</div>`;
+}
+
+function pcMode(ctx) {
+  const key = "select.picture_mode";
+  const stateObj = ctx.state(key);
+  const options = pcOptions(stateObj);
+  if (!stateObj || settingLocked(ctx, key) || !options.length) return "";
+  const noSignal = pcNoSignal(ctx);
+  const signal = noSignal ? "" : signalLabel(ctx);
+  const source = ctx.player?.attributes.source;
+  const on = source === "Home" ? " on the home screen" : source ? ` on ${source}` : "";
+  let sub = ["Each signal format keeps its own picture mode."];
+  if (noSignal) sub = [`No signal${on}.`, "These are the modes it offers now."];
+  else if (signal) sub = [`For ${signal}${on}.`, "Each format keeps its own mode."];
+  const badge = signal ? `<span class="pc-badge">${esc(signal)}</span>` : "";
+  const cols = Math.min(4, options.length);
+  const seg = pcSeg(ctx, stateObj, options, { labelledBy: "pc-mode-t", label: pcShortMode, cols });
+  return `<section class="vc-grp pc-mode" aria-labelledby="pc-mode-t"><div class="vc-h"><span class="vc-t" id="pc-mode-t">${esc(SETTING_NAMES[key])}</span>${badge}</div>
+<div class="pc-sub">${sub.map((s) => `<span>${esc(s)}</span>`).join("")}</div>${seg}</section>`;
+}
+
+function pcAspect(ctx) {
+  const key = "select.aspect_ratio";
+  const stateObj = ctx.state(key);
+  const options = pcOptions(stateObj);
+  if (!stateObj || settingLocked(ctx, key) || !options.length) return "";
+  if (pcNoSignal(ctx)) {
+    return `<div class="pc-note pc-ar" role="note">${icon("info", 18)}<span>Aspect ratio needs an HDMI signal.</span></div>`;
+  }
+  const normal = options.filter((o) => !o.startsWith("anamorphic_"));
+  const lens = options.filter((o) => o.startsWith("anamorphic_"));
+  const value = ctx.isOn && options.includes(stateObj.state) ? optionLabel(ctx, stateObj, stateObj.state) : "";
+  const opts = { action: "picture-aspect" };
+  const rows = [];
+  if (normal.length) {
+    rows.push(pcSeg(ctx, stateObj, normal, { ...opts, labelledBy: "pc-ar-t", cols: normal.length }));
+  }
+  if (lens.length) {
+    const short = (text) => text.replace(/^Anamorphic\s+/i, "") || text;
+    const seg = pcSeg(ctx, stateObj, lens, { ...opts, labelledBy: "pc-ana-t", label: short, cols: lens.length });
+    rows.push(`<div class="pc-ana"><span class="pc-lbl" id="pc-ana-t">Anamorphic lens</span>${seg}</div>`);
+  }
+  return `<section class="vc-grp pc-ar" aria-labelledby="pc-ar-t"><div class="vc-h"><span class="vc-t" id="pc-ar-t">${esc(SETTING_NAMES[key])}</span>${value ? `<span class="vc-v">${esc(value)}</span>` : ""}</div>${rows.join("")}</section>`;
+}
+
+/** Aspect ratios sit in two rows: one selection across both. */
+ACTIONS["picture-aspect"] = (card, el, ctx) => {
+  if (!ctx.isOn || el.disabled || el.getAttribute("aria-pressed") === "true") return;
+  for (const other of el.closest(".pc-ar").querySelectorAll(".vc-opt.sel")) {
+    other.classList.remove("sel");
+    other.setAttribute("aria-pressed", "false");
+  }
+  ACTIONS["setting-select"](card, el, ctx);
+};
+
+/* ----- scenes ----- */
+
+/** The scene list of this projector, cached on the card: { list, failed, pending }. */
+function pcSceneState(card) {
+  const deviceId = card._config.device_id;
+  let st = card._pcScenes;
+  if (!st || st.deviceId !== deviceId) {
+    st = card._pcScenes = { deviceId, list: null, failed: false, pending: false, seq: 0 };
+  }
+  return st;
+}
+
+/** Ask for the scene list; the pane (and an open editor) render again when it arrives. */
+function pcLoadScenes(card) {
+  const st = pcSceneState(card);
+  const seq = ++st.seq;
+  st.pending = true;
+  const current = () => card._pcScenes === st && st.seq === seq;
+  return Promise.resolve()
+    .then(() => card.hass.callWS({ type: `${DOMAIN}/scenes/list`, device_id: st.deviceId }))
+    .then(
+      (data) => {
+        if (!current()) return;
+        st.list = Array.isArray(data?.scenes) ? data.scenes : [];
+        st.failed = false;
+      },
+      () => {
+        if (current()) st.failed = true;
+      },
+    )
+    .then(() => {
+      if (!current()) return;
+      st.pending = false;
+      if (card._tab === "picture") card._renderPane();
+    });
+}
+
+/** The scene list for a render; loads it when the tab opens (again on every opening). */
+function pcScenes(ctx) {
+  const { card } = ctx;
+  const st = pcSceneState(card);
+  const opening = !card._el?.pane.querySelector(".tab-picture");
+  if ((opening || (!st.list && !st.failed)) && !st.pending) pcLoadScenes(card);
+  return st;
+}
+
+const pcFindScene = (card, id) => (card._pcScenes?.list || []).find((scene) => scene.id === id);
+
+function pcScenesGroup(ctx) {
+  const st = pcScenes(ctx);
+  const admin = !!ctx.hass.user?.is_admin;
+  const list = st.list || [];
+  const head = (right = "") =>
+    `<div class="vc-h"><span class="vc-t" id="pc-sc-t">Scenes</span>${right}</div>`;
+  if (!admin && !list.length) {
+    if (st.failed) return "";
+    const body = st.list
+      ? `<p class="pc-quiet">No scenes yet. An admin can create them here.</p>`
+      : `<div class="pc-chips"></div>`;
+    return `<section class="vc-grp pc-sc" aria-labelledby="pc-sc-t">${head()}${body}</section>`;
+  }
+  const off = ctx.isOn ? "" : " disabled";
+  const chips = list.map(
+    (scene) =>
+      `<button class="pr pc-chip" data-action="scene-apply" data-scene="${esc(scene.id)}" title="${esc(scene.name)}"${off}><span>${esc(scene.name)}</span></button>`,
+  );
+  if (admin) {
+    chips.push(
+      `<button class="pr pc-chip pc-add" data-action="scene-new" aria-label="New scene">${icon("pc-plus", 18)}<span>New</span></button>`,
+    );
+  }
+  const edit =
+    admin && list.length
+      ? `<button class="pr pc-tbtn" data-action="scene-edit">${icon("pencil", 18)}<span>Edit</span></button>`
+      : "";
+  return `<section class="vc-grp pc-sc" aria-labelledby="pc-sc-t">${head(edit)}<div class="pc-chips" role="group" aria-labelledby="pc-sc-t">${chips.join("")}</div></section>`;
+}
+
+/** The toast after applying a scene: what was skipped, in plain words. */
+function pcApplyMessage(ctx, scene, result) {
+  const name = scene.name;
+  const skipped = Array.isArray(result?.skipped) ? result.skipped : [];
+  const applied = Array.isArray(result?.applied) ? result.applied : [];
+  const mode = skipped.find((s) => s.setting === "picture_mode");
+  if (mode) {
+    // The other settings belong to the scene's mode, so nothing else was sent.
+    const wanted = scene.settings?.picture_mode || "Its picture mode";
+    const signal = signalLabel(ctx) || "this signal";
+    const why = {
+      not_offered: `${wanted} is not available for ${signal}`,
+      locked: `the picture mode is locked for ${signal}`,
+      refused: `the projector refused ${wanted}`,
+    };
+    return `${name} was not applied: ${why[mode.reason] || `${wanted} could not be set`}.`;
+  }
+  if (!skipped.length) return `${name} applied.`;
+  const names = skipped
+    .map((s) => `${pcSettingName(s.setting)} (${PC_SKIP_REASONS[s.reason] || s.reason})`)
+    .join(", ");
+  return applied.length ? `${name} applied. Skipped: ${names}.` : `${name} was not applied. Skipped: ${names}.`;
+}
+
+ACTIONS["scene-apply"] = async (card, el, ctx) => {
+  const scene = pcFindScene(card, el.dataset.scene);
+  if (!ctx.isOn || el.disabled || !scene) return;
+  fire(card, "haptic", "light");
+  let message;
+  try {
+    const result = await ctx.hass.callWS({
+      type: `${DOMAIN}/scenes/apply`,
+      device_id: card._config.device_id,
+      scene_id: scene.id,
+    });
+    message = pcApplyMessage(card._context(), scene, result);
+  } catch (err) {
+    message = err?.message || `${scene.name} could not be applied.`;
+  }
+  fire(card, "hass-notification", { message });
+};
+
+/* ----- scene editor (a sheet) ----- */
+
+/*
+ * The editor is drawn from a draft on the card (card._pcEdit), which the
+ * fields update as they change. When the projector's entities change, the
+ * sheet asks for its body again; while the draft would draw the same
+ * fields, the body is kept as it is, so typing, focus and an open select
+ * are not disturbed. If it must be drawn again (the picture modes changed),
+ * the focus and caret go back to the same field.
+ */
+
+/** The current value of a setting as a scene option ("" when unknown or locked). */
+function pcCurrent(ctx, key) {
+  const stateObj = ctx.state(pcEntityKey(key));
+  if (!ssKnown(stateObj)) return "";
+  if (key === "laser_level") {
+    const level = Math.round(Number(stateObj.state));
+    return Number.isFinite(level) && level >= 0 && level <= PC_LASER_MAX ? String(level) : "";
+  }
+  const readOnly = READ_ONLY_OPTIONS[pcEntityKey(key)];
+  if (readOnly?.has(stateObj.state)) return "";
+  return key === "picture_mode" || pcOptions(stateObj).includes(stateObj.state) ? stateObj.state : "";
+}
+
+/** A draft of `scene`, or of a new scene (from the current values while the projector is on). */
+function pcDraft(ctx, scene) {
+  const settings = {};
+  for (const key of PC_SCENE_KEYS) {
+    if (scene) settings[key] = key in (scene.settings || {}) ? String(scene.settings[key]) : "";
+    else settings[key] = ctx.isOn ? pcCurrent(ctx, key) : "";
+  }
+  return {
+    id: scene?.id ?? null,
+    original: scene?.name ?? "",
+    name: scene?.name ?? "",
+    settings,
+    error: "",
+    confirm: false,
+    busy: false,
+    html: null,
+  };
+}
+
+/** The values a setting row offers: [value, label]. */
+function pcChoices(ctx, key, value) {
+  const stateObj = ctx.state(pcEntityKey(key));
+  let values;
+  if (key === "laser_level") {
+    values = Array.from({ length: PC_LASER_MAX + 1 }, (_, i) => String(i));
+  } else {
+    const readOnly = READ_ONLY_OPTIONS[pcEntityKey(key)] || new Set();
+    values = pcOptions(stateObj).filter((o) => !readOnly.has(o));
+  }
+  if (value && !values.includes(value)) values = [...values, value];
+  const label = (v) => (stateObj && key !== "laser_level" && key !== "picture_mode" ? optionLabel(ctx, stateObj, v) : v);
+  return values.map((v) => [v, label(v)]);
+}
+
+function pcEditorHtml(ctx, draft) {
+  const list = ctx.card._pcScenes?.list || [];
+  const picker = list.length
+    ? `<div class="pc-chips pc-pick" role="group" aria-label="Scene to edit">${list
+        .map((scene, i) => {
+          const on = scene.id === draft.id;
+          return `<button class="pr pc-chip" id="pc-pick-${i}" data-action="scene-pick" data-scene="${esc(scene.id)}" aria-pressed="${on}"><span>${esc(scene.name)}</span></button>`;
+        })
+        .join("")}<button class="pr pc-chip pc-add" id="pc-pick-new" data-action="scene-pick" data-scene="" aria-pressed="${!draft.id}" aria-label="New scene">${icon("pc-plus", 18)}<span>New</span></button></div>`
+    : "";
+  const rows = PC_SCENE_KEYS.map((key) => {
+    const value = draft.settings[key];
+    if (!ctx.state(pcEntityKey(key)) && !value) return "";
+    const options = pcChoices(ctx, key, value)
+      .map(([v, label]) => `<option value="${esc(v)}"${v === value ? " selected" : ""}>${esc(label)}</option>`)
+      .join("");
+    return `<div class="pc-row"><label class="pc-rl" for="pc-f-${key}">${esc(pcSettingName(key))}</label><select class="pc-sel${value ? " set" : ""}" id="pc-f-${key}" data-pc-field="${key}"><option value=""${value ? "" : " selected"}>Don't change</option>${options}</select></div>`;
+  }).join("");
+  const busy = draft.busy ? " disabled" : "";
+  const del = draft.id
+    ? `<button class="pr pc-tbtn pc-danger${draft.confirm ? " pc-confirm" : ""}" id="pc-del" data-action="scene-delete"${busy}>${esc(draft.confirm ? `Delete ${draft.original}?` : "Delete")}</button>`
+    : "";
+  const error = draft.error ? `<p class="pc-err" role="alert">${esc(draft.error)}</p>` : "";
+  return `<p class="pc-hint">Pick only what this scene should change.</p>${picker}
+<input class="pc-name" id="pc-f-name" data-pc-field="name" value="${esc(draft.name)}" placeholder="Scene name" aria-label="Scene name" maxlength="100" autocomplete="off" enterkeyhint="done">
+<div class="pc-rows">${rows}</div>${error}
+<div class="pc-foot">${del}<span class="pc-gap"></span><button class="pr pc-tbtn" id="pc-cancel" data-action="sheet-close">Cancel</button><button class="pr pc-fbtn" id="pc-save" data-action="scene-save"${busy}>Save</button></div>`;
+}
+
+/** After the body is drawn again, put the focus, caret and scroll position back. */
+function pcKeepFocus(card) {
+  const body = card._el.sheetBody;
+  const active = card.shadowRoot.activeElement;
+  const id = body.contains(active) ? active.id : "";
+  const range = active?.tagName === "INPUT" ? [active.selectionStart, active.selectionEnd] : null;
+  const scroll = body.scrollTop;
+  Promise.resolve().then(() => {
+    body.scrollTop = scroll;
+    const el = id && body.querySelector(`#${id}`);
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    if (range && el.setSelectionRange) el.setSelectionRange(range[0], range[1]);
+  });
+}
+
+function pcEditorRender(ctx) {
+  const { card } = ctx;
+  const draft = card._pcEdit;
+  if (!draft) return "";
+  const html = pcEditorHtml(ctx, draft);
+  // Nothing to change: keep the fields as they are (see the sheet API).
+  if (html === draft.html && card._el.sheetBody.firstChild) return null;
+  draft.html = html;
+  pcKeepFocus(card);
+  return html;
+}
+
+function pcOpenEditor(card, scene) {
+  card._pcEdit = pcDraft(card._context(), scene || null);
+  card.openSheet({
+    id: "scene-editor",
+    title: (ctx) => (ctx.card._pcEdit?.id ? "Edit scene" : "New scene"),
+    render: pcEditorRender,
+    onClose: (c) => {
+      c._pcEdit = null;
+    },
+  });
+}
+
+function pcEditError(card, draft, message) {
+  draft.error = message;
+  draft.busy = false;
+  if (card._pcEdit === draft) card._renderSheet();
+}
+
+Object.assign(ACTIONS, {
+  "scene-edit": (card) => {
+    const first = card._pcScenes?.list?.[0];
+    if (first) pcOpenEditor(card, first);
+  },
+  "scene-new": (card) => pcOpenEditor(card, null),
+  "scene-pick": (card, el, ctx) => {
+    const scene = pcFindScene(card, el.dataset.scene);
+    if (el.getAttribute("aria-pressed") === "true") return;
+    card._pcEdit = pcDraft(ctx, scene || null);
+    card._renderSheet();
+  },
+  "scene-save": async (card, _el, ctx) => {
+    const draft = card._pcEdit;
+    if (!draft || draft.busy) return;
+    const name = draft.name.trim();
+    const settings = {};
+    for (const key of PC_SCENE_KEYS) {
+      const value = draft.settings[key];
+      if (value !== "") settings[key] = key === "laser_level" ? Number(value) : value;
+    }
+    if (!name) return pcEditError(card, draft, "Enter a name for the scene.");
+    if (!Object.keys(settings).length) return pcEditError(card, draft, "Pick at least one setting to change.");
+    draft.busy = true;
+    draft.error = "";
+    card._renderSheet();
+    const message = { type: `${DOMAIN}/scenes/save`, device_id: card._config.device_id, name, settings };
+    if (draft.id) message.scene_id = draft.id;
+    let reply;
+    try {
+      reply = await ctx.hass.callWS(message);
+    } catch (err) {
+      return pcEditError(card, draft, err?.message || "The scene could not be saved.");
+    }
+    await pcLoadScenes(card);
+    if (card._pcEdit === draft) card.closeSheet();
+    fire(card, "hass-notification", { message: `${reply?.scene?.name || name} saved.` });
+  },
+  "scene-delete": async (card, _el, ctx) => {
+    const draft = card._pcEdit;
+    if (!draft?.id || draft.busy) return;
+    if (!draft.confirm) {
+      draft.confirm = true;
+      card._renderSheet();
+      return;
+    }
+    draft.busy = true;
+    card._renderSheet();
+    try {
+      await ctx.hass.callWS({ type: `${DOMAIN}/scenes/delete`, device_id: card._config.device_id, scene_id: draft.id });
+    } catch (err) {
+      draft.confirm = false;
+      return pcEditError(card, draft, err?.message || "The scene could not be deleted.");
+    }
+    await pcLoadScenes(card);
+    if (card._pcEdit === draft) card.closeSheet();
+    fire(card, "hass-notification", { message: `${draft.original} deleted.` });
+  },
+});
+
+/** Runs once when the card builds its DOM (see TABS): the editor's fields update its draft. */
+function pictureSetup(card, _pane) {
+  const body = card._el.sheetBody;
+  const onField = (ev) => {
+    const draft = card._pcEdit;
+    const el = ev.target;
+    const field = el?.dataset?.pcField;
+    if (!draft || card.sheetId !== "scene-editor" || !field) return;
+    if (field === "name") draft.name = el.value;
+    else {
+      draft.settings[field] = el.value;
+      el.classList.toggle("set", el.value !== "");
+    }
+    // The fields show the draft now; an entity update need not draw them again.
+    draft.html = pcEditorHtml(card._context(), draft);
+  };
+  body.addEventListener("input", onField);
+  body.addEventListener("change", onField);
+  body.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter" || ev.isComposing || ev.target?.dataset?.pcField !== "name" || !card._pcEdit) return;
+    ev.preventDefault();
+    ACTIONS["scene-save"](card, ev.target, card._context());
+  });
+}
 
 /* ---------- end of Picture tab ---------- */
 
@@ -1055,6 +1514,76 @@ ha-card{display:block;overflow:hidden;position:relative}
 }
 
 /* ---------- Picture tab (classes pc-) ---------- */
+/* On a phone the groups are a little tighter, so all of it fits the pane. */
+.tab-picture{gap:8px;--vc-opt-h:40px}
+.tab-picture .vc-grp{padding:10px 12px;gap:8px}
+.pc-mode .vc-opt{font-size:12px;padding:2px;overflow-wrap:normal}
+/* One line: the second sentence drops out (to a hidden line) when it does not fit. */
+.pc-sub{margin-top:-4px;height:16px;overflow:hidden;display:flex;flex-wrap:wrap;column-gap:.3em;
+  font-size:12px;line-height:16px;color:var(--secondary-text-color,#727272)}
+.pc-sub span{white-space:nowrap}
+.pc-badge{display:inline-flex;align-items:center;gap:6px;height:22px;box-sizing:border-box;padding:0 10px;border-radius:11px;flex:none;
+  border:1px solid var(--divider-color,rgba(0,0,0,.12));font-size:12px;font-weight:500;white-space:nowrap}
+.pc-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary-color,#03a9f4)}
+.pc-ana{display:flex;align-items:center;gap:8px}
+.pc-ana .vc-seg{flex:1;min-width:0}
+.pc-lbl{flex:none;width:68px;font-size:12px;line-height:1.25;color:var(--secondary-text-color,#727272)}
+.pc-note{display:flex;align-items:center;gap:8px;min-height:28px;padding:2px 4px;font-size:13px;color:var(--secondary-text-color,#727272)}
+.pc-note svg{color:var(--secondary-text-color,#727272)}
+.pc-quiet{margin:0;min-height:40px;display:flex;align-items:center;font-size:13px;color:var(--secondary-text-color,#727272)}
+.pc-chips{display:flex;gap:6px;min-height:40px;overflow-x:auto;scrollbar-width:none;margin:-2px;padding:2px}
+.pc-chips.pc-pick{flex-wrap:wrap;overflow:visible}
+.pc-chips::-webkit-scrollbar{display:none}
+.pc-chip{flex:none;min-height:40px;max-width:200px;padding:0 10px;border-radius:var(--vc-radius);box-sizing:border-box;
+  border:1px solid var(--divider-color,rgba(0,0,0,.12));background-color:transparent;font:inherit;color:var(--primary-text-color,#212121);
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pc-chip > span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tab-picture .pc-chip{flex:0 1 auto;min-width:64px}
+.pc-chip.pc-add{flex:none;min-width:0;border-style:dashed;color:var(--secondary-text-color,#727272);padding:0 12px 0 10px}
+.tab-picture .pc-add span{display:none}
+.pc-chip[aria-pressed="true"]{background-color:var(--vc-sel);box-shadow:inset 0 0 0 2px var(--primary-color,#03a9f4);
+  border-color:transparent;font-weight:500}
+.pc-chip:disabled{cursor:default;background-image:none}
+.is-on .pc-chip:disabled{opacity:.35}
+.pc-tbtn{min-height:40px;padding:0 12px;border-radius:20px;background-color:transparent;font:inherit;font-weight:500;
+  color:var(--primary-color,#03a9f4);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.vc-h .pc-tbtn{margin:-10px -8px -10px 0}
+.pc-tbtn:disabled,.pc-fbtn:disabled{opacity:.5;cursor:default;background-image:none}
+@container (min-width:600px){
+  .tab-picture{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-content:start;gap:12px;--vc-opt-h:44px}
+  .tab-picture .vc-grp{padding:12px;gap:10px}
+  .pc-mode,.pc-ar,.tab-picture > .vc-lock{grid-column:1 / -1}
+  .pc-mode .vc-opt{font-size:14px;padding:4px 2px}
+  .pc-sub{font-size:13px}
+  .pc-ana{flex-direction:column;align-items:stretch;gap:6px}
+  .pc-lbl{width:auto;font-size:13px}
+  .tab-picture .pc-add span{display:inline}
+}
+/* the scene editor, in the sheet */
+.pc-hint{margin:0;font-size:13px;color:var(--secondary-text-color,#727272)}
+.pc-pick{flex:none}
+.pc-name{flex:none;height:44px;width:100%;box-sizing:border-box;padding:0 12px;border:0;
+  border-bottom:1px solid var(--secondary-text-color,#727272);border-radius:var(--vc-in-radius) var(--vc-in-radius) 0 0;
+  background:var(--vc-ctl);color:var(--primary-text-color,#212121);font:inherit;font-size:15px}
+.pc-name:focus{outline:none;border-bottom:2px solid var(--primary-color,#03a9f4)}
+.pc-name::placeholder{color:var(--secondary-text-color,#727272)}
+.pc-rows{flex:none;border:1px solid var(--divider-color,rgba(0,0,0,.12));border-radius:var(--vc-radius);padding:2px 12px}
+.pc-row{display:flex;align-items:center;gap:12px;min-height:50px}
+.pc-rl{flex:1;min-width:0}
+.pc-sel{flex:none;width:52%;max-width:220px;height:40px;padding:0 8px;border:0;
+  border-bottom:1px solid var(--secondary-text-color,#727272);border-radius:var(--vc-in-radius) var(--vc-in-radius) 0 0;
+  background:var(--vc-ctl);color:var(--primary-text-color,#212121);font:inherit}
+.pc-sel option{background:var(--ha-card-background,var(--card-background-color,#fff));color:var(--primary-text-color,#212121)}
+.pc-sel.set{border-bottom-color:var(--primary-color,#03a9f4);font-weight:500}
+.pc-sel:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+.pc-err{margin:0;font-size:13px;color:var(--error-color,#db4437)}
+.pc-foot{flex:none;position:sticky;bottom:-16px;margin:0 -16px -16px;padding:8px 16px 16px;display:flex;align-items:center;gap:8px;
+  background:var(--ha-card-background,var(--card-background-color,#fff))}
+.pc-gap{flex:1}
+.pc-fbtn{min-height:44px;padding:0 24px;border-radius:22px;background-color:var(--primary-color,#03a9f4);font:inherit;font-weight:500;
+  color:var(--text-primary-color,#fff)}
+.pc-danger{color:var(--error-color,#db4437)}
+.pc-tbtn.pc-confirm{background-color:color-mix(in srgb,var(--error-color,#db4437) 14%,transparent)}
 /* ---------- end of Picture tab styles ---------- */
 
 /* ---------- sheet ---------- */
@@ -1372,7 +1901,8 @@ class ValerionCard extends HTMLElement {
     const ctx = this._context();
     const title = typeof spec.title === "function" ? spec.title(ctx) : spec.title;
     this._el.sheetTitle.textContent = title || "";
-    this._el.sheetBody.innerHTML = spec.render(ctx);
+    const html = spec.render(ctx);
+    if (html !== null) this._el.sheetBody.innerHTML = html;
   }
 
   disconnectedCallback() {
