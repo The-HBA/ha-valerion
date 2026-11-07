@@ -61,7 +61,7 @@ from .notifications import (
 from .protocol import AwolLinkProtocolError, Command, Response, parse_command_line
 from .wol import DEFAULT_BROADCAST, build_magic_packet, normalize_mac, send_magic_packet
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "ALL_PICTURE_MODES",

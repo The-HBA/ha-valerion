@@ -7,9 +7,9 @@ Local control of Valerion (AWOL Vision) projectors from Home Assistant over **AW
 
 Thanks also to [tinogo's Unfolded Circle driver](https://github.com/tinogo/uc-intg-awol-valerion), which served as a second reference for the protocol behaviour.
 
-This is an independent community project, not affiliated with or supported by Valerion or AWOL Vision. The Valerion and AWOL names and logos belong to their owners. AI-assisted tooling was used during development; every change is reviewed by the maintainer and tested on a real projector.
+This is an independent community project, not affiliated with or supported by Valerion or AWOL Vision. The Valerion and AWOL names and logos belong to their owners. AI-assisted tooling was used during development; the maintainer tests the integration on a real projector.
 
-**Status:** v0.1.0 is the first complete version. The card's Picture and Advanced tabs, scenes and the lens sheet shown below come in v0.1.1. Please [report](https://github.com/The-HBA/ha-valerion/issues) anything that looks wrong.
+**Status:** v0.1.1 adds the Picture and Advanced tabs, scenes and the lens sheet to the card. Please [report](https://github.com/The-HBA/ha-valerion/issues) anything that looks wrong.
 
 **Most testing so far was done on a VisionMaster Pro2, plus user reports from a VisionMaster Plus2 and an Aetherion Max.** If you own another model, please [help test it](docs/help-test.md). Everything is done in Home Assistant and most tests take a few minutes.
 

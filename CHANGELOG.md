@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-07
+
 ### Added
 - Remote card, Picture tab: picture mode for what is playing, color temperature, aspect ratio with the anamorphic lens ratios, and scenes.
 - Remote card, Advanced tab: laser level, enhanced black level, dynamic tone mapping, gamma, motion enhancement and the lens menus.
