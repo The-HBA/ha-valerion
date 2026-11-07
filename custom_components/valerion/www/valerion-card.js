@@ -1395,9 +1395,9 @@ const AD_LASER = "number.laser_level";
  * The lens menus, in the order the card shows them. Each opens the
  * projector's own on-screen menu (button.<name>_menu); the sheet then gives
  * the keys that menu uses.
- * UNCONFIRMED: the instructions, the arrows and the Menu key are best guesses
- * and have not been checked on a projector yet. Check each menu on the
- * projector before release.
+ * Not checked on a projector: the instructions, the arrows and the Menu key
+ * are best guesses, kept as they are since v0.1.1. Correct them when a user
+ * reports what a menu really does.
  */
 const LENS_MENUS = {
   lens_shift: {
