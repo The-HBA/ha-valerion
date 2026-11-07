@@ -304,3 +304,76 @@ const OPTION_LABELS = {
   clear: "Clear",
   smooth: "Smooth",
 };
+
+/* ---------- Picture tab tests ---------- */
+
+/** The scenes valerion/scenes/list returns for a new hass object. */
+export const SCENES = [
+  {
+    id: "scene_movie",
+    name: "Movie night",
+    settings: { picture_mode: "HDR Theater", laser_level: 6, color_temperature: "warm1", aspect_ratio: "ratio_21_9" },
+    entity_id: "scene.visionmaster_pro2_movie_night",
+  },
+  {
+    id: "scene_sports",
+    name: "Sports",
+    settings: { picture_mode: "HDR Sports", motion_enhancement: "smooth" },
+    entity_id: "scene.visionmaster_pro2_sports",
+  },
+  {
+    id: "scene_day",
+    name: "Daytime",
+    settings: { laser_level: 10, enhanced_black_level: "off" },
+    entity_id: "scene.visionmaster_pro2_daytime",
+  },
+];
+
+Object.assign(STATUS_LABELS, { sdr: "SDR", hlg: "HLG", hdr10_plus: "HDR10+", dolby_vision: "Dolby Vision" });
+
+/**
+ * Scene commands on top of the websocket above, with the scenes kept in
+ * `hass.ws.scenes`. Save checks the name as scenes.py does; apply applies
+ * every setting. Tests replace handlers for other replies.
+ */
+const pictureBaseWebsocket = websocket;
+// makeHass calls websocket() by name, so replacing it adds the scene commands.
+websocket = () => {
+  const base = pictureBaseWebsocket();
+  const { ws } = base;
+  ws.scenes = structuredClone(SCENES);
+  let next = 1;
+  const fail = (code, message) => {
+    throw { code, message };
+  };
+  Object.assign(ws.handlers, {
+    "valerion/scenes/list": () => ({ entry_id: "entry_pro2", scenes: structuredClone(ws.scenes) }),
+    "valerion/scenes/save": ({ name, scene_id: id, settings }) => {
+      const clean = String(name || "").trim();
+      if (!clean) fail("invalid_name", "Enter a scene name of 1 to 100 characters.");
+      if (ws.scenes.some((s) => s.name.toLowerCase() === clean.toLowerCase() && s.id !== id)) {
+        fail("invalid_name", `Another scene of this projector is already called ${clean}.`);
+      }
+      if (!settings || !Object.keys(settings).length) fail("invalid_settings", "A scene needs at least one picture setting.");
+      let scene = ws.scenes.find((s) => s.id === id);
+      if (id && !scene) fail("scene_not_found", `This projector has no scene with ID ${id}.`);
+      if (!scene) {
+        scene = { id: `scene_new_${next++}`, entity_id: null };
+        ws.scenes.push(scene);
+      }
+      Object.assign(scene, { name: clean, settings: structuredClone(settings) });
+      return { scene: structuredClone(scene) };
+    },
+    "valerion/scenes/delete": ({ scene_id: id }) => {
+      if (!ws.scenes.some((s) => s.id === id)) fail("scene_not_found", `This projector has no scene with ID ${id}.`);
+      ws.scenes = ws.scenes.filter((s) => s.id !== id);
+      return null;
+    },
+    "valerion/scenes/apply": ({ scene_id: id }) => {
+      const scene = ws.scenes.find((s) => s.id === id);
+      if (!scene) fail("scene_not_found", `This projector has no scene with ID ${id}.`);
+      return { applied: Object.keys(scene.settings), skipped: [] };
+    },
+  });
+  return base;
+};
