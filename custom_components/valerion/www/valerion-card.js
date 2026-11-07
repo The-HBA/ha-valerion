@@ -924,12 +924,553 @@ function remoteSetup(card, pane) {
 
 /* ---------- Advanced tab ---------- */
 
+Object.assign(ICONS, {
+  hdr: "M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M5,5V19H19V5H5M6,8H8V11H10V8H12V16H10V13H8V16H6V8M14,8H16A2,2 0 0,1 18,10V14A2,2 0 0,1 16,16H14V8M16,10V14V10Z",
+  lensShift:
+    "M13,11H18L16.5,9.5L17.92,8.08L21.84,12L17.92,15.92L16.5,14.5L18,13H13V18L14.5,16.5L15.92,17.92L12,21.84L8.08,17.92L9.5,16.5L11,18V13H6L7.5,14.5L6.08,15.92L2.16,12L6.08,8.08L7.5,9.5L6,11H11V6L9.5,7.5L8.08,6.08L12,2.16L15.92,6.08L14.5,7.5L13,6V11Z",
+  zoom: "M15.5,14L20.5,19L19,20.5L14,15.5V14.71L13.73,14.43C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.43,13.73L14.71,14H15.5M9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14M12,10H10V12H9V10H7V9H9V7H10V9H12V10Z",
+  focus:
+    "M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M19,19H15V21H19A2,2 0 0,0 21,19V15H19M19,3H15V5H19V9H21V5A2,2 0 0,0 19,3M5,5H9V3H5A2,2 0 0,0 3,5V9H5M5,15H3V19A2,2 0 0,0 5,21H9V19H5V15Z",
+});
+
+/** The settings of this tab, in the order the locked line names them. */
+const ADVANCED_KEYS = [
+  "number.laser_level",
+  "select.enhanced_black_level",
+  "select.dynamic_tone_mapping",
+  "select.gamma",
+  "select.motion_enhancement",
+];
+const AD_LASER = "number.laser_level";
+
+/*
+ * The lens menus, in the order the card shows them. Each opens the
+ * projector's own on-screen menu (button.<name>_menu); the sheet then gives
+ * the keys that menu uses.
+ * UNCONFIRMED: the instructions, the arrows and the Menu key are best guesses
+ * and have not been checked on a projector yet. Check each menu on the
+ * projector before release.
+ */
+const LENS_MENUS = {
+  lens_shift: {
+    title: "Lens shift",
+    short: "Shift",
+    icon: "lensShift",
+    arrows: ["up", "left", "right", "down"],
+    menuKey: false,
+    text: "The arrows move the picture up, down, left and right.",
+  },
+  zoom: {
+    title: "Zoom",
+    short: "Zoom",
+    icon: "zoom",
+    arrows: ["up", "left", "right", "down"],
+    menuKey: true,
+    text: "Left and right zoom in and out. Menu moves the zoomed picture. To reset, hold OK on the projector's remote.",
+  },
+  focus: {
+    title: "Focus",
+    short: "Focus",
+    icon: "focus",
+    arrows: ["left", "right"],
+    menuKey: false,
+    text: "Left and right adjust the focus. Stop when text on screen is sharp.",
+  },
+};
+const AD_ARROW_LABELS = { up: "Up", down: "Down", left: "Left", right: "Right" };
+
 function renderAdvanced(ctx) {
-  return comingLater(ctx, "advanced", "Advanced settings", "Laser level, black level, motion, gamma, tone mapping and the lens menus.");
+  const parts = [adSignal(ctx), adLaser(ctx), adSettings(ctx), adLockRow(ctx), adLensKeys(ctx)].filter(Boolean);
+  const body = parts.length ? parts.join("") : `<p class="ad-none">This projector has no advanced settings in Home Assistant.</p>`;
+  return `<div class="tab tab-advanced">${body}</div>`;
 }
 
-/** Runs once when the card builds its DOM (see TABS). */
-function advancedSetup(_card, _pane) {}
+/** "Settings for HDR10 · 3840×2160p 24 Hz"; nothing while off. */
+function adSignal(ctx) {
+  const signal = signalLabel(ctx);
+  if (!signal) return "";
+  const video = ctx.state("sensor.video_signal");
+  let text;
+  if (ctx.state("sensor.hdr_format")?.state === "no_signal") text = "No signal. Showing the current settings.";
+  else text = `Settings for ${signal}${ssKnown(video) ? ` · ${video.state}` : ""}`;
+  return `<div class="ad-sig">${icon("hdr", 18)}<span>${esc(text)}</span></div>`;
+}
+
+/** Range of the laser level number: { min, max, step }. */
+function adRange(stateObj) {
+  const num = (value, fallback) => (Number.isFinite(Number(value)) && value !== null ? Number(value) : fallback);
+  const min = num(stateObj?.attributes.min, 0);
+  const max = Math.max(min + 1, num(stateObj?.attributes.max, 10));
+  const step = num(stateObj?.attributes.step, 1) > 0 ? num(stateObj?.attributes.step, 1) : 1;
+  return { min, max, step };
+}
+
+/** Round to a step and keep inside the range. */
+function adClamp(value, range) {
+  const stepped = range.min + Math.round((value - range.min) / range.step) * range.step;
+  return Math.min(range.max, Math.max(range.min, Number(stepped.toFixed(4))));
+}
+
+/** The laser level now: state object, range, current value (or null) and whether it can be set. */
+function adLaserNow(ctx) {
+  const stateObj = ctx.state(AD_LASER);
+  const range = adRange(stateObj);
+  const known = ctx.isOn && ssKnown(stateObj) && Number.isFinite(Number(stateObj.state));
+  return {
+    stateObj,
+    range,
+    current: known ? adClamp(Number(stateObj.state), range) : null,
+    usable: !!stateObj && ctx.isOn && stateObj.state !== "unavailable",
+  };
+}
+
+function adLaser(ctx) {
+  const now = adLaserNow(ctx);
+  if (!now.stateObj || settingLocked(ctx, AD_LASER)) return "";
+  const { min, max, step } = now.range;
+  const value = now.current ?? min;
+  const f = (value - min) / (max - min);
+  const count = Math.round((max - min) / step);
+  let ticks = "";
+  if (count >= 2 && count <= 20) {
+    for (let i = 1; i < count; i++) ticks += `<i class="ad-tick" style="--t:${i / count}"></i>`;
+  }
+  const off = now.usable ? "" : " disabled";
+  const focus = now.usable ? `tabindex="0"` : `tabindex="-1" aria-disabled="true"`;
+  const stepKey = (dir, glyph, label) =>
+    `<button class="pr ad-ib" data-ad-step="${dir}" aria-label="${label}"${off}>${icon(glyph)}</button>`;
+  return `<section class="vc-grp ad-laser" aria-labelledby="ad-laser-t"><div class="vc-h"><span class="vc-t" id="ad-laser-t">${esc(SETTING_NAMES[AD_LASER])}</span><span class="vc-v ad-lv">${now.current ?? ""}</span></div>
+<div class="ad-row">${stepKey(-1, "minus", "Laser level down")}<div class="ad-slider" data-ad-slider role="slider" aria-label="Laser level" aria-valuemin="${min}" aria-valuemax="${max}" aria-valuenow="${value}" ${focus} style="--f:${f}"><div class="ad-fill"></div>${ticks}<div class="ad-hdl"></div></div>${stepKey(1, "plus", "Laser level up")}</div></section>`;
+}
+
+/**
+ * Black level, tone mapping, gamma and motion. On a phone they share one
+ * box to fit the screen; from 600 px wide each is its own group.
+ */
+function adSettings(ctx) {
+  const groups = [
+    settingGroup(ctx, "select.enhanced_black_level"),
+    settingGroup(ctx, "select.dynamic_tone_mapping", { title: "Dynamic tone mapping" }),
+    settingGroup(ctx, "select.gamma"),
+    settingGroup(ctx, "select.motion_enhancement", { cols: 3, colsWide: 6, cls: "ad-motion" }),
+  ].filter(Boolean);
+  if (!groups.length) return "";
+  // All four (projector off, or no signal): smaller options, to fit the phone.
+  return `<div class="ad-box${groups.length > 3 ? " ad-tight" : ""}">${groups.join("")}</div>`;
+}
+
+/** The locked line, with Forget learned locks beside it when that button exists. */
+function adLockRow(ctx) {
+  const line = lockedLine(ctx, ADVANCED_KEYS);
+  if (!line) return "";
+  const forget = ctx.state("button.forget_learned_locks");
+  const usable = forget && ctx.isOn && forget.state !== "unavailable";
+  const button = forget
+    ? `<button class="pr ad-forget" data-action="advanced-forget" aria-label="Forget learned locks" title="Forget learned locks"${usable ? "" : " disabled"}>Forget</button>`
+    : "";
+  return `<div class="ad-lock">${line}${button}</div>`;
+}
+
+/** The card_info reply, asked for once per projector (cardInfo asks again on every render). */
+function adCardInfo(ctx) {
+  const { card } = ctx;
+  const info = card._cardInfo;
+  if (info && info.deviceId === card._config.device_id) return info;
+  const fresh = cardInfo(ctx);
+  // cardInfo renders again only for the Settings tab: wait for the reply here.
+  const started = performance.now();
+  const wait = () => {
+    if (card._cardInfo !== fresh) return;
+    if (fresh.pending && performance.now() - started < 30000) setTimeout(wait, 100);
+    else if (!fresh.pending && card._tab === "advanced") card._renderAll();
+  };
+  setTimeout(wait, 0);
+  return fresh;
+}
+
+/**
+ * The lens menus this projector has: the button exists, is not unavailable
+ * while the projector is on (it refused the menu) and the model has the menu.
+ */
+function adLensMenus(ctx) {
+  const unsupported = new Set(adCardInfo(ctx).data?.setup?.unsupported_menus || []);
+  return Object.keys(LENS_MENUS).filter((name) => {
+    if (unsupported.has(name)) return false;
+    const stateObj = ctx.state(`button.${name}_menu`);
+    return !!stateObj && !(ctx.isOn && stateObj.state === "unavailable");
+  });
+}
+
+function adLensKeys(ctx) {
+  const menus = adLensMenus(ctx);
+  if (!menus.length) return "";
+  const keys = menus
+    .map((name) => {
+      const menu = LENS_MENUS[name];
+      return `<button class="pr ad-lk" data-action="lens-open" data-menu="${name}"${ctx.isOn ? "" : " disabled"}>${icon(menu.icon)}<span>${esc(menu.title)}</span></button>`;
+    })
+    .join("");
+  return `<section class="ad-lens" role="group" aria-label="Lens" style="--n:${menus.length}">${keys}</section>`;
+}
+
+/* ----- lens sheet ----- */
+
+/** Per card: the menu the sheet shows and the chain of lens service calls. */
+const AD_LENS = new WeakMap();
+function adLensState(card) {
+  let lens = AD_LENS.get(card);
+  if (!lens) AD_LENS.set(card, (lens = { menu: "zoom", chain: Promise.resolve() }));
+  return lens;
+}
+
+/** Run lens calls one after the other: Return must reach the projector before the next menu opens. */
+function adLensQueue(card, step) {
+  const lens = adLensState(card);
+  lens.chain = lens.chain.then(step, step);
+  return lens.chain;
+}
+
+function adPressMenu(card, name) {
+  const ctx = card._context();
+  const entityId = ctx.entities.byKey[`button.${name}_menu`];
+  if (!ctx.isOn || !entityId) return Promise.resolve(false);
+  return remoteCall(card, "button", "press", { entity_id: entityId });
+}
+
+function adLensSheet(ctx, lens) {
+  const menu = LENS_MENUS[lens.menu];
+  const menus = adLensMenus(ctx);
+  const switcher =
+    menus.length > 1
+      ? `<div class="vc-seg ad-sw" role="group" aria-label="Lens menu" style="--n:${menus.length}">${menus
+          .map((name) => {
+            const selected = name === lens.menu;
+            return `<button class="pr vc-opt ad-swo${selected ? " sel" : ""}" data-action="lens-switch" data-menu="${name}" aria-pressed="${selected}"${ctx.isOn ? "" : " disabled"}>${icon(LENS_MENUS[name].icon, 20)}<span>${esc(LENS_MENUS[name].short)}</span></button>`;
+          })
+          .join("")}</div>`
+      : "";
+  const arrows = menu.arrows
+    .map((name) => {
+      const attrs = remoteKeyAttrs(ctx, name, AD_ARROW_LABELS[name]);
+      return attrs ? `<button class="pr rm-dk rm-${name}" ${attrs}>${icon(name, 30)}</button>` : "";
+    })
+    .join("");
+  const ok = remoteKeyAttrs(ctx, "ok", "OK");
+  const pad = `<div class="rm-dpad ad-dpad" role="group" aria-label="${esc(menu.title)} keys">${arrows}${ok ? `<button class="pr rm-dk rm-ok" ${ok}>OK</button>` : ""}</div>`;
+  const key = (name, glyph, label) => {
+    const attrs = remoteKeyAttrs(ctx, name, label);
+    return attrs ? `<button class="pr rm-key ad-sk" ${attrs}>${icon(glyph)}<span>${esc(label)}</span></button>` : "";
+  };
+  const keys = key("return", "back", "Back") + (menu.menuKey ? key("menu", "menu", "Menu") : "");
+  return `<div class="ad-sheet">${switcher}<p class="ad-instr">${esc(menu.text)}</p>${pad}${keys ? `<div class="ad-skeys">${keys}</div>` : ""}<button class="pr ad-done" data-action="lens-done" autofocus>Done</button></div>`;
+}
+
+Object.assign(ACTIONS, {
+  // Open the projector's lens menu and the sheet with its keys.
+  "lens-open": (card, el, ctx) => {
+    const name = el.dataset.menu;
+    if (!ctx.isOn || el.disabled || !LENS_MENUS[name]) return;
+    fire(card, "haptic", "light");
+    const lens = adLensState(card);
+    lens.menu = name;
+    adLensQueue(card, () => adPressMenu(card, name));
+    card.openSheet({
+      id: "lens",
+      title: () => LENS_MENUS[lens.menu].title,
+      render: (sheetCtx) => adLensSheet(sheetCtx, lens),
+      // Done, Escape, the close button and a tap outside: close the projector's menu once.
+      onClose: (c) => {
+        adLensQueue(c, () => remoteSendKey(c, "return"));
+        c._el?.pane.querySelector(`[data-action="lens-open"][data-menu="${lens.menu}"]`)?.focus({ preventScroll: true });
+      },
+    });
+  },
+  // Another menu: Return closes the current one, then the other opens.
+  "lens-switch": (card, el, ctx) => {
+    const name = el.dataset.menu;
+    const lens = adLensState(card);
+    if (!ctx.isOn || el.disabled || !LENS_MENUS[name] || name === lens.menu) return;
+    fire(card, "haptic", "selection");
+    lens.menu = name;
+    card._renderSheet();
+    adLensQueue(card, () => remoteSendKey(card, "return"));
+    adLensQueue(card, () => adPressMenu(card, name));
+  },
+  "lens-done": (card) => card.closeSheet(),
+  "advanced-forget": (card, el, ctx) => {
+    const entityId = ctx.entities.byKey["button.forget_learned_locks"];
+    if (!ctx.isOn || el.disabled || !entityId) return;
+    fire(card, "haptic", "light");
+    remoteCall(card, "button", "press", { entity_id: entityId });
+  },
+});
+
+/*
+ * The laser level slider and its minus and plus buttons, and the focus in
+ * the pane and the lens sheet across renders. The listeners sit on the pane
+ * and the window (the pane is rendered again on every entity change).
+ *
+ * The slider sends one number.set_value on release, not while it is dragged.
+ * Minus and plus send on release; held, they repeat after REMOTE_REPEAT_DELAY.
+ * Only one call is on its way at a time: a value chosen meanwhile is sent
+ * when it returns (the newest wins, nothing queues up).
+ */
+function advancedSetup(card, pane) {
+  const st = { want: null, until: 0, busy: null, drag: null, hold: null, focus: null, sheetFocus: null };
+  const root = pane.getRootNode();
+  const mine = () => !!pane.querySelector(".tab-advanced");
+  const laser = () => adLaserNow(card._context());
+  const sliderEl = () => pane.querySelector("[data-ad-slider]");
+
+  const show = (value) => {
+    const el = sliderEl();
+    if (!el) return;
+    const { min, max } = laser().range;
+    el.style.setProperty("--f", String((value - min) / (max - min)));
+    el.setAttribute("aria-valuenow", String(value));
+    const out = pane.querySelector(".ad-lv");
+    if (out) out.textContent = String(value);
+  };
+
+  /** The value shown now: being dragged, just sent, or the projector's. */
+  const shown = () => {
+    if (st.drag) return st.drag.value;
+    if (st.want !== null && (st.busy || performance.now() < st.until)) return st.want;
+    return laser().current;
+  };
+
+  async function pump(entityId) {
+    let last = null;
+    let ok = true;
+    while (st.want !== null && st.want !== last) {
+      last = st.want;
+      ok = await remoteCall(card, "number", "set_value", { entity_id: entityId, value: last });
+      if (!ok) {
+        st.want = null;
+        card._renderPane();
+        break;
+      }
+    }
+    return ok;
+  }
+
+  function commit(value) {
+    const now = laser();
+    if (!now.usable) return Promise.resolve(false);
+    const target = adClamp(value, now.range);
+    // Already shown: the projector has it, or the call for it is on its way.
+    if (target === shown()) {
+      show(target);
+      return st.busy || Promise.resolve(true);
+    }
+    st.want = target;
+    st.until = performance.now() + 3000;
+    show(target);
+    if (!st.busy) {
+      st.busy = pump(now.stateObj.entity_id).finally(() => {
+        st.busy = null;
+        st.until = performance.now() + 3000;
+      });
+    }
+    return st.busy;
+  }
+
+  const stepBy = (dir) => {
+    const now = laser();
+    const base = shown() ?? now.range.min;
+    const next = adClamp(base + dir * now.range.step, now.range);
+    if (next === base) return Promise.resolve(false);
+    return commit(next);
+  };
+
+  /* ----- slider ----- */
+
+  const valueAt = (x) => {
+    const { range } = laser();
+    const box = sliderEl()?.getBoundingClientRect();
+    if (!box?.width) return range.min;
+    const f = Math.min(1, Math.max(0, (x - box.left - 10) / (box.width - 18)));
+    return adClamp(range.min + f * (range.max - range.min), range);
+  };
+
+  function dragStart(el, ev) {
+    el.setPointerCapture(ev.pointerId);
+    el.focus({ preventScroll: true });
+    st.drag = { pointerId: ev.pointerId, value: valueAt(ev.clientX) };
+    show(st.drag.value);
+    const move = (e) => {
+      if (e.pointerId !== st.drag?.pointerId) return;
+      st.drag.value = valueAt(e.clientX);
+      show(st.drag.value);
+    };
+    const end = (e) => {
+      if (e.pointerId !== st.drag?.pointerId) return;
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", end, true);
+      window.removeEventListener("pointercancel", end, true);
+      const { value } = st.drag;
+      st.drag = null;
+      if (e.type === "pointerup") {
+        fire(card, "haptic", "light");
+        commit(value);
+      } else {
+        card._renderPane();
+      }
+    };
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", end, true);
+    window.addEventListener("pointercancel", end, true);
+  }
+
+  function sliderKey(ev) {
+    const { range } = laser();
+    const base = shown() ?? range.min;
+    const moves = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 2, PageDown: -2 };
+    let value;
+    if (ev.key in moves) value = base + moves[ev.key] * range.step;
+    else if (ev.key === "Home") value = range.min;
+    else if (ev.key === "End") value = range.max;
+    else return;
+    ev.preventDefault();
+    commit(value);
+  }
+
+  /* ----- minus and plus, held to repeat ----- */
+
+  const stepEl = (node) => (node instanceof Element ? node.closest("[data-ad-step]") : null);
+
+  function stopHold(send) {
+    const hold = st.hold;
+    if (!hold) return;
+    st.hold = null;
+    hold.active = false;
+    clearTimeout(hold.timer);
+    clearTimeout(hold.limit);
+    window.removeEventListener("pointerup", onUp, true);
+    window.removeEventListener("pointercancel", onCancel, true);
+    pane.querySelector(`[data-ad-step="${hold.dir}"]`)?.classList.remove("held");
+    if (send && !hold.sent) {
+      fire(card, "haptic", "light");
+      stepBy(hold.dir);
+    }
+  }
+
+  function startHold(el, pointerId) {
+    stopHold(false);
+    const hold = { dir: Number(el.dataset.adStep), pointerId, active: true, sent: false };
+    st.hold = hold;
+    el.classList.add("held");
+    hold.timer = setTimeout(async () => {
+      if (!hold.active) return;
+      fire(card, "haptic", "light");
+      hold.sent = true;
+      while (hold.active) {
+        const began = performance.now();
+        await stepBy(hold.dir);
+        if (!laser().usable || shown() === adClamp(shown() + hold.dir * laser().range.step, laser().range)) break;
+        const wait = REMOTE_REPEAT_EVERY - (performance.now() - began);
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+      }
+    }, REMOTE_REPEAT_DELAY);
+    hold.limit = setTimeout(() => hold.active && stopHold(false), REMOTE_HOLD_MAX);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("pointercancel", onCancel, true);
+  }
+
+  function onUp(ev) {
+    const hold = st.hold;
+    if (!hold || ev.pointerId !== hold.pointerId) return;
+    const over = ev.composedPath().find((node) => node instanceof Element && node.dataset.adStep);
+    stopHold(Number(over?.dataset.adStep) === hold.dir);
+  }
+  function onCancel(ev) {
+    if (st.hold && ev.pointerId === st.hold.pointerId) stopHold(false);
+  }
+
+  pane.addEventListener("pointerdown", (ev) => {
+    if (!ev.isPrimary || ev.button !== 0 || !mine()) return;
+    const step = stepEl(ev.target);
+    if (step) {
+      if (step.disabled) return;
+      if (step.hasPointerCapture(ev.pointerId)) step.releasePointerCapture(ev.pointerId);
+      startHold(step, ev.pointerId);
+      return;
+    }
+    const slider = ev.target instanceof Element ? ev.target.closest("[data-ad-slider]") : null;
+    if (slider && slider.getAttribute("aria-disabled") !== "true") dragStart(slider, ev);
+  });
+  pane.addEventListener("pointerout", (ev) => {
+    const hold = st.hold;
+    if (!hold || ev.pointerId !== hold.pointerId) return;
+    if (Number(stepEl(ev.relatedTarget)?.dataset.adStep) !== hold.dir) stopHold(false);
+  });
+  pane.addEventListener("contextmenu", (ev) => {
+    if (stepEl(ev.target)) ev.preventDefault();
+  });
+  pane.addEventListener("keydown", (ev) => {
+    if (ev.target instanceof Element && ev.target.matches("[data-ad-slider]")) sliderKey(ev);
+  });
+  // Enter, Space and assistive technology click the button (detail 0).
+  pane.addEventListener("click", (ev) => {
+    const step = stepEl(ev.target);
+    if (step && ev.detail === 0 && !st.hold && !step.disabled) {
+      fire(card, "haptic", "light");
+      stepBy(Number(step.dataset.adStep));
+    }
+  });
+
+  /* ----- after each render ----- */
+
+  const attr = (name, value) => `[${name}="${CSS.escape(value)}"]`;
+  const identity = (el) => {
+    if (!(el instanceof Element)) return null;
+    if (el.matches("[data-ad-slider]")) return "[data-ad-slider]";
+    if (el.dataset.adStep) return attr("data-ad-step", el.dataset.adStep);
+    const action = el.dataset.action;
+    if (action === "setting-select") return `${attr("data-entity", el.dataset.entity)}${attr("data-option", el.dataset.option)}`;
+    if (action && el.dataset.menu) return `${attr("data-action", action)}${attr("data-menu", el.dataset.menu)}`;
+    if (action) return attr("data-action", action);
+    return null;
+  };
+  const lost = () => !root.activeElement && (!document.activeElement || document.activeElement === document.body);
+  const track = (node, key) => {
+    node.addEventListener("focusin", (ev) => {
+      st[key] = identity(ev.target);
+    });
+    node.addEventListener("focusout", (ev) => {
+      const { target } = ev;
+      setTimeout(() => {
+        if (target.isConnected) st[key] = node.contains(root.activeElement) ? identity(root.activeElement) : null;
+      });
+    });
+  };
+  track(pane, "focus");
+  new MutationObserver(() => {
+    if (!mine()) {
+      stopHold(false);
+      return;
+    }
+    if (st.hold) pane.querySelector(`[data-ad-step="${st.hold.dir}"]`)?.classList.add("held");
+    const current = laser().current;
+    if (!st.drag && !st.busy && st.want !== null && (st.want === current || performance.now() >= st.until)) {
+      st.want = null;
+    }
+    const value = shown();
+    if (value !== null && value !== current) show(value);
+    if (st.focus && lost()) pane.querySelector(st.focus)?.focus({ preventScroll: true });
+  }).observe(pane, { childList: true });
+
+  // The lens sheet: keep the focus on its switcher and Done across renders.
+  const body = card._el?.sheetBody;
+  if (body) {
+    track(body, "sheetFocus");
+    new MutationObserver(() => {
+      if (card.sheetId === "lens" && st.sheetFocus && !st.sheetFocus.includes("data-hold") && lost()) {
+        body.querySelector(st.sheetFocus)?.focus({ preventScroll: true });
+      }
+    }).observe(body, { childList: true });
+  }
+}
 
 /* ---------- end of Advanced tab ---------- */
 
@@ -1138,6 +1679,63 @@ ha-card{display:block;overflow:hidden;position:relative}
 }
 
 /* ---------- Advanced tab (classes ad-) ---------- */
+.tab-advanced{--vc-opt-h:40px;gap:8px}
+.tab-advanced .vc-grp{padding:10px 12px;gap:6px}
+.ad-none{margin:0;color:var(--secondary-text-color,#727272)}
+.ad-sig{display:flex;align-items:center;gap:8px;min-height:20px;padding:0 4px;font-size:13px;line-height:1.35;
+  color:var(--secondary-text-color,#727272)}
+.ad-sig svg{color:var(--secondary-text-color,#727272)}
+.ad-box{border:1px solid var(--divider-color,rgba(0,0,0,.12));border-radius:var(--vc-radius);padding:10px 12px;
+  display:flex;flex-direction:column;gap:8px;min-width:0}
+.tab-advanced .ad-box .vc-grp{border:0;border-radius:0;padding:0;gap:4px}
+.tab-advanced .ad-box .vc-h{min-height:20px}
+.ad-box.ad-tight{--vc-opt-h:36px;gap:6px}
+.ad-row{display:flex;align-items:center;gap:8px}
+.ad-ib{width:44px;height:44px;flex:none;padding:0;border-radius:var(--vc-radius);background-color:var(--vc-ctl);
+  display:grid;place-items:center;color:var(--primary-color,#03a9f4)}
+.ad-slider{--f:0;position:relative;flex:1;min-width:0;height:44px;border-radius:var(--vc-radius);overflow:hidden;cursor:pointer;
+  touch-action:pan-y;user-select:none;-webkit-user-select:none;
+  background:color-mix(in srgb,var(--primary-color,#03a9f4) 20%,transparent)}
+.ad-slider:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+.ad-slider[aria-disabled="true"]{cursor:default}
+.ad-fill{position:absolute;inset:0 auto 0 0;width:calc(18px + (100% - 18px) * var(--f));
+  border-radius:var(--vc-radius) 0 0 var(--vc-radius);background:var(--primary-color,#03a9f4)}
+.ad-tick{position:absolute;top:50%;left:calc(10px + (100% - 18px) * var(--t));width:4px;height:4px;margin:-2px 0 0 -2px;
+  border-radius:50%;background:color-mix(in srgb,var(--primary-text-color,#212121) 40%,transparent)}
+.ad-hdl{position:absolute;top:50%;left:calc(18px + (100% - 18px) * var(--f) - 10px);width:4px;height:20px;margin-top:-10px;
+  border-radius:2px;background:var(--text-primary-color,#fff)}
+.ad-lock{display:flex;align-items:center;gap:8px;padding:0 4px;min-width:0}
+.ad-lock .vc-lock{flex:1;min-width:0}
+.ad-forget{flex:none;min-height:32px;padding:0 10px;margin:-4px -4px -4px 0;border-radius:16px;background-color:transparent;
+  color:var(--primary-color,#03a9f4);font-weight:500;font-size:13px}
+.ad-lens{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:8px;margin-top:auto}
+.ad-lk{min-height:44px;min-width:0;padding:4px 6px;border-radius:var(--vc-radius);background-color:var(--vc-ctl);
+  display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.2;text-align:center;white-space:nowrap}
+.ad-lk span{overflow:hidden;text-overflow:ellipsis}
+.ad-lk svg{color:var(--primary-color,#03a9f4)}
+.tab-advanced button:disabled{cursor:default;background-image:none}
+.is-on .tab-advanced button:disabled{opacity:.35}
+@container (min-width:600px){
+  .tab-advanced{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-content:start;gap:10px 12px}
+  .tab-advanced > *,.tab-advanced .ad-motion{grid-column:1 / -1}
+  .ad-box{display:contents}
+  .tab-advanced .ad-box .vc-grp{border:1px solid var(--divider-color,rgba(0,0,0,.12));border-radius:var(--vc-radius);padding:10px 12px;gap:8px}
+  .tab-advanced .ad-box > .vc-grp:not(.ad-motion){grid-column:auto}
+  .ad-lens{margin-top:2px}
+  .ad-lk{min-height:52px}
+}
+/* the lens sheet */
+.ad-sheet{display:flex;flex-direction:column;gap:12px}
+.ad-sw{--vc-opt-h:44px}
+.ad-swo{gap:6px}
+.ad-swo svg{color:var(--primary-color,#03a9f4)}
+.ad-instr{margin:0;min-height:calc(3 * 1.4em);color:var(--secondary-text-color,#727272)}
+.ad-dpad{--d:216px}
+.ad-skeys{display:flex;justify-content:center;gap:12px}
+.ad-sk{width:96px}
+.ad-done{min-height:48px;margin-top:4px;padding:0 24px;border-radius:24px;background-color:var(--primary-color,#03a9f4);
+  color:var(--text-primary-color,#fff);font-weight:500;font-size:15px}
+.ad-sheet button:disabled{opacity:.35;cursor:default;background-image:none}
 /* ---------- end of Advanced tab styles ---------- */
 
 @media (prefers-reduced-motion:reduce){

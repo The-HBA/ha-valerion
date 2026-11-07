@@ -304,3 +304,67 @@ const OPTION_LABELS = {
   clear: "Clear",
   smooth: "Smooth",
 };
+
+/* ---------- Advanced tab tests ---------- */
+
+const ADVANCED_DEVICE = "visionmaster_pro2";
+
+/** Replace states of `hass` (entity_id -> [state, attributes]), as one update. */
+function advancedStates(hass, changes) {
+  const states = { ...hass.states };
+  for (const [id, [value, attributes]] of Object.entries(changes)) {
+    states[id] = state(id, value, attributes ?? states[id]?.attributes ?? {});
+  }
+  return { ...hass, states };
+}
+
+/**
+ * A projector with all three lens menus, like a VisionMaster Max: the lens
+ * shift button is available and card_info reports no unsupported menu.
+ */
+export function asMaxLens(hass) {
+  hass.ws.handlers["valerion/card_info"] = () => ({
+    ...structuredClone(CARD_INFO),
+    model: "VisionMaster Max",
+    setup: { ...CARD_INFO.setup, unsupported_menus: [] },
+  });
+  const on = hass.states[PLAYER].state === "on";
+  return advancedStates(hass, {
+    [`button.${ADVANCED_DEVICE}_lens_shift_menu`]: [on ? "unknown" : "unavailable"],
+  });
+}
+
+/** An SDR signal: gamma can be set, tone mapping is locked. */
+export function asSdr(hass) {
+  return advancedStates(hass, {
+    [`sensor.${ADVANCED_DEVICE}_hdr_format`]: ["SDR"],
+    [`sensor.${ADVANCED_DEVICE}_video_signal`]: ["1920×1080p 24 Hz"],
+    [`select.${ADVANCED_DEVICE}_picture_mode`]: ["Theater"],
+    [`select.${ADVANCED_DEVICE}_gamma`]: ["gamma_2_2"],
+    [`select.${ADVANCED_DEVICE}_dynamic_tone_mapping`]: ["unavailable"],
+  });
+}
+
+/** No signal: no lock is known, so gamma and tone mapping can both be set. */
+export function asNoSignal(hass) {
+  return advancedStates(hass, {
+    [`sensor.${ADVANCED_DEVICE}_hdr_format`]: ["no_signal"],
+    [`sensor.${ADVANCED_DEVICE}_video_signal`]: ["unknown"],
+    [`select.${ADVANCED_DEVICE}_picture_mode`]: ["Standard"],
+    [`select.${ADVANCED_DEVICE}_gamma`]: ["gamma_2_2"],
+  });
+}
+
+/** Adds the Forget learned locks button entity. */
+export function withForgetLocks(hass) {
+  const id = `button.${ADVANCED_DEVICE}_forget_learned_locks`;
+  const on = hass.states[PLAYER].state === "on";
+  return {
+    ...hass,
+    entities: {
+      ...hass.entities,
+      [id]: { entity_id: id, device_id: DEVICE_ID, platform: "valerion", translation_key: "forget_learned_locks" },
+    },
+    states: { ...hass.states, [id]: state(id, on ? "unknown" : "unavailable") },
+  };
+}
