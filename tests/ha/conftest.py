@@ -16,6 +16,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.syrupy import HomeAssistantSnapshotExtension
+from syrupy.assertion import SnapshotAssertion
 
 from custom_components.valerion.const import DOMAIN
 from custom_components.valerion.coordinator import ValerionCoordinator
@@ -24,6 +26,18 @@ from tests.lib.fake_projector import DEFAULT_VALUES, FakeProjector
 PROJECTOR_MAC = "00:00:5e:00:53:01"
 #: Fixed so that snapshots do not change from run to run.
 ENTRY_ID = "01K8VALERI0NTESTENTRY00000"
+
+
+@pytest.fixture
+def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
+    """Snapshots in Home Assistant's format, read from tests/ha/snapshots.
+
+    syrupy and the Home Assistant test plugin both define this fixture, and
+    which plugin pytest loads last is not fixed. A conftest fixture always
+    wins, so the snapshots match on every machine.
+    """
+    return snapshot.use_extension(HomeAssistantSnapshotExtension)
+
 
 #: Replies of a VisionMaster Pro2 playing a 4K HDR10 film (values recorded
 #: in docs/protocol.md): Dolby Audio, 10-bit, YUV 4:2:2, BT.2020.
