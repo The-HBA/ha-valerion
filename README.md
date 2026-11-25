@@ -31,7 +31,7 @@ The remote card on a phone: Remote, Picture and Advanced tabs, then Status, Sett
 <p align="center">
   <img src="docs/images/card-status.png" alt="Valerion remote card, Status tab: signal format, picture mode, audio, power, AWOL Link, LED status, laser level, fans, temperatures" width="30%">
   <img src="docs/images/card-settings.png" alt="Valerion remote card, Settings tab: setup tips, model, firmware, integration version, links" width="30%">
-  <img src="docs/images/card-lens.png" alt="Valerion remote card, zoom sheet: switch between zoom and focus, one line of instructions, arrow keys with OK, back, menu and Done" width="30%">
+  <img src="docs/images/card-lens.png" alt="Valerion remote card, zoom sheet: switch between zoom and focus, one line of instructions, left and right arrows with OK, back, menu and Done" width="30%">
 </p>
 
 ## Features

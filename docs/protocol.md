@@ -251,6 +251,10 @@ on an HDMI input, through the integration's *Send raw command* action and
   Pro2 most likely has no motorised lens shift; `%3ZMMN ?` opened the zoom
   menu (2026-10-29). `%3FCMN` from the *Focus menu* button returned no
   error (2026-10-31); Hattan confirmed the focus menu works (2026-10-31).
+  The focus menu is adjusted with Up and Down, not Left and Right: its
+  on-screen hint shows an up/down key "to adjust" and Back "to exit"
+  (Hattan, 2026-11-25). The zoom menu uses Left and Right only; Up and
+  Down do nothing there (Hattan, 2026-11-25).
 
 ## Signal information codes (`%3SINF`)
 

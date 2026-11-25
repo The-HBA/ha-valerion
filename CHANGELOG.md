@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-25
+
+### Fixed
+- Focus sheet: the arrows are now Up and Down, as the projector's focus menu asks. They were Left and Right.
+- Zoom sheet: only Left and Right are shown, the keys the zoom menu uses. Up and Down did nothing.
+
 ## [0.1.1] - 2026-11-07
 
 ### Added

@@ -418,7 +418,7 @@ describe("advanced tab: lens sheet", () => {
       );
       assert.deepEqual(
         await $(page, ".ad-dpad [data-hold]").evaluateAll((els) => els.map((el) => el.dataset.hold)),
-        ["up", "left", "right", "down", "ok"],
+        ["left", "right", "ok"],
       );
       assert.deepEqual(await $(page, ".ad-skeys .rm-key").allTextContents(), ["Back", "Menu"]);
       assert.equal(await $(page, ".ad-sheet button:disabled").count(), 0);
@@ -428,7 +428,7 @@ describe("advanced tab: lens sheet", () => {
     }
   });
 
-  test("Focus: left and right only, no Menu key; one menu: no switcher", async () => {
+  test("Focus: up and down only, no Menu key; one menu: no switcher", async () => {
     const { page } = await open({ power: "on" });
     try {
       await page.evaluate(() => {
@@ -439,11 +439,11 @@ describe("advanced tab: lens sheet", () => {
       assert.equal(await $(page, ".sheet-t").textContent(), "Focus");
       assert.equal(
         await $(page, ".ad-instr").textContent(),
-        "Left and right adjust the focus. Stop when text on screen is sharp.",
+        "Up and down adjust the focus. Stop when text on screen is sharp.",
       );
       assert.deepEqual(
         await $(page, ".ad-dpad [data-hold]").evaluateAll((els) => els.map((el) => el.dataset.hold)),
-        ["left", "right", "ok"],
+        ["up", "down", "ok"],
       );
       assert.deepEqual(await $(page, ".ad-skeys .rm-key").allTextContents(), ["Back"]);
       assert.equal(await $(page, ".ad-sw").count(), 0);

@@ -1395,9 +1395,10 @@ const AD_LASER = "number.laser_level";
  * The lens menus, in the order the card shows them. Each opens the
  * projector's own on-screen menu (button.<name>_menu); the sheet then gives
  * the keys that menu uses.
- * Not checked on a projector: the instructions, the arrows and the Menu key
- * are best guesses, kept as they are since v0.1.1. Correct them when a user
- * reports what a menu really does.
+ * Checked on a VisionMaster Pro2 on 2026-11-25: focus uses Up and Down,
+ * zoom uses Left and Right only. The zoom Menu key and lens shift are still
+ * best guesses from v0.1.1. Correct them when a user reports what
+ * a menu really does.
  */
 const LENS_MENUS = {
   lens_shift: {
@@ -1412,7 +1413,7 @@ const LENS_MENUS = {
     title: "Zoom",
     short: "Zoom",
     icon: "zoom",
-    arrows: ["up", "left", "right", "down"],
+    arrows: ["left", "right"],
     menuKey: true,
     text: "Left and right zoom in and out. Menu moves the zoomed picture. To reset, hold OK on the projector's remote.",
   },
@@ -1420,9 +1421,9 @@ const LENS_MENUS = {
     title: "Focus",
     short: "Focus",
     icon: "focus",
-    arrows: ["left", "right"],
+    arrows: ["up", "down"],
     menuKey: false,
-    text: "Left and right adjust the focus. Stop when text on screen is sharp.",
+    text: "Up and down adjust the focus. Stop when text on screen is sharp.",
   },
 };
 const AD_ARROW_LABELS = { up: "Up", down: "Down", left: "Left", right: "Right" };
